@@ -19,8 +19,9 @@ async def llm_model_func(
         prompt,
         system_prompt=system_prompt,
         history_messages=history_messages,
-        api_key=os.getenv("UPSTAGE_API_KEY"),
-        base_url="https://api.upstage.ai/v1/solar",
+        #api_key=os.getenv("UPSTAGE_API_KEY"),
+        api_key="null",
+        base_url="https://11434-01jasnwfwqv3hg9e1faaabm8zf.cloudspaces.litng.ai/",
         **kwargs,
     )
 
