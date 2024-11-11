@@ -3,7 +3,7 @@ from pyvis.network import Network
 import random
 
 # Load the GraphML file
-G = nx.read_graphml('./dickens/graph_chunk_entity_relation.graphml')
+G = nx.read_graphml('/Users/vinh/Documents/LightRAG/examples/restaurant_openai_p4t_test/graph_chunk_entity_relation.graphml')
 
 # Create a Pyvis network
 net = Network(notebook=True)

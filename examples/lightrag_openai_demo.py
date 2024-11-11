@@ -3,7 +3,7 @@ import os
 from lightrag import LightRAG, QueryParam
 from lightrag.llm import gpt_4o_mini_complete
 
-WORKING_DIR = "./dickens"
+WORKING_DIR = "./restaurant_openai_p4t_test"
 
 if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)
@@ -15,25 +15,26 @@ rag = LightRAG(
 )
 
 
-with open("./book.txt") as f:
+with open("/Users/vinh/Documents/LightRAG/resto.txt") as f:
     rag.insert(f.read())
 
-# Perform naive search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="naive"))
-)
 
-# Perform local search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="local"))
-)
+# # Perform hybrid search
+# print(
+#     rag.query("Donne moi la liste de tous les restaurants situées à Paris", param=QueryParam(mode="naive"))
+# )
 
-# Perform global search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="global"))
-)
+# # Perform hybrid search
+# print(
+#     rag.query("Donne moi la liste de tous les restaurants situées à Paris", param=QueryParam(mode="local"))
+# )
 
-# Perform hybrid search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid"))
-)
+# # Perform hybrid search
+# print(
+#     rag.query("Donne moi la liste de tous les restaurants situées à Paris", param=QueryParam(mode="global"))
+# )
+
+# # Perform hybrid search
+# print(
+#     rag.query("Donne moi une liste de restaurants italien calme pour un diner d'affaire. Et donne moi les plats à prendre", param=QueryParam(mode="hybrid"))
+# )

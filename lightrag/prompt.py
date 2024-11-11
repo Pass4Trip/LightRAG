@@ -7,7 +7,7 @@ PROMPTS["DEFAULT_RECORD_DELIMITER"] = "##"
 PROMPTS["DEFAULT_COMPLETION_DELIMITER"] = "<|COMPLETE|>"
 PROMPTS["process_tickers"] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-PROMPTS["DEFAULT_ENTITY_TYPES"] = ["organization", "person", "geo", "event"]
+PROMPTS["DEFAULT_ENTITY_TYPES"] = ["restaurant", "cid", "resume", "positive_point", "negative_point", "recommandation"]
 
 PROMPTS["entity_extraction"] = """-Goal-
 Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
@@ -31,82 +31,93 @@ Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tupl
 3. Identify high-level key words that summarize the main concepts, themes, or topics of the entire text. These should capture the overarching ideas present in the document.
 Format the content-level key words as ("content_keywords"{tuple_delimiter}<high_level_keywords>)
 
-4. Return output in English as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.
+4. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'restaurant' entity. If an entity cannot be directly or indirectly connected to the 'restaurant' through a relationship, it should not be considered valid or relevant.
 
-5. When finished, output {completion_delimiter}
+5. For **positive_point**, **negative_point**, and **recommandation**, generate generic and concise labels that summarize key aspects applicable across different restaurants.
+
+6. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.
+
+7. When finished, output {completion_delimiter}
 
 ######################
 -Examples-
 ######################
 Example 1:
 
-Entity_types: [person, technology, mission, organization, location]
+Entity_types: [restaurant, CID, positive_point, negative_point, recommandation]
 Text:
-while Alex clenched his jaw, the buzz of frustration dull against the backdrop of Taylor's authoritarian certainty. It was this competitive undercurrent that kept him alert, the sense that his and Jordan's shared commitment to discovery was an unspoken rebellion against Cruz's narrowing vision of control and order.
-
-Then Taylor did something unexpected. They paused beside Jordan and, for a moment, observed the device with something akin to reverence. “If this tech can be understood..." Taylor said, their voice quieter, "It could change the game for us. For all of us.”
-
-The underlying dismissal earlier seemed to falter, replaced by a glimpse of reluctant respect for the gravity of what lay in their hands. Jordan looked up, and for a fleeting heartbeat, their eyes locked with Taylor's, a wordless clash of wills softening into an uneasy truce.
-
-It was a small transformation, barely perceptible, but one that Alex noted with an inward nod. They had all been brought here by different paths
+Restaurant : Le Coquemar
+Cid : 3091293945615310311
+ Résumé du restaurant Le Coquemar:  Le Coquemar est un restaurant français qui offre une expérience culinaire traditionnelle dans un cadre élégant et lumineux. Situé dans un lieu où les murs de pierres sont décorés de peintures, il propose une ambiance chaleureuse et décontractée, parfaite pour les repas en famille ou en groupe.  Le prix de la nourriture se situe entre 20 et 30 euros, offrant un bon rapport qualité-prix pour les clients. Les avis clients sont généralement positifs, avec des notes allant de 4 à 5 étoiles pour la nourriture, le service et l'atmosphère. Les clients apprécient particulièrement la cuisine traditionnelle, la qualité des plats et le service attentif.  Le Coquemar est également connu pour ses options de boissons, incluant des alcools, des bières, des cafés, des cocktails et des apéritifs. Les clients peuvent également choisir des produits sains, des spiritueux, des vins et des desserts. Le restaurant propose également des traiteurs et des cartes de crédit pour faciliter les paiements.  En termes de critiques, les clients ont souvent mentionné la bonne cuisine traditionnelle et le bon service. Cependant, certains critiques ont suggéré une amélioration de l'atmosphère, qui a été notée à 2 étoiles dans certains cas.  Enfin, Le Coquemar propose des repas sur place, des réservations acceptées, des options de paiement telles que les cartes de crédit, les cartes de paiement, les chèques, les paiements mobiles NFC et Pluxee. Le restaurant est également chaleureux et accueillant, avec des toilettes disponibles et des titres restaurant pour les clients.
 ################
 Output:
-("entity"{tuple_delimiter}"Alex"{tuple_delimiter}"person"{tuple_delimiter}"Alex is a character who experiences frustration and is observant of the dynamics among other characters."){record_delimiter}
-("entity"{tuple_delimiter}"Taylor"{tuple_delimiter}"person"{tuple_delimiter}"Taylor is portrayed with authoritarian certainty and shows a moment of reverence towards a device, indicating a change in perspective."){record_delimiter}
-("entity"{tuple_delimiter}"Jordan"{tuple_delimiter}"person"{tuple_delimiter}"Jordan shares a commitment to discovery and has a significant interaction with Taylor regarding a device."){record_delimiter}
-("entity"{tuple_delimiter}"Cruz"{tuple_delimiter}"person"{tuple_delimiter}"Cruz is associated with a vision of control and order, influencing the dynamics among other characters."){record_delimiter}
-("entity"{tuple_delimiter}"The Device"{tuple_delimiter}"technology"{tuple_delimiter}"The Device is central to the story, with potential game-changing implications, and is revered by Taylor."){record_delimiter}
-("relationship"{tuple_delimiter}"Alex"{tuple_delimiter}"Taylor"{tuple_delimiter}"Alex is affected by Taylor's authoritarian certainty and observes changes in Taylor's attitude towards the device."{tuple_delimiter}"power dynamics, perspective shift"{tuple_delimiter}7){record_delimiter}
-("relationship"{tuple_delimiter}"Alex"{tuple_delimiter}"Jordan"{tuple_delimiter}"Alex and Jordan share a commitment to discovery, which contrasts with Cruz's vision."{tuple_delimiter}"shared goals, rebellion"{tuple_delimiter}6){record_delimiter}
-("relationship"{tuple_delimiter}"Taylor"{tuple_delimiter}"Jordan"{tuple_delimiter}"Taylor and Jordan interact directly regarding the device, leading to a moment of mutual respect and an uneasy truce."{tuple_delimiter}"conflict resolution, mutual respect"{tuple_delimiter}8){record_delimiter}
-("relationship"{tuple_delimiter}"Jordan"{tuple_delimiter}"Cruz"{tuple_delimiter}"Jordan's commitment to discovery is in rebellion against Cruz's vision of control and order."{tuple_delimiter}"ideological conflict, rebellion"{tuple_delimiter}5){record_delimiter}
-("relationship"{tuple_delimiter}"Taylor"{tuple_delimiter}"The Device"{tuple_delimiter}"Taylor shows reverence towards the device, indicating its importance and potential impact."{tuple_delimiter}"reverence, technological significance"{tuple_delimiter}9){record_delimiter}
-("content_keywords"{tuple_delimiter}"power dynamics, ideological conflict, discovery, rebellion"){completion_delimiter}
-#############################
+("entity"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"restaurant"{tuple_delimiter}"Le Coquemar est un restaurant français qui offre une expérience culinaire traditionnelle dans un cadre élégant et lumineux."){record_delimiter}
+("entity"{tuple_delimiter}"3091293945615310311"{tuple_delimiter}"CID"{tuple_delimiter}"Le restaurant est identifié par le CID 3091293945615310311."){record_delimiter}
+("entity"{tuple_delimiter}"ambiance chaleureuse"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant offre une ambiance chaleureuse et décontractée."){record_delimiter}
+("entity"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant dispose d'un cadre élégant et lumineux."){record_delimiter}
+("entity"{tuple_delimiter}"service de qualité"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les clients apprécient le service attentif."){record_delimiter}
+("entity"{tuple_delimiter}"amélioration de l'atmosphère"{tuple_delimiter}"negative_point"{tuple_delimiter}"Certains clients suggèrent une amélioration de l'atmosphère."){record_delimiter}
+("entity"{tuple_delimiter}"cuisine recommandée"{tuple_delimiter}"recommandation"{tuple_delimiter}"Les clients recommandent la cuisine traditionnelle."){record_delimiter}
+
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"3091293945615310311"{tuple_delimiter}"Le restaurant est associé au CID 3091293945615310311."{tuple_delimiter}"CID"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"ambiance chaleureuse"{tuple_delimiter}"Le restaurant propose une ambiance chaleureuse."{tuple_delimiter}"ambiance"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"Le restaurant dispose d'un cadre élégant et lumineux."{tuple_delimiter}"cadre attrayant"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"service de qualité"{tuple_delimiter}"Le service est attentif et apprécié des clients."{tuple_delimiter}"service de qualité"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"amélioration de l'atmosphère"{tuple_delimiter}"Certains clients suggèrent une amélioration de l'atmosphère."{tuple_delimiter}"amélioration nécessaire"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"cuisine recommandée"{tuple_delimiter}"La cuisine traditionnelle est particulièrement appréciée des clients."{tuple_delimiter}"cuisine recommandée"{tuple_delimiter}1){record_delimiter}
+
+
+######################
 Example 2:
 
-Entity_types: [person, technology, mission, organization, location]
+Entity_types: [restaurant, CID, positive_point, negative_point, recommandation]
 Text:
-They were no longer mere operatives; they had become guardians of a threshold, keepers of a message from a realm beyond stars and stripes. This elevation in their mission could not be shackled by regulations and established protocols—it demanded a new perspective, a new resolve.
-
-Tension threaded through the dialogue of beeps and static as communications with Washington buzzed in the background. The team stood, a portentous air enveloping them. It was clear that the decisions they made in the ensuing hours could redefine humanity's place in the cosmos or condemn them to ignorance and potential peril.
-
-Their connection to the stars solidified, the group moved to address the crystallizing warning, shifting from passive recipients to active participants. Mercer's latter instincts gained precedence— the team's mandate had evolved, no longer solely to observe and report but to interact and prepare. A metamorphosis had begun, and Operation: Dulce hummed with the newfound frequency of their daring, a tone set not by the earthly
-#############
+Restaurant : Café Lisboa
+Cid : 16204433116771456015
+ Résumé du Café Lisboa:  Le Café Lisboa est un restaurant décontracté situé dans un cadre coloré, offrant une expérience culinaire portugaise avec une terrasse pour profiter de la vue et des tartes à la crème portugaises. Le prix de la nourriture se situe entre 20 et 30 euros, ce qui correspond à un rapport qualité-prix raisonnable.   L'ambiance du lieu est chaleureuse et conviviale, avec une terrasse accessible aux personnes à mobilité réduite. Le restaurant est également adapté aux familles et aux groupes, avec des options de réservation disponibles.   Les avis clients sont partagés, certains appréciant la cuisine authentique et les plats copieux, tandis que d'autres expriment leur déception concernant le fait que le restaurant ne propose pas de café. Les critiques récurrentes soulignent l'importance de faire une réservation pour éviter les longues files d'attente.   Les points forts du Café Lisboa incluent la cuisine portugaise, les spécialités comme le chorizo flambé et les croquettes de morue, ainsi que les excellents cocktails et les produits sains proposés. Cependant, il est recommandé de ne pas attendre pour commander, car le service peut être lent.   En conclusion, le Café Lisboa offre une expérience culinaire portugaise décontractée avec des plats frais et des cocktails raffinés. Bien que certains aspects du service puissent être améliorés, le restaurant est une option appréciée pour un dîner casual dans le centre ville de Lyon.
+################
 Output:
-("entity"{tuple_delimiter}"Washington"{tuple_delimiter}"location"{tuple_delimiter}"Washington is a location where communications are being received, indicating its importance in the decision-making process."){record_delimiter}
-("entity"{tuple_delimiter}"Operation: Dulce"{tuple_delimiter}"mission"{tuple_delimiter}"Operation: Dulce is described as a mission that has evolved to interact and prepare, indicating a significant shift in objectives and activities."){record_delimiter}
-("entity"{tuple_delimiter}"The team"{tuple_delimiter}"organization"{tuple_delimiter}"The team is portrayed as a group of individuals who have transitioned from passive observers to active participants in a mission, showing a dynamic change in their role."){record_delimiter}
-("relationship"{tuple_delimiter}"The team"{tuple_delimiter}"Washington"{tuple_delimiter}"The team receives communications from Washington, which influences their decision-making process."{tuple_delimiter}"decision-making, external influence"{tuple_delimiter}7){record_delimiter}
-("relationship"{tuple_delimiter}"The team"{tuple_delimiter}"Operation: Dulce"{tuple_delimiter}"The team is directly involved in Operation: Dulce, executing its evolved objectives and activities."{tuple_delimiter}"mission evolution, active participation"{tuple_delimiter}9){completion_delimiter}
-("content_keywords"{tuple_delimiter}"mission evolution, decision-making, active participation, cosmic significance"){completion_delimiter}
-#############################
+("entity"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"restaurant"{tuple_delimiter}"Le Café Lisboa est un restaurant décontracté situé dans un cadre coloré, offrant une expérience culinaire portugaise avec une terrasse."){record_delimiter}
+("entity"{tuple_delimiter}"16204433116771456015"{tuple_delimiter}"CID"{tuple_delimiter}"Le restaurant est identifié par le CID 16204433116771456015."){record_delimiter}
+("entity"{tuple_delimiter}"ambiance conviviale"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant offre une ambiance chaleureuse et conviviale."){record_delimiter}
+("entity"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant est situé dans un cadre coloré."){record_delimiter}
+("entity"{tuple_delimiter}"adapté aux familles"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant est adapté aux familles et aux groupes."){record_delimiter}
+("entity"{tuple_delimiter}"service lent"{tuple_delimiter}"negative_point"{tuple_delimiter}"Le service peut être lent, il est donc recommandé de commander rapidement."){record_delimiter}
+("entity"{tuple_delimiter}"cuisine portugaise"{tuple_delimiter}"recommandation"{tuple_delimiter}"La cuisine portugaise et les spécialités comme le chorizo flambé sont recommandées."){record_delimiter}
+
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"16204433116771456015"{tuple_delimiter}"Le restaurant est associé au CID 16204433116771456015."{tuple_delimiter}"CID"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"ambiance conviviale"{tuple_delimiter}"Le restaurant offre une ambiance chaleureuse et conviviale."{tuple_delimiter}"ambiance"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"Le restaurant est situé dans un cadre coloré."{tuple_delimiter}"cadre"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"adapté aux familles"{tuple_delimiter}"Le restaurant est adapté aux familles et aux groupes."{tuple_delimiter}"adapté aux familles"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"service lent"{tuple_delimiter}"Le service peut être lent, ce qui nécessite de commander rapidement."{tuple_delimiter}"service"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"cuisine portugaise"{tuple_delimiter}"Les spécialités comme le chorizo flambé sont particulièrement appréciées."{tuple_delimiter}"spécialités culinaires"{tuple_delimiter}
+
+
+
+######################
 Example 3:
 
-Entity_types: [person, role, technology, organization, event, location, concept]
+Entity_types: [restaurant, CID, positive_point, negative_point, recommandation]
 Text:
-their voice slicing through the buzz of activity. "Control may be an illusion when facing an intelligence that literally writes its own rules," they stated stoically, casting a watchful eye over the flurry of data.
-
-"It's like it's learning to communicate," offered Sam Rivera from a nearby interface, their youthful energy boding a mix of awe and anxiety. "This gives talking to strangers' a whole new meaning."
-
-Alex surveyed his team—each face a study in concentration, determination, and not a small measure of trepidation. "This might well be our first contact," he acknowledged, "And we need to be ready for whatever answers back."
-
-Together, they stood on the edge of the unknown, forging humanity's response to a message from the heavens. The ensuing silence was palpable—a collective introspection about their role in this grand cosmic play, one that could rewrite human history.
-
-The encrypted dialogue continued to unfold, its intricate patterns showing an almost uncanny anticipation
-#############
+Restaurant : ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon
+Cid : 15463301415010585125
+ Résumé de ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon   ELLA Bolerie Méditerranéenne est un restaurant rapide situé dans la ville de Sainte-Foy-Lès-Lyon, offrant une expérience culinaire rapide et conviviale. Bien que le restaurant soit spécialisé dans la restauration rapide, il se distingue par sa spécialité méditerranéenne, proposant une variété de plats savoureux et rapidement préparés.   L'ambiance du restaurant est accueillante et moderne, avec un design qui favorise une atmosphère chaleureuse et conviviale. Le service est rapide et efficace, ce qui est essentiel dans un établissement de restauration rapide.   En ce qui concerne le rapport qualité-prix, le restaurant offre une gamme de prix qui est compétitive par rapport à d'autres options de restauration rapide dans la région. Les plats sont généralement bien reçus par les clients, bien que le restaurant n'ait pas reçu de notes étoilées.   Les points forts du restaurant incluent sa capacité à servir des repas rapidement sans compromettre la qualité, ainsi que sa disponibilité pour les livraisons sans contact et le service de drive. ELLA Bolerie Méditerranéenne est également adapté aux familles et aux enfants, avec des options de menu pour les convives végétariens.   Les critiques récurrentes suggèrent que le restaurant pourrait bénéficier d'une meilleure notoriété et d'une amélioration de la qualité des plats pour obtenir des étoiles. De plus, il est recommandé d'offrir une plus grande variété de plats pour attirer une clientèle plus large.   Enfin, le restaurant est ouvert aux heures habituelles d'une restauration rapide, propose un parking accessible en fauteuil roulant, et dispose d'un bar à salade et de cafés pour les clients qui souhaitent prendre un café ou un encas. La livraison et le service de drive sont également disponibles, ce qui le rend accessible pour les clients qui ne peuvent pas se rendre sur place.
+################
 Output:
-("entity"{tuple_delimiter}"Sam Rivera"{tuple_delimiter}"person"{tuple_delimiter}"Sam Rivera is a member of a team working on communicating with an unknown intelligence, showing a mix of awe and anxiety."){record_delimiter}
-("entity"{tuple_delimiter}"Alex"{tuple_delimiter}"person"{tuple_delimiter}"Alex is the leader of a team attempting first contact with an unknown intelligence, acknowledging the significance of their task."){record_delimiter}
-("entity"{tuple_delimiter}"Control"{tuple_delimiter}"concept"{tuple_delimiter}"Control refers to the ability to manage or govern, which is challenged by an intelligence that writes its own rules."){record_delimiter}
-("entity"{tuple_delimiter}"Intelligence"{tuple_delimiter}"concept"{tuple_delimiter}"Intelligence here refers to an unknown entity capable of writing its own rules and learning to communicate."){record_delimiter}
-("entity"{tuple_delimiter}"First Contact"{tuple_delimiter}"event"{tuple_delimiter}"First Contact is the potential initial communication between humanity and an unknown intelligence."){record_delimiter}
-("entity"{tuple_delimiter}"Humanity's Response"{tuple_delimiter}"event"{tuple_delimiter}"Humanity's Response is the collective action taken by Alex's team in response to a message from an unknown intelligence."){record_delimiter}
-("relationship"{tuple_delimiter}"Sam Rivera"{tuple_delimiter}"Intelligence"{tuple_delimiter}"Sam Rivera is directly involved in the process of learning to communicate with the unknown intelligence."{tuple_delimiter}"communication, learning process"{tuple_delimiter}9){record_delimiter}
-("relationship"{tuple_delimiter}"Alex"{tuple_delimiter}"First Contact"{tuple_delimiter}"Alex leads the team that might be making the First Contact with the unknown intelligence."{tuple_delimiter}"leadership, exploration"{tuple_delimiter}10){record_delimiter}
-("relationship"{tuple_delimiter}"Alex"{tuple_delimiter}"Humanity's Response"{tuple_delimiter}"Alex and his team are the key figures in Humanity's Response to the unknown intelligence."{tuple_delimiter}"collective action, cosmic significance"{tuple_delimiter}8){record_delimiter}
-("relationship"{tuple_delimiter}"Control"{tuple_delimiter}"Intelligence"{tuple_delimiter}"The concept of Control is challenged by the Intelligence that writes its own rules."{tuple_delimiter}"power dynamics, autonomy"{tuple_delimiter}7){record_delimiter}
-("content_keywords"{tuple_delimiter}"first contact, control, communication, cosmic significance"){completion_delimiter}
+("entity"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"restaurant"{tuple_delimiter}"ELLA Bolerie Méditerranéenne est un restaurant rapide situé dans la ville de Sainte-Foy-Lès-Lyon, offrant une expérience culinaire rapide et conviviale."){record_delimiter}
+("entity"{tuple_delimiter}"15463301415010585125"{tuple_delimiter}"CID"{tuple_delimiter}"Le restaurant est identifié par le CID 15463301415010585125."){record_delimiter}
+("entity"{tuple_delimiter}"service rapide"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le service est rapide et efficace."){record_delimiter}
+("entity"{tuple_delimiter}"ambiance moderne"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant a une ambiance moderne et conviviale."){record_delimiter}
+("entity"{tuple_delimiter}"menu varié"{tuple_delimiter}"recommandation"{tuple_delimiter}"Il est recommandé d'offrir une plus grande variété de plats pour attirer plus de clients."){record_delimiter}
+("entity"{tuple_delimiter}"amélioration de la qualité"{tuple_delimiter}"negative_point"{tuple_delimiter}"Le restaurant pourrait améliorer la qualité des plats."){record_delimiter}
+
+("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"15463301415010585125"{tuple_delimiter}"Le restaurant est associé au CID 15463301415010585125."{tuple_delimiter}"CID"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"service rapide"{tuple_delimiter}"Le service est rapide et efficace."{tuple_delimiter}"service"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"ambiance moderne"{tuple_delimiter}"Le restaurant a une ambiance moderne et accueillante."{tuple_delimiter}"ambiance"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"menu varié"{tuple_delimiter}"Il est recommandé d'offrir une plus grande variété de plats."{tuple_delimiter}"variété"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"amélioration de la qualité"{tuple_delimiter}"Le restaurant pourrait améliorer la qualité des plats pour satisfaire les clients."{tuple_delimiter}"amélioration qualité"{tuple_delimiter}1){record_delimiter}
+
+
 #############################
 -Real Data-
 ######################

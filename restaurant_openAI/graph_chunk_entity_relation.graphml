@@ -1,0 +1,447 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d6" for="edge" attr.name="source_id" attr.type="string" />
+  <key id="d5" for="edge" attr.name="keywords" attr.type="string" />
+  <key id="d4" for="edge" attr.name="description" attr.type="string" />
+  <key id="d3" for="edge" attr.name="weight" attr.type="double" />
+  <key id="d2" for="node" attr.name="source_id" attr.type="string" />
+  <key id="d1" for="node" attr.name="description" attr.type="string" />
+  <key id="d0" for="node" attr.name="entity_type" attr.type="string" />
+  <graph edgedefault="undirected">
+    <node id="&quot;PIZZERIA NAPOLI&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Pizzeria Napoli, un lieu convivial proposant une cuisine italienne authentique."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;4 RUE DU COMMERCE, 75011 PARIS&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Pizzeria Napoli est située à l'adresse 4 Rue du Commerce, 75011 Paris."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PIZZERIA&quot;">
+      <data key="d0">"CATEGORY"</data>
+      <data key="d1">"Pizzeria Da Marco est un restaurant de pizza traditionnelle."&lt;SEP&gt;"Pizzeria Napoli est un restaurant de pizza traditionnelle."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;LIEU CONVIVIAL&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Le restaurant est considéré comme un lieu convivial."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;CUISINE ITALIENNE AUTHENTIQUE&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Le restaurant propose une cuisine italienne authentique."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;LES PRIX PEUVENT ÊTRE UN PEU ÉLEVÉS&quot;">
+      <data key="d0">"NEGATIVE_POINT"</data>
+      <data key="d1">"Le restaurant a des prix un peu élevés."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;IL PEUT Y AVOIR DES FILES D'ATTENTE&quot;">
+      <data key="d0">"NEGATIVE_POINT"</data>
+      <data key="d1">"Le restaurant a parfois des files d'attente."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PIZZA MARGHERITA&quot;">
+      <data key="d0">"RECOMMANDATION"</data>
+      <data key="d1">"On apprécie généralement les pizzas, notamment la Margherita, qui est un classique."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;LE WOK CÉLESTE&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Le Wok Céleste offre une cuisine chinoise authentique dans une ambiance chaleureuse."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;6 AVENUE DE LA LIBERTÉ, 69005 LYON&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Le Wok Céleste est situé à l'adresse 6 Avenue de la Liberté, 69005 Lyon."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;RESTAURANT CHINOIS&quot;">
+      <data key="d0">"CATEGORY"</data>
+      <data key="d1">"Le Wok Céleste est un restaurant de cuisine chinoise authentique."&lt;SEP&gt;"Le Wok Magique est un restaurant de cuisine chinoise.&lt;SEP&gt;"Le Wok Magique est un restaurant de cuisine chinoise."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;AMBIANCE CHALEUREUSE&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"L'ambiance est chaleureuse au Comptoir du Fromage."&lt;SEP&gt;"Le restaurant est caractérisé par une ambiance chaleureuse."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;POULET SATAY&quot;">
+      <data key="d0">"RECOMMANDATION"</data>
+      <data key="d1">"Le poulet satay est un plat populaire et savoureux au Wok Céleste."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;LE PETIT BISTRO&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Le Petit Bistro, un bistro traditionnel proposant une cuisine simple et raffinée."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;22 RUE DE LA RÉPUBLIQUE, 69001 LYON&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Le Petit Bistro est située à l'adresse 22 Rue de la République, 69001 Lyon."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;BISTRO&quot;">
+      <data key="d0">"CATEGORY"</data>
+      <data key="d1">"Le Petit Bistro est un bistro traditionnel."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;SALADE NIÇOISE&quot;">
+      <data key="d0">"RECOMMANDATION"</data>
+      <data key="d1">"La salade Niçoise est un plat incontournable au Petit Bistro."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;SERVICE EFFICACE&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Le service au Petit Bistro est caractérisé par son efficacité."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;BRUYANTE&quot;">
+      <data key="d0">"NEGATIVE_POINT"</data>
+      <data key="d1">"L'ambiance au Petit Bistro peut parfois être bruyante."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;TRATTORIA BELLA ITALIA&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Trattoria Bella Italia, un restaurant italien authentique offrant une ambiance chaleureuse."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;10 RUE DES ARTS, 69001 LYON&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Trattoria Bella Italia est située à l'adresse 10 Rue des Arts, 69001 Lyon."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;ITALIEN&quot;">
+      <data key="d0">"CATEGORY"</data>
+      <data key="d1">"Trattoria Bella Italia est un restaurant italien."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PÂTES À LA CARBONARA&quot;">
+      <data key="d0">"RECOMMANDATION"</data>
+      <data key="d1">"Les pâtes à la carbonara sont un classique apprécié à la Trattoria Bella Italia."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;SERVICE ATTENTIONNÉ&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Le service est attentionné au Jardin Secret."&lt;SEP&gt;"Le service est attentionné à Trattoria Bella Italia."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PRIX ÉLEVÉS&quot;">
+      <data key="d0">"NEGATIVE_POINT"</data>
+      <data key="d1">"Les prix à Sambahia sont élevés."&lt;SEP&gt;"Les prix à Trattoria Bella Italia peuvent être un peu élevés."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;TEMPS D'ATTENTE IMPORTANTS&quot;">
+      <data key="d0">"NEGATIVE_POINT"</data>
+      <data key="d1">"Il peut y avoir des temps d'attente importants à la Trattoria Bella Italia."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PIZZERIA DA MARCO&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Pizzeria Da Marco, une pizzeria traditionnelle proposant une cuisine italienne authentique."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;12 RUE DES ARTS, 75001 PARIS&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Pizzeria Da Marco est située à l'adresse 12 Rue des Arts, 75001 Paris."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PIZZAS SAVOUREUSES&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Les pizzas à Pizzeria Da Marco sont savoureuses."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;AMBIANCE FAMILIALE&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Pizzeria Da Marco a une ambiance familiale."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;DÉCOR MODERNISÉ&quot;">
+      <data key="d0">"NEGATIVE_POINT"</data>
+      <data key="d1">"Le décor de Pizzeria Da Marco pourrait être modernisé."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;ERREURS DE COMMANDE&quot;">
+      <data key="d0">"NEGATIVE_POINT"</data>
+      <data key="d1">"Il peut y avoir des erreurs de commande occasionnelles à Pizzeria Da Marco."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;LE WOK MAGIQUE&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Le Wok Magique, un restaurant chinois proposant une cuisine authentique dans une ambiance agréable."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;15 BOULEVARD DE LA LIBERTÉ, 69003 LYON&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Le Wok Magique est situé à l'adresse 15 Boulevard de la Liberté, 69003 Lyon."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;NOUILLES SAUTÉES&quot;">
+      <data key="d0">"RECOMMANDATION"</data>
+      <data key="d1">"Les nouilles sautées sont un plat populaire au Wok Magique."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PLATS BIEN CUISINÉS&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Les plats au Wok Magique sont bien cuisinés."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;MENU LIMITÉ&quot;">
+      <data key="d0">"NEGATIVE_POINT"</data>
+      <data key="d1">"Le menu au Wok Magique est limité."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;SAMBAHIA&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Sambahia, un restaurant brésilien proposant une cuisine authentique et raffinée."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;8 RUE DU VIEL RENVERSÉ, 69005 LYON&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Sambahia est située à l'adresse 8 Rue du Viel Renversé, 69005 Lyon."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;RESTAURANT BRÉSILIEN&quot;">
+      <data key="d0">"CATEGORY"</data>
+      <data key="d1">"Sambahia est un restaurant brésilien."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;COXINHA&quot;">
+      <data key="d0">"RECOMMANDATION"</data>
+      <data key="d1">"La Coxinha est un plat incontournable à Sambahia."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;AMBIANCE ACCUEILLANTE&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Sambahia a une ambiance accueillante."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PLATS SAVOUREUX&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Les plats à Sambahia sont savoureux."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PROBLÈMES DE SERVICE OCCASIONNELS&quot;">
+      <data key="d0">"NEGATIVE_POINT"</data>
+      <data key="d1">"Il peut y avoir des problèmes de service occasionnels à Sambahia."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;LE BURGER BAR&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Le Burger Bar, un restaurant spécialisé dans les hamburgers artisanaux."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;15 RUE DE LA GARE, 69001 LYON&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Le Burger Bar est situé à l'adresse 15 Rue de la Gare, 69001 Lyon."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;HAMBURGER&quot;">
+      <data key="d0">"CATEGORY"</data>
+      <data key="d1">"Le Burger Bar est un restaurant de hamburgers artisanaux."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;BURGERS GÉNÉREUX&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Le Burger Bar est connu pour ses burgers généreux et savoureux."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;FRITES MAISON&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Les frites maison sont appréciées au Burger Bar."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;AMBIANCE DÉCONTRACTÉE&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Le Burger Bar a une ambiance décontractée."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;SERVICE RAPIDE&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Le service est rapide au Burger Bar."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;LE COMPTOIR DU FROMAGE&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Le Comptoir du Fromage, un lieu dédié aux fromages de qualité."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;20 RUE DES HALLES, 75001 PARIS&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Le Comptoir du Fromage est situé à l'adresse 20 Rue des Halles, 75001 Paris."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;FROMAGE&quot;">
+      <data key="d0">"CATEGORY"</data>
+      <data key="d1">"Le Comptoir du Fromage est un restaurant spécialisé dans les fromages."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;LARGE SÉLECTION DE FROMAGES&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"On y trouve une large sélection de fromages français et internationaux."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;CHARCUTERIES ET VINS&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Le Comptoir du Fromage propose également des charcuteries et des vins."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;SERVICE PROFESSIONNEL&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Le service est professionnel au Comptoir du Fromage."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;LE JARDIN SECRET&quot;">
+      <data key="d0">"RESTAURANT"</data>
+      <data key="d1">"Le Jardin Secret, un restaurant proposant une cuisine du monde variée et savoureuse."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;14 AVENUE DE LA RÉPUBLIQUE, 69003 LYON&quot;">
+      <data key="d0">"ADRESSE"</data>
+      <data key="d1">"Le Jardin Secret est situé à l'adresse 14 Avenue de la République, 69003 Lyon."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;CUISINE DU MONDE&quot;">
+      <data key="d0">"CATEGORY"</data>
+      <data key="d1">"Le Jardin Secret est un restaurant de cuisine du monde."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;INGRÉDIENTS FRAIS ET LOCAUX&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Les plats sont préparés avec des ingrédients frais et locaux au Jardin Secret."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;AMBIANCE DÉTENDUE&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"L'ambiance est détendue au Jardin Secret."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <node id="&quot;PRIX MODÉRÉS&quot;">
+      <data key="d0">"POSITIVE_POINT"</data>
+      <data key="d1">"Les prix au Jardin Secret sont modérés."</data>
+      <data key="d2">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </node>
+    <edge source="&quot;PIZZERIA NAPOLI&quot;" target="&quot;PIZZA MARGHERITA&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Pizzeria Napoli propose son classique avec la pizza Margherita qui est un classique."</data>
+      <data key="d5">"Pizza Margherita, classique"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;PIZZERIA NAPOLI&quot;" target="&quot;4 RUE DU COMMERCE, 75011 PARIS&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Pizzeria Napoli a l'adresse : 4 Rue du Commerce, 75011 Paris."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;PIZZA MARGHERITA&quot;" target="&quot;PIZZERIA DA MARCO&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Les pizzas à Pizzeria Da Marco sont savoureuses et incluent la Margherita."</data>
+      <data key="d5">"savoureuses"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE WOK CÉLESTE&quot;" target="&quot;POULET SATAY&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Le poulet satay est un plat populaire et savoureux au Wok Céleste."</data>
+      <data key="d5">"plat populaire"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE WOK CÉLESTE&quot;" target="&quot;6 AVENUE DE LA LIBERTÉ, 69005 LYON&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Le Wok Céleste est situé à l'adresse 6 Avenue de la Liberté, 69005 Lyon."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE PETIT BISTRO&quot;" target="&quot;SALADE NIÇOISE&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"La salade Niçoise est un plat incontournable au Petit Bistro."</data>
+      <data key="d5">"plat incontournable"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE PETIT BISTRO&quot;" target="&quot;22 RUE DE LA RÉPUBLIQUE, 69001 LYON&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Le Petit Bistro est situé à l'adresse 22 Rue de la République, 69001 Lyon."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;TRATTORIA BELLA ITALIA&quot;" target="&quot;PÂTES À LA CARBONARA&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Les pâtes à la carbonara sont un plat classique apprécié à la Trattoria Bella Italia."</data>
+      <data key="d5">"plat classique"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;TRATTORIA BELLA ITALIA&quot;" target="&quot;10 RUE DES ARTS, 69001 LYON&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Trattoria Bella Italia est située à l'adresse 10 Rue des Arts, 69001 Lyon."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;PIZZERIA DA MARCO&quot;" target="&quot;12 RUE DES ARTS, 75001 PARIS&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Pizzeria Da Marco est située à l'adresse 12 Rue des Arts, 75001 Paris."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE WOK MAGIQUE&quot;" target="&quot;NOUILLES SAUTÉES&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Les nouilles sautées sont un plat populaire au Wok Magique."</data>
+      <data key="d5">"plat populaire"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE WOK MAGIQUE&quot;" target="&quot;15 BOULEVARD DE LA LIBERTÉ, 69003 LYON&quot;">
+      <data key="d3">2.0</data>
+      <data key="d4">"Le Wok Magique est situé à l'adresse 15 Boulevard de la Liberté, 69003 Lyon."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;SAMBAHIA&quot;" target="&quot;COXINHA&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"La Coxinha est un plat incontournable à Sambahia."</data>
+      <data key="d5">"plat incontournable"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;SAMBAHIA&quot;" target="&quot;8 RUE DU VIEL RENVERSÉ, 69005 LYON&quot;">
+      <data key="d3">2.0</data>
+      <data key="d4">"Sambahia est située à l'adresse 8 Rue du Viel Renversé, 69005 Lyon."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE BURGER BAR&quot;" target="&quot;BURGERS GÉNÉREUX&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Le Burger Bar est connu pour ses burgers généreux et savoureux."</data>
+      <data key="d5">"plat populaire"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE BURGER BAR&quot;" target="&quot;15 RUE DE LA GARE, 69001 LYON&quot;">
+      <data key="d3">2.0</data>
+      <data key="d4">"Le Burger Bar est situé à l'adresse 15 Rue de la Gare, 69001 Lyon."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE COMPTOIR DU FROMAGE&quot;" target="&quot;LARGE SÉLECTION DE FROMAGES&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"On y trouve une large sélection de fromages au Comptoir du Fromage."</data>
+      <data key="d5">"large sélection"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE COMPTOIR DU FROMAGE&quot;" target="&quot;20 RUE DES HALLES, 75001 PARIS&quot;">
+      <data key="d3">2.0</data>
+      <data key="d4">"Le Comptoir du Fromage est situé à l'adresse 20 Rue des Halles, 75001 Paris."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE JARDIN SECRET&quot;" target="&quot;INGRÉDIENTS FRAIS ET LOCAUX&quot;">
+      <data key="d3">1.0</data>
+      <data key="d4">"Les plats sont préparés avec des ingrédients frais et locaux au Jardin Secret."</data>
+      <data key="d5">"ingrédients frais"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+    <edge source="&quot;LE JARDIN SECRET&quot;" target="&quot;14 AVENUE DE LA RÉPUBLIQUE, 69003 LYON&quot;">
+      <data key="d3">2.0</data>
+      <data key="d4">"Le Jardin Secret est situé à l'adresse 14 Avenue de la République, 69003 Lyon."</data>
+      <data key="d5">"adresse"</data>
+      <data key="d6">chunk-777b27e4eb98acdcded830f8ebfb321a</data>
+    </edge>
+  </graph>
+</graphml>
