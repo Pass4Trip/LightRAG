@@ -1,26 +1,48 @@
 # Fork du Répo LightRAG
 
-## Utilisation du Code Python `examples/lightrag_openai_demo.py`
+## Utilisation du Code Python `examples/lightrag_openai_compatible_demo.py`
 
-- **Modèle** : OpenAI avec **GPT4oMini**.
-- **Source de données** : Extraction de la base `Myboun`, incluant les informations et les résumés.
+- **Modèle** : API OVH compatible OpenAI
+- **Source de données** : Extraction de la base `Myboun`, incluant les informations et les résumés des restaurants.
 - **Résultat** : Les données sont déposées dans le répertoire `WORKING_DIR = "./restaurant_openai_p4t_test"`.
+- **Personnalisation** :
+  - Utilisation de `addon_params` pour personnaliser :
+    - Les types d'entités (`entity_types`) : restaurant, cuisine, prix, ambiance, localisation, specialite, horaire, contact
+    - Le prompt d'extraction (`entity_extraction_prompt`) adapté au domaine de la restauration
 - **Fonctionnement** :
-  - La partie non commentée du code crée uniquement la base vectorielle et les fichiers JSON.
-  - Le script est conçu pour ne traiter que les données non encore intégrées, permettant un ajout **incrémental**.
-  - La partie commentée permet de lancer une question.
-- **Extraction** : Ce fichier utilise `lightrag/prompt.py` pour réaliser l'extraction.
+  - La partie non commentée du code crée la base vectorielle et les fichiers JSON.
+  - Le script est conçu pour un traitement incrémental des données.
+  - La partie commentée permet de lancer des requêtes sur les restaurants.
+- **Configuration** :
+  - Nécessite un token OVH API (à stocker dans un fichier `.env`)
+  - Compatible avec les endpoints OVH pour les embeddings et le LLM
 
 ## Utilisation du Code Python `examples/graph_visual_with_html.py`
 
-- **Objectif** : Générer un fichier HTML représentant le graphe.
+- **Objectif** : Générer une visualisation interactive du graphe de connaissances.
 - **Sortie** : Le fichier HTML est créé dans `examples/knowledge_graph.html`.
+- **Visualisation** : 
+  - Affiche les relations entre les restaurants et leurs attributs
+  - Les nœuds sont colorés selon leur type d'entité
+  - Les arêtes montrent les relations avec leur force
 
 ## Analyse du Graphe avec `examples/networkX.py`
 
-- **Création** : Construction d'une base de graphes en mémoire avec **NetworkX** pour analyser le graphe.
+- **Création** : Construction d'une base de graphes en mémoire avec **NetworkX**.
+- **Analyse** : Permet d'explorer les relations et la structure du graphe.
+- **Export** : Le graphe peut être exporté en format GraphML pour d'autres analyses.
 
 ## Points Restants à Traiter
 
 - Certaines entités générées ne possèdent pas de connexion (**edge**).
-- Des hallucinations semblent présentes dans certaines réponses.
+- Des hallucinations peuvent apparaître dans certaines réponses.
+- Optimisation possible des prompts pour améliorer la qualité de l'extraction.
+
+## Configuration
+
+1. Créer un fichier `.env` à la racine du projet
+2. Ajouter votre token OVH API :
+   ```
+   OVH_AI_ENDPOINTS_ACCESS_TOKEN=votre_token_ici
+   ```
+3. Le fichier `.env` est ignoré par git pour la sécurité
