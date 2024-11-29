@@ -14,5 +14,5 @@ uv venv
 # Activer le venv
 source .venv/bin/activate
 
-# Installer les dépendances avec uv
-uv pip install -e .
+# Installer les dépendances avec uv depuis requirements.txt
+uv pip install -r requirements.txt
