@@ -1,11 +1,13 @@
 # LightRAG
 
-LightRAG est une implémentation légère de RAG avec intégration RabbitMQ.
+LightRAG est une implémentation légère de RAG (Retrieval-Augmented Generation) avec intégration Neo4j et RabbitMQ.
 
 ## Prérequis
 
 - Python >= 3.9
 - UV (gestionnaire de paquets Python)
+- Neo4j (base de données graphe)
+- RabbitMQ (message broker)
 
 ## Installation Rapide
 
@@ -21,6 +23,41 @@ Ce script :
 - Crée un environnement virtuel
 - Installe toutes les dépendances
 
+## Services Requis
+
+### Neo4j
+- **Installation** : Suivez les instructions sur [neo4j.com](https://neo4j.com/download/)
+- **Configuration** :
+  - Créez une base de données
+  - Notez les identifiants (URI, utilisateur, mot de passe)
+  - Configurez ces informations dans votre fichier `.env`
+
+### RabbitMQ
+- **Installation** : Suivez les instructions sur [rabbitmq.com](https://www.rabbitmq.com/download.html)
+- **Configuration** :
+  - Le serveur doit être accessible sur le port 5672
+  - Configurez les identifiants dans votre fichier `.env`
+
+## Configuration
+
+Créez un fichier `.env` à la racine du projet :
+
+```env
+# Neo4j
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=votre_mot_de_passe
+
+# RabbitMQ
+RABBITMQ_USER=rabbitmq
+RABBITMQ_PASSWORD=votre_mot_de_passe
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+
+# OpenAI/OVH
+OPENAI_API_KEY=votre_clé_api
+```
+
 ## Dépendances Principales
 
 Le projet utilise plusieurs bibliothèques essentielles :
@@ -31,47 +68,46 @@ Le projet utilise plusieurs bibliothèques essentielles :
 - ollama >= 0.1.6
 - openai >= 1.3.7
 - transformers >= 4.36.1
+- neo4j >= 5.14.0
+- pika >= 1.3.2
 
-## Utilisation du Code Python `examples/lightrag_openai_compatible_demo.py`
+## Composants Principaux
 
-- **Modèle** : API OVH compatible OpenAI
-- **Source de données** : Extraction de la base `Myboun`, incluant les informations et les résumés des restaurants.
-- **Résultat** : Les données sont déposées dans le répertoire `WORKING_DIR = "./restaurant_openai_p4t_test"`.
-- **Personnalisation** :
-  - ⚠️ Note importante : La personnalisation via `addon_params` ne fonctionne pas actuellement
-  - Pour personnaliser l'extraction d'entités, modifiez directement les valeurs dans `lightrag/prompt.py` :
-    - `DEFAULT_ENTITY_TYPES` : types d'entités (restaurant, cuisine, prix, etc.)
-    - `entity_extraction` : prompt d'extraction adapté aux restaurants
-  - Une mise à jour future permettra l'utilisation de `addon_params`
-- **Fonctionnement** :
-  - La partie non commentée du code crée la base vectorielle et les fichiers JSON.
-  - Le script est conçu pour un traitement incrémental des données.
-  - La partie commentée permet de lancer des requêtes sur les restaurants.
-- **Configuration** :
-  - Nécessite un token OVH API (à stocker dans un fichier `.env`)
-  - Compatible avec les endpoints OVH pour les embeddings et le LLM
+### 1. Traitement des Messages RabbitMQ (`examples/lightrag_openai_compatible_demo_rabbitmq.py`)
 
-## Utilisation du Code Python `examples/graph_visual_with_html.py`
+Ce composant :
+- Consomme les messages de la queue RabbitMQ
+- Traite les données des restaurants
+- Normalise les labels pour Neo4j
+- Insère les documents dans LightRAG
 
-- **Objectif** : Générer une visualisation interactive du graphe de connaissances.
-- **Sortie** : Le fichier HTML est créé dans `examples/knowledge_graph.html`.
-- **Visualisation** : 
-  - Affiche les relations entre les restaurants et leurs attributs
-  - Les nœuds sont colorés selon leur type d'entité
-  - Les arêtes montrent les relations avec leur force
+### 2. Intégration Neo4j
 
-## Analyse du Graphe avec `examples/networkX.py`
+- Stockage des relations entre entités
+- Labels normalisés pour les nœuds
+- Structure graphe optimisée pour les requêtes
 
-- **Création** : Construction d'une base de graphes en mémoire avec **NetworkX**.
-- **Analyse** : Permet d'explorer les relations et la structure du graphe.
-- **Export** : Le graphe peut être exporté en format GraphML pour d'autres analyses.
+### 3. Visualisation du Graphe (`examples/graph_visual_with_html.py`)
+
+- Génère une visualisation interactive du graphe de connaissances
+- Affiche les relations entre restaurants et attributs
+- Nœuds colorés par type d'entité
+- Export au format HTML
+
+### 4. Analyse avec NetworkX (`examples/networkX.py`)
+
+- Construction d'une base de graphes en mémoire
+- Analyse des relations et de la structure
+- Export en format GraphML
 
 ## Points Restants à Traiter
 
-- Certaines entités générées ne possèdent pas de connexion (**edge**).
-- Des hallucinations peuvent apparaître dans certaines réponses.
+- Certaines entités générées ne possèdent pas de connexion (**edge**)
+- Des hallucinations peuvent apparaître dans certaines réponses
 - ⚠️ Implémentation de la personnalisation via `addon_params` à corriger
-- Optimisation possible des prompts pour améliorer la qualité de l'extraction.
+- Optimisation possible des prompts pour améliorer la qualité de l'extraction
+- Gestion des erreurs RabbitMQ et reconnexion automatique
+- Validation des données avant insertion dans Neo4j
 
 ## Installation avec UV (Recommandé)
 
@@ -100,20 +136,5 @@ UV est un gestionnaire de paquets Python ultra-rapide écrit en Rust. Pour insta
 
 4. Installer les dépendances avec UV :
    ```bash
-   # Installation en mode développement
-   uv pip install -e ".[dev]"
-   
-   # OU installation simple
-   uv pip install -e .
+   uv pip install -r requirements.txt
    ```
-
-Les dépendances sont gérées via le fichier `pyproject.toml`. UV assure une installation rapide et déterministe des paquets.
-
-## Configuration
-
-1. Créer un fichier `.env` à la racine du projet
-2. Ajouter votre token OVH API :
-   ```
-   OVH_AI_ENDPOINTS_ACCESS_TOKEN=votre_token_ici
-   ```
-3. Le fichier `.env` est ignoré par git pour la sécurité
