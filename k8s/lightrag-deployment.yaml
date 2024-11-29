@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: lightrag
+spec:
+  serviceName: lightrag
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lightrag
+  template:
+    metadata:
+      labels:
+        app: lightrag
+    spec:
+      containers:
+      - name: lightrag
+        image: pass4trip/lightrag:latest  # Vous devrez créer cette image Docker
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: OVH_AI_ENDPOINTS_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: lightrag-secrets
+              key: ovh-token
+        volumeMounts:
+        - name: lightrag-data
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+  volumeClaimTemplates:
+  - metadata:
+      name: lightrag-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi

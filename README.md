@@ -1,4 +1,36 @@
-# Fork du Répo LightRAG
+# LightRAG
+
+LightRAG est une implémentation légère de RAG avec intégration RabbitMQ.
+
+## Prérequis
+
+- Python >= 3.9
+- UV (gestionnaire de paquets Python)
+
+## Installation Rapide
+
+Un script d'installation automatique est disponible :
+
+```bash
+# Exécuter le script d'installation
+./setup_uv_env.sh
+```
+
+Ce script :
+- Installe UV si nécessaire
+- Crée un environnement virtuel
+- Installe toutes les dépendances
+
+## Dépendances Principales
+
+Le projet utilise plusieurs bibliothèques essentielles :
+- accelerate >= 0.25.0
+- aioboto3 >= 11.3.0
+- hnswlib >= 0.7.0
+- nano-vectordb >= 0.0.4
+- ollama >= 0.1.6
+- openai >= 1.3.7
+- transformers >= 4.36.1
 
 ## Utilisation du Code Python `examples/lightrag_openai_compatible_demo.py`
 
@@ -47,12 +79,13 @@ UV est un gestionnaire de paquets Python ultra-rapide écrit en Rust. Pour insta
 
 1. Installer UV :
    ```bash
+   # macOS / Linux
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
 2. Cloner le projet et se placer dans le répertoire :
    ```bash
-   git clone [URL_DU_REPO]
+   git clone https://github.com/MyBoun/LightRAG.git
    cd LightRAG
    ```
 
@@ -61,16 +94,20 @@ UV est un gestionnaire de paquets Python ultra-rapide écrit en Rust. Pour insta
    # Créer l'environnement
    uv venv
    
-   # Activer l'environnement
+   # Activer l'environnement (Linux/macOS)
    source .venv/bin/activate
    ```
 
-4. Installer les dépendances :
+4. Installer les dépendances avec UV :
    ```bash
+   # Installation en mode développement
+   uv pip install -e ".[dev]"
+   
+   # OU installation simple
    uv pip install -e .
    ```
 
-Les dépendances sont gérées via le fichier `pyproject.toml`, ce qui garantit des versions compatibles et une installation rapide.
+Les dépendances sont gérées via le fichier `pyproject.toml`. UV assure une installation rapide et déterministe des paquets.
 
 ## Configuration
 

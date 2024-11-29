@@ -23,6 +23,11 @@ load_dotenv()
 
 WORKING_DIR = "./nano-vectorDB"
 
+
+os.environ["NEO4J_URI"] = "neo4j://vps-af24e24d.vps.ovh.net:32719"
+os.environ["NEO4J_USERNAME"] = "neo4j"
+os.environ["NEO4J_PASSWORD"] = "my-initial-password"
+
 if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)
 
@@ -151,7 +156,7 @@ class RabbitMQConsumer:
             
             return np.array(embeddings)
 
-        # Initialiser LightRAG
+         # Initialiser LightRAG
         rag = LightRAG(
             working_dir=WORKING_DIR,
             llm_model_func=llm_model_func,
@@ -159,7 +164,9 @@ class RabbitMQConsumer:
                 embedding_dim=768,  # Updated for multilingual-e5-base model
                 max_token_size=8192,
                 func=embedding_func
-            )
+            ),
+            kg="Neo4JStorage",
+            log_level="INFO",
         )
         return rag
 
