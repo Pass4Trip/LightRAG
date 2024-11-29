@@ -32,7 +32,28 @@ if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)
 
 class RabbitMQConsumer:
+    """
+    Consommateur RabbitMQ pour le traitement des données de restaurants.
+    Cette classe gère la connexion à RabbitMQ, la réception des messages,
+    et l'insertion des données dans LightRAG avec intégration Neo4j.
+
+    Attributes:
+        user (str): Nom d'utilisateur RabbitMQ
+        password (str): Mot de passe RabbitMQ
+        host (str): Hôte du serveur RabbitMQ
+        port (int): Port du serveur RabbitMQ
+        connection: Connexion RabbitMQ
+        channel: Canal RabbitMQ
+        rag: Instance de LightRAG
+        max_retries (int): Nombre maximum de tentatives de reconnexion
+        current_retry_count (int): Compteur de tentatives actuelles
+        consecutive_500_errors (int): Compteur d'erreurs 500 consécutives
+        max_consecutive_500_errors (int): Nombre maximum d'erreurs 500 autorisées
+        backoff_factor (float): Facteur de temporisation pour les tentatives
+    """
+
     def __init__(self):
+        """Initialise le consommateur RabbitMQ avec les paramètres de connexion par défaut."""
         self.user = 'rabbitmq'
         self.password = 'mypassword'
         self.host = '51.77.200.196'
@@ -112,9 +133,21 @@ class RabbitMQConsumer:
             logger.error(f"Unexpected error: {str(e)}", exc_info=True)
             raise
 
-    async def initialize_rag(self) -> LightRAG:
+    async def initialize_rag(self):
         """
-        Initialise l'instance LightRAG avec les configurations nécessaires
+        Initialise l'instance LightRAG avec les configurations nécessaires.
+        
+        Cette méthode configure :
+        1. Le modèle LLM et ses paramètres
+        2. La fonction d'embedding et ses paramètres
+        3. Le stockage vectoriel
+        4. L'intégration Neo4j
+        
+        Returns:
+            LightRAG: Instance configurée de LightRAG
+            
+        Note:
+            Utilise les variables d'environnement pour la configuration Neo4j
         """
         async def llm_model_func(
             prompt, system_prompt=None, history_messages=[], **kwargs
@@ -170,6 +203,145 @@ class RabbitMQConsumer:
         )
         return rag
 
+    def normalize_label(self, text: str) -> str:
+        """
+        Normalise un texte pour l'utiliser comme label Neo4j.
+        
+        Cette fonction effectue les transformations suivantes :
+        1. Remplace les espaces par des underscores
+        2. Supprime les caractères spéciaux et accents
+        3. Convertit en majuscules
+        
+        Args:
+            text (str): Le texte à normaliser
+            
+        Returns:
+            str: Le texte normalisé utilisable comme label Neo4j
+            
+        Example:
+            >>> normalize_label("Café & Restaurant")
+            "CAFE_RESTAURANT"
+        """
+        # Remplacer les espaces par des underscores
+        text = text.replace(' ', '_')
+        # Supprimer les caractères spéciaux et accents
+        text = ''.join(c for c in text if c.isalnum() or c == '_')
+        # Convertir en majuscules
+        return text.upper()
+
+    def prepare_document(self, restaurant_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Prépare un document formaté à partir des données du restaurant.
+        
+        Cette fonction :
+        1. Normalise le nom du restaurant pour l'utiliser comme label
+        2. Normalise les tags pour les utiliser comme labels
+        3. Structure les données pour l'insertion dans Neo4j
+        
+        Args:
+            restaurant_data (Dict[str, Any]): Données brutes du restaurant contenant :
+                - name: Nom du restaurant
+                - id: Identifiant unique
+                - description: Description du restaurant
+                - address: Adresse
+                - tags: Liste des tags/catégories
+                - reviews: Liste des avis
+                
+        Returns:
+            Dict[str, Any]: Document structuré pour LightRAG avec :
+                - title: Nom du restaurant
+                - id: Identifiant unique
+                - content: Contenu détaillé
+                - metadata: Labels et relations pour Neo4j
+        """
+        # Normaliser le nom du restaurant pour l'utiliser comme label
+        restaurant_name = restaurant_data.get('name', 'Unknown')
+        restaurant_label = self.normalize_label(restaurant_name)
+        
+        # Normaliser les tags pour les utiliser comme labels
+        labels = [self.normalize_label(tag) for tag in restaurant_data.get('tags', [])]
+        labels.append(restaurant_label)  # Ajouter le nom du restaurant comme label
+        
+        # S'assurer que tous les labels sont uniques
+        labels = list(set(labels))
+        
+        # Créer le document avec les propriétés normalisées
+        document = {
+            "title": restaurant_name,
+            "id": str(restaurant_data.get('id', 'Unknown')),
+            "content": {
+                "name": restaurant_name,
+                "address": restaurant_data.get('address', 'Unknown'),
+                "cuisine_types": restaurant_data.get('tags', []),
+                "reviews": restaurant_data.get('reviews', [])
+            },
+            "metadata": {
+                "labels": labels,
+                "source": "restaurant_database",
+                "relationships": [
+                    {
+                        "source_label": restaurant_label,
+                        "target_label": self.normalize_label(tag),
+                        "type": "HAS_TAG",
+                        "properties": {
+                            "weight": 1.0
+                        }
+                    } for tag in restaurant_data.get('tags', [])
+                ]
+            }
+        }
+        
+        return document
+
+    async def process_message(self, ch, method, properties, body):
+        """
+        Traite un message reçu de RabbitMQ de manière asynchrone.
+        
+        Cette méthode :
+        1. Décode le message JSON
+        2. Extrait les données du restaurant
+        3. Prépare le document pour LightRAG
+        4. Insère le document via ainsert()
+        
+        Args:
+            ch: Canal RabbitMQ
+            method: Méthode de livraison RabbitMQ
+            properties: Propriétés du message
+            body: Corps du message en JSON
+            
+        Raises:
+            Exception: En cas d'erreur lors du traitement du message
+        """
+        try:
+            # Décoder le message JSON
+            data = json.loads(body)
+            restaurant_data = data.get('restaurant', {})
+            restaurant_id = restaurant_data.get('id', 'Unknown')
+            restaurant_title = restaurant_data.get('title', 'Unknown')
+            logger.info(f"Traitement du restaurant {restaurant_title} (ID: {restaurant_id})")
+            
+            # Préparer le document pour LightRAG
+            document = self.prepare_document({
+                'id': restaurant_id,
+                'name': restaurant_title,
+                'description': restaurant_data.get('description'),
+                'address': restaurant_data.get('address'),
+                'price': restaurant_data.get('price'),
+                'tags': [restaurant_data.get('categoryname', 'Restaurant')],
+                'reviews': data.get('reviews', [])
+            })
+            
+            # Ajouter le document à LightRAG
+            if self.rag is None:
+                self.rag = await self.initialize_rag()
+            
+            await self.rag.ainsert(document)
+            logger.info(f"Document ajouté avec succès pour le restaurant {restaurant_title}")
+            
+        except Exception as e:
+            logger.error(f"Erreur lors du traitement du message: {str(e)}", exc_info=True)
+            raise
+
     def connect(self):
         retry_count = 0
         while retry_count < self.max_retries:
@@ -198,50 +370,18 @@ class RabbitMQConsumer:
             self.connection.close()
             logger.info("Connexion RabbitMQ fermée")
 
-    async def process_message(self, ch, method, properties, body):
-        try:
-            # Décoder le message JSON
-            restaurant_data = json.loads(body)
-            restaurant_id = restaurant_data.get('id', 'Unknown')
-            logger.info(f"Traitement du restaurant {restaurant_id}")
-            
-            # Préparer le document pour LightRAG
-            document = self.prepare_document(restaurant_data)
-            
-            # Ajouter le document à LightRAG
-            if self.rag is None:
-                self.rag = await self.initialize_rag()
-            
-            await self.rag.ainsert(document)
-            logger.info(f"Document ajouté avec succès pour le restaurant {restaurant_id}")
-            
-        except Exception as e:
-            logger.error(f"Erreur lors du traitement du message: {str(e)}", exc_info=True)
-            raise
-
-    def prepare_document(self, restaurant_data: Dict[str, Any]) -> str:
-        """
-        Prépare un document formaté à partir des données du restaurant
-        """
-        doc_parts = [
-            f"Restaurant: {restaurant_data.get('name', 'Unknown')}",
-            f"ID: {restaurant_data.get('id', 'Unknown')}",
-            f"Adresse: {restaurant_data.get('address', 'Unknown')}",
-            f"Type de cuisine: {', '.join(restaurant_data.get('tags', []))}",
-            "Informations additionnelles:",
-        ]
-        
-        # Ajouter les avis s'ils existent
-        if 'reviews' in restaurant_data:
-            doc_parts.append("Avis des clients:")
-            for review in restaurant_data['reviews']:
-                doc_parts.append(f"- {review.get('comment', '')}")
-        
-        return "\n".join(doc_parts)
-
     def start_consuming(self, queue_name: str = "queue_vinh_test"):
         """
-        Démarre la consommation des messages de la queue
+        Démarre la consommation des messages de la queue.
+        
+        Cette méthode configure la queue, déclare les paramètres de consommation,
+        et lance la consommation des messages.
+        
+        Args:
+            queue_name (str): Nom de la queue à consommer
+            
+        Raises:
+            Exception: En cas d'erreur lors de la consommation
         """
         try:
             # Créer un nouveau canal si nécessaire
