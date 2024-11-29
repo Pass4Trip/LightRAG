@@ -6,9 +6,11 @@
 - **Source de données** : Extraction de la base `Myboun`, incluant les informations et les résumés des restaurants.
 - **Résultat** : Les données sont déposées dans le répertoire `WORKING_DIR = "./restaurant_openai_p4t_test"`.
 - **Personnalisation** :
-  - Utilisation de `addon_params` pour personnaliser :
-    - Les types d'entités (`entity_types`) : restaurant, cuisine, prix, ambiance, localisation, specialite, horaire, contact
-    - Le prompt d'extraction (`entity_extraction_prompt`) adapté au domaine de la restauration
+  - ⚠️ Note importante : La personnalisation via `addon_params` ne fonctionne pas actuellement
+  - Pour personnaliser l'extraction d'entités, modifiez directement les valeurs dans `lightrag/prompt.py` :
+    - `DEFAULT_ENTITY_TYPES` : types d'entités (restaurant, cuisine, prix, etc.)
+    - `entity_extraction` : prompt d'extraction adapté aux restaurants
+  - Une mise à jour future permettra l'utilisation de `addon_params`
 - **Fonctionnement** :
   - La partie non commentée du code crée la base vectorielle et les fichiers JSON.
   - Le script est conçu pour un traitement incrémental des données.
@@ -36,6 +38,7 @@
 
 - Certaines entités générées ne possèdent pas de connexion (**edge**).
 - Des hallucinations peuvent apparaître dans certaines réponses.
+- ⚠️ Implémentation de la personnalisation via `addon_params` à corriger
 - Optimisation possible des prompts pour améliorer la qualité de l'extraction.
 
 ## Configuration
