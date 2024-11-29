@@ -41,6 +41,37 @@
 - ⚠️ Implémentation de la personnalisation via `addon_params` à corriger
 - Optimisation possible des prompts pour améliorer la qualité de l'extraction.
 
+## Installation avec UV (Recommandé)
+
+UV est un gestionnaire de paquets Python ultra-rapide écrit en Rust. Pour installer le projet avec UV :
+
+1. Installer UV :
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+2. Cloner le projet et se placer dans le répertoire :
+   ```bash
+   git clone [URL_DU_REPO]
+   cd LightRAG
+   ```
+
+3. Créer et activer l'environnement virtuel avec UV :
+   ```bash
+   # Créer l'environnement
+   uv venv
+   
+   # Activer l'environnement
+   source .venv/bin/activate
+   ```
+
+4. Installer les dépendances :
+   ```bash
+   uv pip install -e .
+   ```
+
+Les dépendances sont gérées via le fichier `pyproject.toml`, ce qui garantit des versions compatibles et une installation rapide.
+
 ## Configuration
 
 1. Créer un fichier `.env` à la racine du projet
