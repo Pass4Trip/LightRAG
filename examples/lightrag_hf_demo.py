@@ -1,18 +1,18 @@
 import os
 
 from lightrag import LightRAG, QueryParam
-from lightrag.llm import hf_model_complete, hf_embedding
+from lightrag.llm import hf_complete, hf_embedding
 from lightrag.utils import EmbeddingFunc
 from transformers import AutoModel, AutoTokenizer
 
-WORKING_DIR = "./dickens"
+WORKING_DIR = "./nano-vectorDB"
 
 if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)
 
 rag = LightRAG(
     working_dir=WORKING_DIR,
-    llm_model_func=hf_model_complete,
+    llm_model_func=hf_complete,
     llm_model_name="meta-llama/Llama-3.1-8B-Instruct",
     embedding_func=EmbeddingFunc(
         embedding_dim=384,
