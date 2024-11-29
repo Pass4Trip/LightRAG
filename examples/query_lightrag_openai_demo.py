@@ -3,7 +3,7 @@ import os
 from lightrag import LightRAG, QueryParam
 from lightrag.llm import gpt_4o_mini_complete
 
-WORKING_DIR = "./restaurant_openai_p4t"
+WORKING_DIR = "./nano-vectorDB"
 
 if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)

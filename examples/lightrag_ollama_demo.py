@@ -1,17 +1,17 @@
 import os
 
 from lightrag import LightRAG, QueryParam
-from lightrag.llm import ollama_model_complete, ollama_embedding
+from lightrag.llm import ollama_complete, ollama_embedding
 from lightrag.utils import EmbeddingFunc
 
-WORKING_DIR = "./restaurants"
+WORKING_DIR = "./nano-vectorDB"
 
 if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)
 
 rag = LightRAG(
     working_dir=WORKING_DIR,
-    llm_model_func=ollama_model_complete,
+    llm_model_func=ollama_complete,
     llm_model_name="qwen2.5m",
     embedding_func=EmbeddingFunc(
         embedding_dim=768,

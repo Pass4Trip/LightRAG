@@ -10,7 +10,7 @@ import requests
 # Load environment variables from .env file
 load_dotenv()
 
-WORKING_DIR = "./restaurant_openai_p4t_test"
+WORKING_DIR = "./nano-vectorDB"
 
 if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)
@@ -79,7 +79,7 @@ async def llm_model_func(
         raise Exception(f"Error from OVH API: {response.status_code}")
 
 async def embedding_func(texts: list[str]) -> np.ndarray:
-    url = "https://bge-m3.endpoints.kepler.ai.cloud.ovh.net/api/text2vec"
+    url = "https://multilingual-e5-base.endpoints.kepler.ai.cloud.ovh.net/api/text2vec"
     headers = {
         "Content-Type": "text/plain",
         "Authorization": f"Bearer {os.getenv('OVH_AI_ENDPOINTS_ACCESS_TOKEN')}",
@@ -108,7 +108,7 @@ async def test_funcs():
 
 asyncio.run(test_funcs())
 
-
+# Cette solution ne marche pas dans LightRAG
 # Définir le prompt personnalisé pour l'extraction d'entités
 custom_entity_extraction_prompt = """-Goal-
 Given a text document about restaurants, identify all relevant entities and their relationships.
@@ -166,7 +166,7 @@ with open("/Users/vinh/Documents/LightRAG/resto.txt") as f:
 #     rag.query("What are the top themes in this story?", param=QueryParam(mode="global"))
 # )
 
-# Perform hybrid search
-print(
-    rag.query("Donne moi un restaurant avec du traditionnelle.", param=QueryParam(mode="hybrid"))
-)
+# # Perform hybrid search
+# print(
+#     rag.query("Donne moi un restaurant avec du traditionnelle.", param=QueryParam(mode="hybrid"))
+# )

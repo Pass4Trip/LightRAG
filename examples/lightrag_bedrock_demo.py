@@ -1,9 +1,10 @@
 """
-LightRAG meets Amazon Bedrock ⛰️
+LightRAG meets Amazon Bedrock 
 """
 
 import os
 import logging
+import boto3
 
 from lightrag import LightRAG, QueryParam
 from lightrag.llm import bedrock_complete, bedrock_embedding
@@ -11,7 +12,7 @@ from lightrag.utils import EmbeddingFunc
 
 logging.getLogger("aiobotocore").setLevel(logging.WARNING)
 
-WORKING_DIR = "./dickens"
+WORKING_DIR = "./nano-vectorDB"
 if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)
 

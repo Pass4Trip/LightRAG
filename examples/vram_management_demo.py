@@ -1,11 +1,11 @@
 import os
 import time
 from lightrag import LightRAG, QueryParam
-from lightrag.llm import ollama_model_complete, ollama_embedding
+from lightrag.llm import hf_complete, ollama_embedding
 from lightrag.utils import EmbeddingFunc
 
 # Working directory and the directory path for text files
-WORKING_DIR = "./dickens"
+WORKING_DIR = "./nano-vectorDB"
 TEXT_FILES_DIR = "/llm/mt"
 
 # Create the working directory if it doesn't exist
@@ -15,7 +15,7 @@ if not os.path.exists(WORKING_DIR):
 # Initialize LightRAG
 rag = LightRAG(
     working_dir=WORKING_DIR,
-    llm_model_func=ollama_model_complete,
+    llm_model_func=hf_complete,
     llm_model_name="qwen2.5:3b-instruct-max-context",
     embedding_func=EmbeddingFunc(
         embedding_dim=768,

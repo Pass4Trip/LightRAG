@@ -6,6 +6,7 @@ nano-vectordb
 networkx
 ollama
 openai
+pika
 tenacity
 tiktoken
 torch

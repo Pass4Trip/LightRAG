@@ -7,45 +7,44 @@ PROMPTS["DEFAULT_RECORD_DELIMITER"] = "##"
 PROMPTS["DEFAULT_COMPLETION_DELIMITER"] = "<|COMPLETE|>"
 PROMPTS["process_tickers"] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-PROMPTS["DEFAULT_ENTITY_TYPES"] = ["restaurant", "cuisine", "prix", "ambiance", "localisation", "specialite", "horaire", "contact"]
+PROMPTS["DEFAULT_ENTITY_TYPES"] = ["restaurant", "cid", "resume", "positive_point", "negative_point", "recommandation"]
 
 PROMPTS["entity_extraction"] = """-Goal-
-Given a text document about restaurants, identify all relevant entities and their relationships.
+Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
 
 -Steps-
 1. Identify all entities. For each identified entity, extract the following information:
 - entity_name: Name of the entity, capitalized
 - entity_type: One of the following types: [{entity_types}]
-- entity_description: Comprehensive description of the entity's attributes
+- entity_description: Comprehensive description of the entity's attributes and activities
 Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>
 
 2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
 For each pair of related entities, extract the following information:
 - source_entity: name of the source entity, as identified in step 1
 - target_entity: name of the target entity, as identified in step 1
-- relationship_description: explanation of how the entities are related (e.g., "Ce restaurant propose cette cuisine", "Ce restaurant est situé à cet endroit")
-- relationship_strength: a numeric score (1-10) indicating the importance of this relationship
-- relationship_keywords: key words that describe the nature of the relationship (e.g., "propose", "situé à", "spécialisé en")
+- relationship_description: explanation as to why you think the source entity and the target entity are related to each other
+- relationship_strength: a numeric score indicating strength of the relationship between the source entity and target entity
+- relationship_keywords: one or more high-level key words that summarize the overarching nature of the relationship, focusing on concepts or themes rather than specific details
 Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_keywords>{tuple_delimiter}<relationship_strength>)
 
-3. Identify high-level key words that summarize the main aspects of the restaurant.
+3. Identify high-level key words that summarize the main concepts, themes, or topics of the entire text. These should capture the overarching ideas present in the document.
 Format the content-level key words as ("content_keywords"{tuple_delimiter}<high_level_keywords>)
 
-4. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'restaurant' entity.
+4. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'restaurant' entity. If an entity cannot be directly or indirectly connected to the 'restaurant' through a relationship, it should not be considered valid or relevant.
 
--Example Output-
-("entity"{tuple_delimiter}"LE BISTROT"{tuple_delimiter}"restaurant"{tuple_delimiter}"Un bistrot traditionnel français au cœur de Paris")
-("entity"{tuple_delimiter}"CUISINE FRANÇAISE"{tuple_delimiter}"cuisine"{tuple_delimiter}"Cuisine traditionnelle française avec des plats classiques")
-("entity"{tuple_delimiter}"MODÉRÉ"{tuple_delimiter}"prix"{tuple_delimiter}"Prix modérés, environ 25-35€ par personne")
-("relationship"{tuple_delimiter}"LE BISTROT"{tuple_delimiter}"CUISINE FRANÇAISE"{tuple_delimiter}"Le restaurant propose une cuisine française traditionnelle"{tuple_delimiter}"propose, spécialité"{tuple_delimiter}"9")
-{{ ... }}
+5. For **positive_point**, **negative_point**, and **recommandation**, generate generic and concise labels that summarize key aspects applicable across different restaurants.
+
+6. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.
+
+7. When finished, output {completion_delimiter}
 
 ######################
 -Examples-
 ######################
 Example 1:
 
-Entity_types: [restaurant, cuisine, prix, ambiance, localisation, specialite, horaire, contact]
+Entity_types: [restaurant, CID, positive_point, negative_point, recommandation]
 Text:
 Restaurant : Le Coquemar
 Cid : 3091293945615310311
@@ -54,24 +53,24 @@ Cid : 3091293945615310311
 Output:
 ("entity"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"restaurant"{tuple_delimiter}"Le Coquemar est un restaurant français qui offre une expérience culinaire traditionnelle dans un cadre élégant et lumineux."){record_delimiter}
 ("entity"{tuple_delimiter}"3091293945615310311"{tuple_delimiter}"CID"{tuple_delimiter}"Le restaurant est identifié par le CID 3091293945615310311."){record_delimiter}
-("entity"{tuple_delimiter}"ambiance chaleureuse"{tuple_delimiter}"ambiance"{tuple_delimiter}"Le restaurant offre une ambiance chaleureuse et décontractée."){record_delimiter}
-("entity"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"localisation"{tuple_delimiter}"Le restaurant est situé dans un lieu où les murs de pierres sont décorés de peintures."){record_delimiter}
-("entity"{tuple_delimiter}"service de qualité"{tuple_delimiter}"contact"{tuple_delimiter}"Les clients apprécient le service attentif."){record_delimiter}
-("entity"{tuple_delimiter}"amélioration de l'atmosphère"{tuple_delimiter}"specialite"{tuple_delimiter}"Certains clients suggèrent une amélioration de l'atmosphère."){record_delimiter}
-("entity"{tuple_delimiter}"cuisine recommandée"{tuple_delimiter}"cuisine"{tuple_delimiter}"Les clients recommandent la cuisine traditionnelle."){record_delimiter}
+("entity"{tuple_delimiter}"ambiance chaleureuse"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant offre une ambiance chaleureuse et décontractée."){record_delimiter}
+("entity"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant dispose d'un cadre élégant et lumineux."){record_delimiter}
+("entity"{tuple_delimiter}"service de qualité"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les clients apprécient le service attentif."){record_delimiter}
+("entity"{tuple_delimiter}"amélioration de l'atmosphère"{tuple_delimiter}"negative_point"{tuple_delimiter}"Certains clients suggèrent une amélioration de l'atmosphère."){record_delimiter}
+("entity"{tuple_delimiter}"cuisine recommandée"{tuple_delimiter}"recommandation"{tuple_delimiter}"Les clients recommandent la cuisine traditionnelle."){record_delimiter}
 
 ("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"3091293945615310311"{tuple_delimiter}"Le restaurant est associé au CID 3091293945615310311."{tuple_delimiter}"CID"{tuple_delimiter}1){record_delimiter}
 ("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"ambiance chaleureuse"{tuple_delimiter}"Le restaurant propose une ambiance chaleureuse."{tuple_delimiter}"ambiance"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"Le restaurant est situé dans un cadre élégant et lumineux."{tuple_delimiter}"localisation"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"service de qualité"{tuple_delimiter}"Le service est attentif et apprécié des clients."{tuple_delimiter}"contact"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"amélioration de l'atmosphère"{tuple_delimiter}"Certains clients suggèrent une amélioration de l'atmosphère."{tuple_delimiter}"specialite"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"cuisine recommandée"{tuple_delimiter}"La cuisine traditionnelle est particulièrement appréciée des clients."{tuple_delimiter}"cuisine"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"Le restaurant dispose d'un cadre élégant et lumineux."{tuple_delimiter}"cadre attrayant"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"service de qualité"{tuple_delimiter}"Le service est attentif et apprécié des clients."{tuple_delimiter}"service de qualité"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"amélioration de l'atmosphère"{tuple_delimiter}"Certains clients suggèrent une amélioration de l'atmosphère."{tuple_delimiter}"amélioration nécessaire"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Le Coquemar"{tuple_delimiter}"cuisine recommandée"{tuple_delimiter}"La cuisine traditionnelle est particulièrement appréciée des clients."{tuple_delimiter}"cuisine recommandée"{tuple_delimiter}1){record_delimiter}
 
 
 ######################
 Example 2:
 
-Entity_types: [restaurant, cuisine, prix, ambiance, localisation, specialite, horaire, contact]
+Entity_types: [restaurant, CID, positive_point, negative_point, recommandation]
 Text:
 Restaurant : Café Lisboa
 Cid : 16204433116771456015
@@ -80,24 +79,25 @@ Cid : 16204433116771456015
 Output:
 ("entity"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"restaurant"{tuple_delimiter}"Le Café Lisboa est un restaurant décontracté situé dans un cadre coloré, offrant une expérience culinaire portugaise avec une terrasse."){record_delimiter}
 ("entity"{tuple_delimiter}"16204433116771456015"{tuple_delimiter}"CID"{tuple_delimiter}"Le restaurant est identifié par le CID 16204433116771456015."){record_delimiter}
-("entity"{tuple_delimiter}"ambiance conviviale"{tuple_delimiter}"ambiance"{tuple_delimiter}"Le restaurant offre une ambiance chaleureuse et conviviale."){record_delimiter}
-("entity"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"localisation"{tuple_delimiter}"Le restaurant est situé dans un cadre coloré."){record_delimiter}
-("entity"{tuple_delimiter}"adapté aux familles"{tuple_delimiter}"contact"{tuple_delimiter}"Le restaurant est adapté aux familles et aux groupes."){record_delimiter}
-("entity"{tuple_delimiter}"service lent"{tuple_delimiter}"specialite"{tuple_delimiter}"Le service peut être lent, il est donc recommandé de commander rapidement."){record_delimiter}
-("entity"{tuple_delimiter}"cuisine portugaise"{tuple_delimiter}"cuisine"{tuple_delimiter}"La cuisine portugaise et les spécialités comme le chorizo flambé sont recommandées."){record_delimiter}
+("entity"{tuple_delimiter}"ambiance conviviale"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant offre une ambiance chaleureuse et conviviale."){record_delimiter}
+("entity"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant est situé dans un cadre coloré."){record_delimiter}
+("entity"{tuple_delimiter}"adapté aux familles"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant est adapté aux familles et aux groupes."){record_delimiter}
+("entity"{tuple_delimiter}"service lent"{tuple_delimiter}"negative_point"{tuple_delimiter}"Le service peut être lent, il est donc recommandé de commander rapidement."){record_delimiter}
+("entity"{tuple_delimiter}"cuisine portugaise"{tuple_delimiter}"recommandation"{tuple_delimiter}"La cuisine portugaise et les spécialités comme le chorizo flambé sont recommandées."){record_delimiter}
 
 ("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"16204433116771456015"{tuple_delimiter}"Le restaurant est associé au CID 16204433116771456015."{tuple_delimiter}"CID"{tuple_delimiter}1){record_delimiter}
 ("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"ambiance conviviale"{tuple_delimiter}"Le restaurant offre une ambiance chaleureuse et conviviale."{tuple_delimiter}"ambiance"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"Le restaurant est situé dans un cadre coloré."{tuple_delimiter}"localisation"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"adapté aux familles"{tuple_delimiter}"Le restaurant est adapté aux familles et aux groupes."{tuple_delimiter}"contact"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"service lent"{tuple_delimiter}"Le service peut être lent, ce qui nécessite de commander rapidement."{tuple_delimiter}"specialite"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"cuisine portugaise"{tuple_delimiter}"Les spécialités comme le chorizo flambé sont particulièrement appréciées."{tuple_delimiter}"cuisine"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"cadre attrayant"{tuple_delimiter}"Le restaurant est situé dans un cadre coloré."{tuple_delimiter}"cadre"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"adapté aux familles"{tuple_delimiter}"Le restaurant est adapté aux familles et aux groupes."{tuple_delimiter}"adapté aux familles"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"service lent"{tuple_delimiter}"Le service peut être lent, ce qui nécessite de commander rapidement."{tuple_delimiter}"service"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"Café Lisboa"{tuple_delimiter}"cuisine portugaise"{tuple_delimiter}"Les spécialités comme le chorizo flambé sont particulièrement appréciées."{tuple_delimiter}"spécialités culinaires"{tuple_delimiter}
+
 
 
 ######################
 Example 3:
 
-Entity_types: [restaurant, cuisine, prix, ambiance, localisation, specialite, horaire, contact]
+Entity_types: [restaurant, CID, positive_point, negative_point, recommandation]
 Text:
 Restaurant : ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon
 Cid : 15463301415010585125
@@ -106,16 +106,16 @@ Cid : 15463301415010585125
 Output:
 ("entity"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"restaurant"{tuple_delimiter}"ELLA Bolerie Méditerranéenne est un restaurant rapide situé dans la ville de Sainte-Foy-Lès-Lyon, offrant une expérience culinaire rapide et conviviale."){record_delimiter}
 ("entity"{tuple_delimiter}"15463301415010585125"{tuple_delimiter}"CID"{tuple_delimiter}"Le restaurant est identifié par le CID 15463301415010585125."){record_delimiter}
-("entity"{tuple_delimiter}"service rapide"{tuple_delimiter}"specialite"{tuple_delimiter}"Le service est rapide et efficace."){record_delimiter}
-("entity"{tuple_delimiter}"ambiance moderne"{tuple_delimiter}"ambiance"{tuple_delimiter}"Le restaurant a une ambiance moderne et conviviale."){record_delimiter}
-("entity"{tuple_delimiter}"menu varié"{tuple_delimiter}"cuisine"{tuple_delimiter}"Il est recommandé d'offrir une plus grande variété de plats pour attirer plus de clients."){record_delimiter}
-("entity"{tuple_delimiter}"amélioration de la qualité"{tuple_delimiter}"contact"{tuple_delimiter}"Le restaurant pourrait améliorer la qualité des plats."){record_delimiter}
+("entity"{tuple_delimiter}"service rapide"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le service est rapide et efficace."){record_delimiter}
+("entity"{tuple_delimiter}"ambiance moderne"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant a une ambiance moderne et conviviale."){record_delimiter}
+("entity"{tuple_delimiter}"menu varié"{tuple_delimiter}"recommandation"{tuple_delimiter}"Il est recommandé d'offrir une plus grande variété de plats pour attirer plus de clients."){record_delimiter}
+("entity"{tuple_delimiter}"amélioration de la qualité"{tuple_delimiter}"negative_point"{tuple_delimiter}"Le restaurant pourrait améliorer la qualité des plats."){record_delimiter}
 
 ("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"15463301415010585125"{tuple_delimiter}"Le restaurant est associé au CID 15463301415010585125."{tuple_delimiter}"CID"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"service rapide"{tuple_delimiter}"Le service est rapide et efficace."{tuple_delimiter}"specialite"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"service rapide"{tuple_delimiter}"Le service est rapide et efficace."{tuple_delimiter}"service"{tuple_delimiter}1){record_delimiter}
 ("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"ambiance moderne"{tuple_delimiter}"Le restaurant a une ambiance moderne et accueillante."{tuple_delimiter}"ambiance"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"menu varié"{tuple_delimiter}"Il est recommandé d'offrir une plus grande variété de plats."{tuple_delimiter}"cuisine"{tuple_delimiter}1){record_delimiter}
-("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"amélioration de la qualité"{tuple_delimiter}"Le restaurant pourrait améliorer la qualité des plats pour satisfaire les clients."{tuple_delimiter}"contact"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"menu varié"{tuple_delimiter}"Il est recommandé d'offrir une plus grande variété de plats."{tuple_delimiter}"variété"{tuple_delimiter}1){record_delimiter}
+("relationship"{tuple_delimiter}"ELLA Bolerie Méditerranéenne - Sainte-Foy-Lès-Lyon"{tuple_delimiter}"amélioration de la qualité"{tuple_delimiter}"Le restaurant pourrait améliorer la qualité des plats pour satisfaire les clients."{tuple_delimiter}"amélioration qualité"{tuple_delimiter}1){record_delimiter}
 
 
 #############################
@@ -125,7 +125,6 @@ Entity_types: {entity_types}
 Text: {input_text}
 ######################
 Output:
-
 """
 
 PROMPTS[
