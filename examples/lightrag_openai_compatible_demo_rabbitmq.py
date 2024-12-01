@@ -42,7 +42,7 @@ class OVHCredentials(Block):
 # Load Prefect worker configuration
 try:
     # Try to load from YAML first
-    with open('/home/ubuntu/vinh_value_prefect_worker.yaml', 'r') as f:
+    with open('/home/ubuntu/value_prefect_worker.yaml', 'r') as f:
         worker_config = yaml.safe_load(f)
         PREFECT_ACCOUNT_ID = worker_config['worker']['cloudApiConfig']['accountId']
         PREFECT_WORKSPACE_ID = worker_config['worker']['cloudApiConfig']['workspaceId']
