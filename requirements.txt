@@ -16,18 +16,33 @@ aioitertools==0.12.0
     # via aiobotocore
 aiosignal==1.3.1
     # via aiohttp
+aiosqlite==0.20.0
+    # via prefect
+alembic==1.14.0
+    # via prefect
 annotated-types==0.7.0
     # via pydantic
 anyio==4.6.2.post1
     # via
     #   httpx
     #   openai
+    #   prefect
+    #   starlette
 anytree==2.12.1
     # via graspologic
+apprise==1.9.0
+    # via prefect
+asgi-lifespan==2.1.0
+    # via prefect
 asttokens==3.0.0
     # via stack-data
+asyncpg==0.30.0
+    # via prefect
 attrs==24.2.0
-    # via aiohttp
+    # via
+    #   aiohttp
+    #   jsonschema
+    #   referencing
 autograd==1.7.0
     # via hyppo
 beartype==0.18.5
@@ -39,23 +54,54 @@ botocore==1.35.36
     #   aiobotocore
     #   boto3
     #   s3transfer
+cachetools==5.5.0
+    # via prefect
 certifi==2024.8.30
     # via
+    #   apprise
     #   httpcore
     #   httpx
     #   requests
+cffi==1.17.1
+    # via cryptography
 charset-normalizer==3.4.0
     # via requests
+click==8.1.7
+    # via
+    #   apprise
+    #   prefect
+    #   typer
+    #   uvicorn
+cloudpickle==3.1.0
+    # via prefect
+colorama==0.4.6
+    # via griffe
 contourpy==1.3.1
     # via matplotlib
+coolname==2.2.0
+    # via prefect
+croniter==5.0.1
+    # via prefect
+cryptography==44.0.0
+    # via prefect
 cycler==0.12.1
     # via matplotlib
+dateparser==1.2.0
+    # via prefect
 decorator==5.1.1
     # via ipython
+deprecated==1.2.15
+    # via opentelemetry-api
 distro==1.9.0
     # via openai
+docker==7.1.0
+    # via prefect
+exceptiongroup==1.2.2
+    # via prefect
 executing==2.1.0
     # via stack-data
+fastapi==0.115.5
+    # via prefect
 filelock==3.16.1
     # via
     #   huggingface-hub
@@ -70,28 +116,50 @@ frozenlist==1.5.0
 fsspec==2024.10.0
     # via
     #   huggingface-hub
+    #   prefect
     #   torch
 gensim==4.3.3
     # via graspologic
+graphviz==0.20.3
+    # via prefect
 graspologic==3.4.1
     # via lightrag (pyproject.toml)
 graspologic-native==1.2.1
     # via graspologic
+greenlet==3.1.1
+    # via sqlalchemy
+griffe==1.5.1
+    # via prefect
 h11==0.14.0
-    # via httpcore
+    # via
+    #   httpcore
+    #   uvicorn
+h2==4.1.0
+    # via httpx
 hnswlib==0.8.0
     # via lightrag (pyproject.toml)
+hpack==4.0.0
+    # via h2
 httpcore==1.0.7
-    # via httpx
+    # via
+    #   httpx
+    #   prefect
 httpx==0.27.2
     # via
     #   ollama
     #   openai
+    #   prefect
 huggingface-hub==0.26.3
     # via
     #   accelerate
     #   tokenizers
     #   transformers
+humanize==4.11.0
+    # via
+    #   jinja2-humanize-extension
+    #   prefect
+hyperframe==6.0.1
+    # via h2
 hyppo==0.4.0
     # via graspologic
 idna==3.10
@@ -100,14 +168,20 @@ idna==3.10
     #   httpx
     #   requests
     #   yarl
+importlib-metadata==8.5.0
+    # via opentelemetry-api
 ipython==8.30.0
     # via pyvis
 jedi==0.19.2
     # via ipython
 jinja2==3.1.4
     # via
+    #   jinja2-humanize-extension
+    #   prefect
     #   pyvis
     #   torch
+jinja2-humanize-extension==0.4.0
+    # via prefect
 jiter==0.8.0
     # via openai
 jmespath==1.0.1
@@ -119,8 +193,16 @@ joblib==1.4.2
     #   graspologic
     #   pynndescent
     #   scikit-learn
+jsonpatch==1.33
+    # via prefect
 jsonpickle==4.0.0
     # via pyvis
+jsonpointer==3.0.0
+    # via jsonpatch
+jsonschema==4.23.0
+    # via prefect
+jsonschema-specifications==2024.10.1
+    # via jsonschema
 kiwisolver==1.4.7
     # via matplotlib
 lightrag-hku==1.0.0
@@ -129,14 +211,24 @@ llvmlite==0.43.0
     # via
     #   numba
     #   pynndescent
+mako==1.3.6
+    # via alembic
+markdown==3.7
+    # via apprise
+markdown-it-py==3.0.0
+    # via rich
 markupsafe==3.0.2
-    # via jinja2
+    # via
+    #   jinja2
+    #   mako
 matplotlib==3.9.3
     # via
     #   graspologic
     #   seaborn
 matplotlib-inline==0.1.7
     # via ipython
+mdurl==0.1.2
+    # via markdown-it-py
 mpmath==1.3.0
     # via sympy
 multidict==6.1.0
@@ -179,15 +271,22 @@ numpy==1.26.4
     #   statsmodels
     #   transformers
     #   umap-learn
+oauthlib==3.2.2
+    # via requests-oauthlib
 ollama==0.4.2
     # via lightrag (pyproject.toml)
 openai==1.55.3
     # via lightrag (pyproject.toml)
+opentelemetry-api==1.28.2
+    # via prefect
+orjson==3.10.12
+    # via prefect
 packaging==24.2
     # via
     #   accelerate
     #   huggingface-hub
     #   matplotlib
+    #   prefect
     #   statsmodels
     #   transformers
 pandas==2.2.3
@@ -196,8 +295,12 @@ pandas==2.2.3
     #   statsmodels
 parso==0.8.4
     # via jedi
+pathspec==0.12.1
+    # via prefect
 patsy==1.0.1
     # via statsmodels
+pendulum==3.0.0
+    # via prefect
 pexpect==4.9.0
     # via ipython
 pika==1.3.2
@@ -206,6 +309,10 @@ pillow==11.0.0
     # via matplotlib
 pot==0.9.5
     # via graspologic
+prefect==3.1.4
+    # via lightrag (pyproject.toml)
+prometheus-client==0.21.0
+    # via prefect
 prompt-toolkit==3.0.48
     # via ipython
 propcache==0.2.0
@@ -218,14 +325,28 @@ ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.3
     # via stack-data
+pycparser==2.22
+    # via cffi
 pydantic==2.10.2
     # via
+    #   fastapi
     #   ollama
     #   openai
+    #   prefect
+    #   pydantic-extra-types
+    #   pydantic-settings
 pydantic-core==2.27.1
-    # via pydantic
+    # via
+    #   prefect
+    #   pydantic
+pydantic-extra-types==2.10.0
+    # via prefect
+pydantic-settings==2.6.1
+    # via prefect
 pygments==2.18.0
-    # via ipython
+    # via
+    #   ipython
+    #   rich
 pynndescent==0.5.13
     # via umap-learn
 pyparsing==3.2.0
@@ -233,30 +354,70 @@ pyparsing==3.2.0
 python-dateutil==2.9.0.post0
     # via
     #   botocore
+    #   croniter
+    #   dateparser
     #   matplotlib
     #   pandas
+    #   pendulum
+    #   prefect
+    #   time-machine
 python-dotenv==1.0.1
-    # via lightrag (pyproject.toml)
+    # via
+    #   lightrag (pyproject.toml)
+    #   pydantic-settings
+python-slugify==8.0.4
+    # via prefect
 pytz==2024.2
     # via
+    #   croniter
+    #   dateparser
     #   neo4j
     #   pandas
+    #   prefect
 pyvis==0.3.2
     # via lightrag (pyproject.toml)
 pyyaml==6.0.2
     # via
     #   accelerate
+    #   apprise
     #   huggingface-hub
+    #   prefect
     #   transformers
+readchar==4.2.1
+    # via prefect
+referencing==0.35.1
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
 regex==2024.11.6
     # via
+    #   dateparser
     #   tiktoken
     #   transformers
 requests==2.32.3
     # via
+    #   apprise
+    #   docker
     #   huggingface-hub
+    #   requests-oauthlib
     #   tiktoken
     #   transformers
+requests-oauthlib==2.0.0
+    # via apprise
+rfc3339-validator==0.1.4
+    # via prefect
+rich==13.9.4
+    # via
+    #   prefect
+    #   typer
+rpds-py==0.21.0
+    # via
+    #   jsonschema
+    #   referencing
+ruamel-yaml==0.18.6
+    # via prefect
+ruamel-yaml-clib==0.2.12
+    # via ruamel-yaml
 s3transfer==0.10.4
     # via boto3
 safetensors==0.4.5
@@ -283,31 +444,48 @@ seaborn==0.13.2
     # via graspologic
 setuptools==75.6.0
     # via torch
+shellingham==1.5.4
+    # via typer
 six==1.16.0
     # via
     #   anytree
     #   python-dateutil
+    #   rfc3339-validator
 smart-open==7.0.5
     # via gensim
 sniffio==1.3.1
     # via
     #   anyio
+    #   asgi-lifespan
     #   httpx
     #   openai
+    #   prefect
+sqlalchemy==2.0.36
+    # via
+    #   alembic
+    #   prefect
 stack-data==0.6.3
     # via ipython
+starlette==0.41.3
+    # via fastapi
 statsmodels==0.14.4
     # via graspologic
 sympy==1.13.1
     # via torch
 tenacity==9.0.0
     # via lightrag (pyproject.toml)
+text-unidecode==1.3
+    # via python-slugify
 threadpoolctl==3.5.0
     # via scikit-learn
 tiktoken==0.8.0
     # via lightrag (pyproject.toml)
+time-machine==2.16.0
+    # via pendulum
 tokenizers==0.20.3
     # via transformers
+toml==0.10.2
+    # via prefect
 torch==2.5.1
     # via
     #   lightrag (pyproject.toml)
@@ -324,29 +502,52 @@ traitlets==5.14.3
     #   matplotlib-inline
 transformers==4.46.3
     # via lightrag (pyproject.toml)
+typer==0.13.1
+    # via prefect
 typing-extensions==4.12.2
     # via
+    #   aiosqlite
+    #   alembic
+    #   fastapi
     #   graspologic
     #   huggingface-hub
     #   openai
+    #   prefect
     #   pydantic
     #   pydantic-core
+    #   pydantic-extra-types
+    #   sqlalchemy
     #   torch
+    #   typer
 tzdata==2024.2
-    # via pandas
+    # via
+    #   pandas
+    #   pendulum
+tzlocal==5.2
+    # via dateparser
+ujson==5.10.0
+    # via prefect
 umap-learn==0.5.7
     # via graspologic
 urllib3==2.2.3
     # via
     #   botocore
+    #   docker
     #   requests
+uvicorn==0.32.1
+    # via prefect
 wcwidth==0.2.13
     # via prompt-toolkit
+websockets==13.1
+    # via prefect
 wrapt==1.17.0
     # via
     #   aiobotocore
+    #   deprecated
     #   smart-open
 xxhash==3.5.0
     # via lightrag (pyproject.toml)
 yarl==1.18.0
     # via aiohttp
+zipp==3.21.0
+    # via importlib-metadata
