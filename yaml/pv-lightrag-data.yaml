@@ -7,6 +7,7 @@ spec:
     storage: 10Gi
   accessModes:
     - ReadWriteOnce
+  storageClassName: microk8s-hostpath
   hostPath:
     path: /home/ubuntu/lightrag_data
 
@@ -20,4 +21,5 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 5Gi
+  storageClassName: microk8s-hostpath

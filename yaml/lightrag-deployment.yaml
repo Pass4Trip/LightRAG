@@ -26,4 +26,4 @@ spec:
       volumes:
       - name: lightrag-data
         persistentVolumeClaim:
-          claimName: lightrag-data-claim
+          claimName: lightrag-vectordb-pvc
