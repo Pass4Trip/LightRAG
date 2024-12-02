@@ -88,7 +88,7 @@ def load_prefect_config():
 PREFECT_ACCOUNT_ID, PREFECT_WORKSPACE_ID = load_prefect_config()
 
 os.environ["PREFECT_API_URL"] = f"https://api.prefect.cloud/api/accounts/{PREFECT_ACCOUNT_ID}/workspaces/{PREFECT_WORKSPACE_ID}"
-os.environ["PREFECT_API_KEY"] = os.getenv("PREFECT_API_KEY")
+PREFECT_PROFILE='cloud'
 
 # Load credentials from Prefect blocks
 neo4j_block = Neo4jCredentials.load("neo4j-credentials")

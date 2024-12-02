@@ -137,7 +137,7 @@ UV est un gestionnaire de paquets Python ultra-rapide écrit en Rust. Pour insta
 
 2. Cloner le projet et se placer dans le répertoire :
    ```bash
-   git clone https://github.com/MyBoun/LightRAG.git
+   git clone -b feature/clean-start git@github.com:Pass4Trip/LightRAG.git
    cd LightRAG
    ```
 
