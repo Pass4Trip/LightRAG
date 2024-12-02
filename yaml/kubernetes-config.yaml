@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lightrag-config
+data:
+  RABBITMQ_USERNAME: "guest"
+  RABBITMQ_HOST: "rabbitmq-0.rabbitmq-headless.default.svc.cluster.local"
+  RABBITMQ_PORT: "5672"
+  NEO4J_URI: "bolt://p4t-neo4j-0.p4t-neo4j.default.svc.cluster.local:7687"
+  NEO4J_USERNAME: "neo4j"
+  VECTOR_DB_PATH: "/app/data/nano-vectorDB"
+  PREFECT_ACCOUNT_ID: "42cb0262-af09-4eb2-9d92-97142d7fcedd"
+  PREFECT_WORKSPACE_ID: "a0d5688e-41c6-4d18-bc27-294f7fd7a9e7"

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lightrag
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lightrag
+  template:
+    metadata:
+      labels:
+        app: lightrag
+    spec:
+      containers:
+      - name: lightrag
+        image: localhost:32000/lightrag:v5-prefect
+        envFrom:
+        - configMapRef:
+            name: lightrag-config
+        - secretRef:
+            name: lightrag-secrets
+        volumeMounts:
+        - name: lightrag-data
+          mountPath: /app/data
+      volumes:
+      - name: lightrag-data
+        persistentVolumeClaim:
+          claimName: lightrag-data-claim
