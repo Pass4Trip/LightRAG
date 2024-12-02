@@ -40,20 +40,52 @@ class OVHCredentials(Block):
     llm_api_token: SecretStr
 
 # Load Prefect worker configuration
-try:
-    # Try to load from YAML first
-    with open('/home/ubuntu/value_prefect_worker.yaml', 'r') as f:
-        worker_config = yaml.safe_load(f)
-        PREFECT_ACCOUNT_ID = worker_config['worker']['cloudApiConfig']['accountId']
-        PREFECT_WORKSPACE_ID = worker_config['worker']['cloudApiConfig']['workspaceId']
-except Exception as e:
-    # Fallback to environment variables
-    logger.warning(f"Could not load Prefect config from YAML: {e}, using environment variables")
-    PREFECT_ACCOUNT_ID = os.getenv("PREFECT_ACCOUNT_ID")
-    PREFECT_WORKSPACE_ID = os.getenv("PREFECT_WORKSPACE_ID")
+def load_prefect_config():
+    """
+    Charge la configuration Prefect en fonction de l'environnement d'exécution.
+    Supporte deux modes :
+    1. VPS OVH : utilise le fichier YAML
+    2. Local : utilise les variables d'environnement
+    """
+    # Chemins possibles pour le fichier de configuration
+    config_paths = [
+        '/home/ubuntu/value_prefect_worker.yaml',  # Chemin VPS
+        os.path.expanduser('~/.config/prefect/value_prefect_worker.yaml'),  # Chemin local
+        'value_prefect_worker.yaml'  # Chemin relatif
+    ]
+    
+    # Essayer de charger depuis YAML
+    for config_path in config_paths:
+        try:
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    worker_config = yaml.safe_load(f)
+                    logger.info(f"Configuration chargée depuis {config_path}")
+                    return (
+                        worker_config['worker']['cloudApiConfig']['accountId'],
+                        worker_config['worker']['cloudApiConfig']['workspaceId']
+                    )
+        except Exception as e:
+            logger.debug(f"Impossible de charger {config_path}: {e}")
+            continue
+    
+    # Si aucun fichier YAML n'est trouvé, utiliser les variables d'environnement
+    logger.warning("Utilisation des variables d'environnement")
+    account_id = os.getenv("PREFECT_ACCOUNT_ID")
+    workspace_id = os.getenv("PREFECT_WORKSPACE_ID")
+    
+    if not all([account_id, workspace_id]):
+        raise RuntimeError(
+            "Configuration Prefect non trouvée. Vous devez soit :\n"
+            "1. Avoir un fichier value_prefect_worker.yaml dans un des chemins suivants :\n"
+            f"   {', '.join(config_paths)}\n"
+            "2. Définir les variables d'environnement PREFECT_ACCOUNT_ID et PREFECT_WORKSPACE_ID"
+        )
+    
+    return account_id, workspace_id
 
-    if not all([PREFECT_ACCOUNT_ID, PREFECT_WORKSPACE_ID]):
-        raise RuntimeError("Prefect configuration not found in YAML or environment variables")
+# Charger la configuration
+PREFECT_ACCOUNT_ID, PREFECT_WORKSPACE_ID = load_prefect_config()
 
 os.environ["PREFECT_API_URL"] = f"https://api.prefect.cloud/api/accounts/{PREFECT_ACCOUNT_ID}/workspaces/{PREFECT_WORKSPACE_ID}"
 os.environ["PREFECT_API_KEY"] = os.getenv("PREFECT_API_KEY")
@@ -102,10 +134,15 @@ class RabbitMQConsumer:
 
     def __init__(self):
         """Initialise le consommateur RabbitMQ avec les paramètres de connexion par défaut."""
-        self.user = 'rabbitmq'
-        self.password = 'mypassword'
-        self.host = '51.77.200.196'
-        self.port = 30645
+
+        # Charger les credentials depuis le bloc Prefect
+        rabbitmq_block = RabbitMQCredentials.load("rabbitmq-credentials")        
+
+        # Utiliser les valeurs de l'instance chargée
+        self.user = rabbitmq_block.username
+        self.password = rabbitmq_block.password.get_secret_value()
+        self.host = rabbitmq_block.host
+        self.port = rabbitmq_block.port
         self.connection = None
         self.channel = None
         self.rag = None

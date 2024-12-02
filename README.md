@@ -194,6 +194,8 @@ microk8s kubectl set env deployment/lightrag \
   PREFECT_WORKSPACE_ID=a0d5688e-41c6-4d18-bc27-294f7fd7a9e7 \
   --from=secret/prefect-secrets
 
+  Version local : 
+  export 
 # Monter le ConfigMap dans le pod
 microk8s kubectl patch deployment lightrag --patch '
 {
@@ -218,6 +220,86 @@ microk8s kubectl patch deployment lightrag --patch '
   }
 }'
 ```
+
+### 2.5 Configuration du Volume Persistant pour LightRAG
+```bash
+# Créer le fichier de configuration du volume persistant
+cat > pv-lightrag-data.yaml << 'EOL'
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: lightrag-data-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /home/ubuntu/lightrag_data
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lightrag-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+EOL
+
+# Créer les dossiers nécessaires
+sudo mkdir -p /home/ubuntu/lightrag_data/nano-vectorDB
+sudo chown -R ubuntu:ubuntu /home/ubuntu/lightrag_data
+
+# Appliquer la configuration
+microk8s kubectl apply -f pv-lightrag-data.yaml
+
+# Mettre à jour le déploiement pour utiliser le volume
+microk8s kubectl patch deployment lightrag --patch '
+{
+  "spec": {
+    "template": {
+      "spec": {
+        "volumes": [
+          {
+            "name": "config-volume",
+            "configMap": {
+              "name": "prefect-config"
+            }
+          },
+          {
+            "name": "lightrag-data",
+            "persistentVolumeClaim": {
+              "claimName": "lightrag-data-pvc"
+            }
+          }
+        ],
+        "containers": [{
+          "name": "lightrag",
+          "volumeMounts": [
+            {
+              "name": "config-volume",
+              "mountPath": "/home/ubuntu"
+            },
+            {
+              "name": "lightrag-data",
+              "mountPath": "/data"
+            }
+          ]
+        }]
+      }
+    }
+  }
+}'
+
+# Redémarrer le déploiement pour appliquer les changements
+microk8s kubectl rollout restart deployment lightrag
+```
+
+Cette configuration permet de persister les données de LightRAG dans `/home/ubuntu/lightrag_data/nano-vectorDB` sur le VPS, assurant ainsi que les données sont conservées même en cas de redémarrage du pod.
 
 ### 3. Vérification et Monitoring
 ```bash
