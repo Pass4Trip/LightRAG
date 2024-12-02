@@ -1,186 +1,115 @@
 import os
-import logging
-from typing import Dict, Any
-import json
-import pika
-import requests
-from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log, retry_if_exception_type
-from requests.exceptions import HTTPError, RequestException, Timeout
-from lightrag import LightRAG
-from lightrag.utils import EmbeddingFunc
+from prefect.settings import PREFECT_API_URL
+from prefect.blocks.core import Block
+from pydantic import SecretStr
 import asyncio
+from lightrag import LightRAG, QueryParam
+from lightrag.llm import openai_complete_if_cache, openai_embedding
+from lightrag.utils import EmbeddingFunc
 import numpy as np
+import requests
+import pika
+import json
+import time
+from typing import Dict, Any, Optional
+from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log, retry_if_exception_type
+import logging
+from requests.exceptions import HTTPError, RequestException, Timeout
 import yaml
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def load_config():
-    """
-    Charge la configuration depuis différentes sources:
-    1. Variables d'environnement (pour Kubernetes)
-    2. Fichier .env local
-    3. Valeurs par défaut
-    """
-    # Essayer de charger depuis un fichier .env local
-    env_file = os.path.join(os.path.dirname(__file__), '.env')
-    if os.path.exists(env_file):
-        logger.info(f"Chargement de la configuration depuis {env_file}")
-        with open(env_file) as f:
-            for line in f:
-                if line.strip() and not line.startswith('#'):
-                    key, value = line.strip().split('=', 1)
-                    os.environ[key.strip()] = value.strip().strip('"\'')
+# Block definitions
+class RabbitMQCredentials(Block):
+    """Stores RabbitMQ credentials"""
+    username: str
+    password: SecretStr
+    host: str
+    port: str
 
-    # Configuration par défaut (uniquement les valeurs non-sensibles)
-    defaults = {
-        "RABBITMQ_USERNAME": "guest",
-        "RABBITMQ_HOST": "localhost",
-        "RABBITMQ_PORT": "5672",
-        "NEO4J_URI": "bolt://localhost:7687",
-        "NEO4J_USERNAME": "neo4j",
-        "PREFECT_ACCOUNT_ID": "",
-        "PREFECT_WORKSPACE_ID": "",
-        "VECTOR_DB_PATH": "./nano-vectorDB"
-    }
+class Neo4jCredentials(Block):
+    """Stores Neo4j credentials"""
+    uri: str
+    username: str
+    password: SecretStr
 
-    # Vérifier les variables sensibles requises
-    required_secrets = [
-        "RABBITMQ_PASSWORD",
-        "NEO4J_PASSWORD",
-        "OVH_LLM_API_TOKEN"
+class OVHCredentials(Block):
+    """Stores OVH credentials"""
+    llm_api_token: SecretStr
+
+# Load Prefect worker configuration
+def load_prefect_config():
+    """
+    Charge la configuration Prefect en fonction de l'environnement d'exécution.
+    Supporte deux modes :
+    1. VPS OVH : utilise le fichier YAML
+    2. Local : utilise les variables d'environnement
+    """
+    # Chemins possibles pour le fichier de configuration
+    config_paths = [
+        '/home/ubuntu/value_prefect_worker.yaml',  # Chemin VPS
+        os.path.expanduser('~/.config/prefect/value_prefect_worker.yaml'),  # Chemin local
+        'value_prefect_worker.yaml'  # Chemin relatif
     ]
-
-    # Utiliser les variables d'environnement ou les valeurs par défaut
-    config = {}
     
-    # Charger les valeurs non-sensibles
-    for key, default_value in defaults.items():
-        config[key] = os.getenv(key, default_value)
-        if not os.getenv(key):
-            logger.debug(f"Utilisation de la valeur par défaut pour {key}: {default_value}")
+    # Essayer de charger depuis YAML
+    for config_path in config_paths:
+        try:
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    worker_config = yaml.safe_load(f)
+                    logger.info(f"Configuration chargée depuis {config_path}")
+                    return (
+                        worker_config['worker']['cloudApiConfig']['accountId'],
+                        worker_config['worker']['cloudApiConfig']['workspaceId']
+                    )
+        except Exception as e:
+            logger.debug(f"Impossible de charger {config_path}: {e}")
+            continue
     
-    # Charger les secrets
-    for secret in required_secrets:
-        value = os.getenv(secret)
-        if not value:
-            raise RuntimeError(f"Variable d'environnement requise manquante : {secret}. "
-                             f"Veuillez la définir dans votre fichier .env ou dans les secrets Kubernetes.")
-        config[secret] = value
-
-    return config
-
-def verify_environment():
-    """
-    Vérifie que toutes les variables d'environnement nécessaires sont présentes
-    et affiche leur statut.
-    """
-    # Toutes les variables requises
-    required_vars = {
-        "Non-sensibles": {
-            "RABBITMQ_USERNAME": "Nom d'utilisateur RabbitMQ",
-            "RABBITMQ_HOST": "Hôte RabbitMQ",
-            "RABBITMQ_PORT": "Port RabbitMQ",
-            "NEO4J_URI": "URI Neo4j",
-            "NEO4J_USERNAME": "Nom d'utilisateur Neo4j",
-            "PREFECT_ACCOUNT_ID": "ID du compte Prefect",
-            "PREFECT_WORKSPACE_ID": "ID de l'espace de travail Prefect",
-            "VECTOR_DB_PATH": "Chemin de la base de données vectorielle"
-        },
-        "Secrets": {
-            "RABBITMQ_PASSWORD": "Mot de passe RabbitMQ",
-            "NEO4J_PASSWORD": "Mot de passe Neo4j",
-            "OVH_LLM_API_TOKEN": "Token API OVH LLM"
-        }
-    }
-
-    missing_vars = []
-    status = []
-
-    # Vérifier toutes les variables
-    for category, vars_dict in required_vars.items():
-        status.append(f"\n=== {category} ===")
-        for var, description in vars_dict.items():
-            value = os.getenv(var)
-            if value is None:
-                status.append(f"❌ {description} ({var}): Non défini")
-                missing_vars.append(var)
-            else:
-                # Masquer les valeurs des secrets
-                if category == "Secrets":
-                    display_value = "********"
-                else:
-                    display_value = value
-                status.append(f"✅ {description} ({var}): {display_value}")
-
-    # Afficher le statut
-    logger.info("\nStatut des variables d'environnement:\n" + "\n".join(status))
-
-    # S'il manque des variables, lever une exception
-    if missing_vars:
+    # Si aucun fichier YAML n'est trouvé, utiliser les variables d'environnement
+    logger.warning("Utilisation des variables d'environnement")
+    account_id = os.getenv("PREFECT_ACCOUNT_ID")
+    workspace_id = os.getenv("PREFECT_WORKSPACE_ID")
+    
+    if not all([account_id, workspace_id]):
         raise RuntimeError(
-            f"\nVariables d'environnement manquantes:\n"
-            f"{', '.join(missing_vars)}\n"
-            f"Veuillez les définir dans votre fichier .env ou dans Kubernetes."
+            "Configuration Prefect non trouvée. Vous devez soit :\n"
+            "1. Avoir un fichier value_prefect_worker.yaml dans un des chemins suivants :\n"
+            f"   {', '.join(config_paths)}\n"
+            "2. Définir les variables d'environnement PREFECT_ACCOUNT_ID et PREFECT_WORKSPACE_ID"
         )
-
-    return True
-
-def is_kubernetes():
-    """
-    Détecte si l'application s'exécute dans un environnement Kubernetes.
     
-    Returns:
-        bool: True si dans Kubernetes, False sinon
-    """
-    return os.path.exists('/var/run/secrets/kubernetes.io')
-
-def setup_working_directory(base_dir, config):
-    """
-    Configure le répertoire de travail en fonction de l'environnement (Kubernetes ou local).
-    
-    Args:
-        base_dir (str): Répertoire de base pour le stockage
-        config (dict): Configuration contenant VECTOR_DB_PATH
-        
-    Returns:
-        str: Chemin du répertoire de travail configuré
-    """
-    if is_kubernetes():
-        # Pour Kubernetes/microk8s, utiliser le chemin configuré
-        working_dir = config["VECTOR_DB_PATH"]
-        logger.info("Environnement Kubernetes détecté, utilisation du répertoire: %s", working_dir)
-    else:
-        # Pour Mac local, utiliser le répertoire dans le projet
-        working_dir = "/Users/vinh/Documents/LightRAG/nano-vectorDB"
-        logger.info("Environnement local détecté, utilisation du répertoire: %s", working_dir)
-    
-    # Créer le répertoire s'il n'existe pas
-    os.makedirs(working_dir, exist_ok=True)
-    return working_dir
+    return account_id, workspace_id
 
 # Charger la configuration
-config = load_config()
+PREFECT_ACCOUNT_ID, PREFECT_WORKSPACE_ID = load_prefect_config()
 
-# Vérifier les variables d'environnement au démarrage
-verify_environment()
-
-# Configuration du répertoire de travail
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WORKING_DIR = setup_working_directory(BASE_DIR, config)
-
-# Configuration Prefect
-os.environ["PREFECT_API_URL"] = f"https://api.prefect.cloud/api/accounts/{config['PREFECT_ACCOUNT_ID']}/workspaces/{config['PREFECT_WORKSPACE_ID']}"
+os.environ["PREFECT_API_URL"] = f"https://api.prefect.cloud/api/accounts/{PREFECT_ACCOUNT_ID}/workspaces/{PREFECT_WORKSPACE_ID}"
 PREFECT_PROFILE='cloud'
 
+# Load credentials from Prefect blocks
+neo4j_block = Neo4jCredentials.load("neo4j-credentials")
+ovh_block = OVHCredentials.load("ovh-credentials")
+rabbitmq_block = RabbitMQCredentials.load("rabbitmq-credentials")
+
 # Set environment variables for Neo4J
-os.environ["NEO4J_URI"] = config["NEO4J_URI"]
-os.environ["NEO4J_USERNAME"] = config["NEO4J_USERNAME"]
-os.environ["NEO4J_PASSWORD"] = config["NEO4J_PASSWORD"]
+os.environ["NEO4J_URI"] = neo4j_block.uri
+os.environ["NEO4J_USERNAME"] = neo4j_block.username
+os.environ["NEO4J_PASSWORD"] = neo4j_block.password.get_secret_value()
 
 # Set environment variables for OVH
-os.environ["OVH_AI_ENDPOINTS_ACCESS_TOKEN"] = config["OVH_LLM_API_TOKEN"]
+os.environ["OVH_AI_ENDPOINTS_ACCESS_TOKEN"] = ovh_block.llm_api_token.get_secret_value()
+
+# Get storage path
+WORKING_DIR = os.getenv('VECTOR_DB_PATH', './nano-vectorDB')
+
+# Create working directory if it doesn't exist
+if not os.path.exists(WORKING_DIR):
+    os.makedirs(WORKING_DIR, exist_ok=True)
+
 
 class RabbitMQConsumer:
     """
@@ -206,20 +135,14 @@ class RabbitMQConsumer:
     def __init__(self):
         """Initialise le consommateur RabbitMQ avec les paramètres de connexion par défaut."""
 
-        # Charger la configuration
-        self.user = config["RABBITMQ_USERNAME"]
-        self.password = config["RABBITMQ_PASSWORD"]
-        self.host = config["RABBITMQ_HOST"]
-        self.port = config["RABBITMQ_PORT"]
+        # Charger les credentials depuis le bloc Prefect
+        rabbitmq_block = RabbitMQCredentials.load("rabbitmq-credentials")        
 
-        # Configuration Neo4j
-        os.environ["NEO4J_URI"] = config["NEO4J_URI"]
-        os.environ["NEO4J_USERNAME"] = config["NEO4J_USERNAME"]
-        os.environ["NEO4J_PASSWORD"] = config["NEO4J_PASSWORD"]
-
-        # Configuration OVH
-        os.environ["OVH_AI_ENDPOINTS_ACCESS_TOKEN"] = config["OVH_LLM_API_TOKEN"]
-
+        # Utiliser les valeurs de l'instance chargée
+        self.user = rabbitmq_block.username
+        self.password = rabbitmq_block.password.get_secret_value()
+        self.host = rabbitmq_block.host
+        self.port = rabbitmq_block.port
         self.connection = None
         self.channel = None
         self.rag = None
@@ -356,7 +279,7 @@ class RabbitMQConsumer:
             working_dir=WORKING_DIR,
             llm_model_func=llm_model_func,
             embedding_func=EmbeddingFunc(
-                embedding_dim=768,  # Dimension for multilingual-e5-base model
+                embedding_dim=768,  # Updated for multilingual-e5-base model
                 max_token_size=8192,
                 func=embedding_func
             ),

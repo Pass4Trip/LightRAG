@@ -174,7 +174,13 @@ buildah images | grep lightrag
 buildah push localhost:32000/lightrag:v5-prefect
 ```
 
+
 ### 2. Configuration Prefect et Déploiement
+
+Si le déploiement existe déjà, mettez simplement à jour l'image :
+```bash
+microk8s kubectl set image deployment/lightrag lightrag=localhost:32000/lightrag:v5-prefect
+
 ```bash
 # Créer le secret pour l'API Prefect
 microk8s kubectl create secret generic prefect-secrets \
