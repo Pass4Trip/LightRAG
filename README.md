@@ -2,16 +2,25 @@
 
 LightRAG est une implémentation légère de RAG (Retrieval-Augmented Generation) avec intégration Neo4j et RabbitMQ.
 
+## Table des Matières
+1. [Prérequis](#prérequis)
+2. [Installation](#installation)
+3. [Configuration](#configuration)
+4. [Architecture](#architecture)
+5. [Déploiement](#déploiement)
+6. [Stockage des Données](#stockage-des-données)
+
 ## Prérequis
 
 - Python >= 3.9
 - UV (gestionnaire de paquets Python)
 - Neo4j (base de données graphe)
 - RabbitMQ (message broker)
+- Kubernetes (microk8s)
 
-## Installation Rapide
+## Installation
 
-Un script d'installation automatique est disponible :
+### Installation Rapide
 
 ```bash
 # Exécuter le script d'installation
@@ -23,30 +32,39 @@ Ce script :
 - Crée un environnement virtuel
 - Installe toutes les dépendances
 
-## Services Requis
+### Installation avec UV (Recommandé)
 
-### Neo4j
-- **Installation** : Suivez les instructions sur [neo4j.com](https://neo4j.com/download/)
-- **Configuration** :
-  - Créez une base de données
-  - Notez les identifiants (URI, utilisateur, mot de passe)
-  - Configurez ces informations dans votre fichier `.env`
+UV est un gestionnaire de paquets Python ultra-rapide écrit en Rust :
 
-### RabbitMQ
-- **Installation** : Suivez les instructions sur [rabbitmq.com](https://www.rabbitmq.com/download.html)
-- **Configuration** :
-  - Le serveur doit être accessible sur le port 5672
-  - Configurez les identifiants dans votre fichier `.env`
+```bash
+# Installation de UV
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Création de l'environnement virtuel
+uv venv
+
+# Activation de l'environnement
+source .venv/bin/activate
+
+# Installation des dépendances
+uv pip install -r requirements.txt
+```
 
 ## Configuration
 
+### Services Requis
+
+#### Neo4j
+- **Port** : 7687 (Bolt), exposé sur le port 32719
+- **Credentials** : Configurés via Neo4j Credentials Block
+
+#### RabbitMQ
+- **Port** : 5672, exposé sur le port 30645
+- **Credentials** : Configurés via RabbitMQ Credentials Block
+
 ### Gestion des Secrets avec Prefect Blocks
 
-Le projet utilise Prefect Blocks pour gérer les secrets et les configurations de manière sécurisée :
-
 1. **OVH Credentials Block**
-   - Stocke le token d'accès à l'API LLM d'OVH
-   - Nom du block : "ovh-credentials"
    ```python
    OVHCredentials(
        llm_api_token="votre_token_ovh"
@@ -54,8 +72,6 @@ Le projet utilise Prefect Blocks pour gérer les secrets et les configurations d
    ```
 
 2. **RabbitMQ Credentials Block**
-   - Stocke les identifiants de connexion RabbitMQ
-   - Nom du block : "rabbitmq-credentials"
    ```python
    RabbitMQCredentials(
        username="votre_username",
@@ -66,8 +82,6 @@ Le projet utilise Prefect Blocks pour gérer les secrets et les configurations d
    ```
 
 3. **Neo4j Credentials Block**
-   - Stocke les identifiants de connexion Neo4j
-   - Nom du block : "neo4j-credentials"
    ```python
    Neo4jCredentials(
        uri="votre_uri",
@@ -78,8 +92,6 @@ Le projet utilise Prefect Blocks pour gérer les secrets et les configurations d
 
 ### Configuration des Modèles LLM OVH
 
-Le projet utilise deux modèles d'OVH AI :
-
 1. **LLM pour le traitement du texte**
    - Modèle : Meta-Llama-3_1-70B-Instruct
    - Endpoint : llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net
@@ -89,148 +101,73 @@ Le projet utilise deux modèles d'OVH AI :
    - Endpoint : multilingual-e5-base.endpoints.kepler.ai.cloud.ovh.net
    - Dimension des embeddings : 768
 
-## Composants Principaux
+## Architecture
 
-### 1. Traitement des Messages RabbitMQ (`examples/lightrag_openai_compatible_demo_rabbitmq.py`)
+### Composants Principaux
 
-Ce composant est le cœur du système, gérant le traitement des données via RabbitMQ :
+1. **API REST**
+   - Endpoints pour l'indexation et la recherche
+   - Compatible avec l'API OpenAI
 
-#### Fonctionnalités Principales
-- **Consommation des Messages**
-  - Connexion automatique à RabbitMQ avec gestion des reconnexions
-  - Configuration et monitoring de la queue de messages
-  - Traitement asynchrone des messages
+2. **Traitement des Messages**
+   - Intégration RabbitMQ pour le traitement asynchrone
+   - Gestion des reconnexions et monitoring
 
-- **Traitement des Données**
-  - Normalisation des données restaurants pour Neo4j
-  - Extraction intelligente des informations avec LLM
-  - Génération automatique des labels et relations
+3. **Stockage**
+   - Neo4j pour les graphes de connaissances
+   - Stockage vectoriel local pour les embeddings
 
-- **Intégration LightRAG**
-  - Insertion optimisée des documents dans la base
-  - Gestion des relations entre entités
-  - Structure de graphe optimisée pour les requêtes
+## Déploiement
 
-#### Gestion des Erreurs
-- Reconnexion automatique à RabbitMQ en cas de perte de connexion
-- Retry pattern pour les appels API
-- Logging détaillé pour le debugging
-
-#### Monitoring
-- Métriques sur le traitement des messages
-- Logs en temps réel des opérations
-- Statut des connexions RabbitMQ et Neo4j
-
-### 2. Autres Composants
-
-D'autres composants sont disponibles dans le dossier `examples/` pour la visualisation et l'analyse des données.
-
-## Installation avec UV (Recommandé)
-
-UV est un gestionnaire de paquets Python ultra-rapide écrit en Rust. Pour installer le projet avec UV :
-
-1. Installer UV :
-   ```bash
-   # macOS / Linux
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
-2. Cloner le projet et se placer dans le répertoire :
-   ```bash
-   git clone -b feature/clean-start git@github.com:Pass4Trip/LightRAG.git
-   cd LightRAG
-   ```
-
-3. Créer et activer l'environnement virtuel avec UV :
-   ```bash
-   # Créer l'environnement
-   uv venv
-   
-   # Activer l'environnement (Linux/macOS)
-   source .venv/bin/activate
-   ```
-
-4. Installer les dépendances avec UV :
-   ```bash
-   uv pip install -r requirements.txt
-   ```
-
-## Déploiement avec MicroK8s
-
-### Prérequis
+### Prérequis Kubernetes
 - MicroK8s installé et configuré
 - Registry local sur le port 32000
-- Buildah pour la gestion des conteneurs
+- Buildah pour la construction d'images
 
-### 1. Construction de l'image
+### Construction et Déploiement de l'Image
+
+1. **Construction de l'image**
 ```bash
-# Build de l'image avec optimisation
+# Build de l'image
 buildah build --layers --force-rm -t localhost:32000/lightrag:v5-prefect .
 
-# Vérifier l'image
+# Vérification de l'image
 buildah images | grep lightrag
 
 # Push vers le registry local
 buildah push localhost:32000/lightrag:v5-prefect
 ```
 
-
-### 2. Configuration Prefect et Déploiement
-
-Si le déploiement existe déjà, mettez simplement à jour l'image :
+2. **Configuration des Secrets et ConfigMap**
 ```bash
-microk8s kubectl set image deployment/lightrag lightrag=localhost:32000/lightrag:v5-prefect
+# Suppression des secrets
+microk8s kubectl delete secret lightrag-config 
 
-```bash
-# Créer le secret pour l'API Prefect
-microk8s kubectl create secret generic prefect-secrets \
-  --from-literal=PREFECT_API_KEY="XXX""
+# Création des secrets
+microk8s kubectl create secret generic lightrag-secrets \
+  --from-literal=RABBITMQ_PASSWORD=xxx \
+  --from-literal=NEO4J_PASSWORD=xxx \
+  --from-literal=OVH_LLM_API_TOKEN=xxx
 
-# Créer le ConfigMap pour la configuration
-microk8s kubectl create configmap prefect-config \
-  --from-file=/home/ubuntu/value_prefect_worker.yaml
+# Suppression des ConfigMap
+microk8s kubectl delete configmap lightrag-config 
 
-# Créer le déploiement
-microk8s kubectl create deployment lightrag \
-  --image=localhost:32000/lightrag:v5-prefect
-
-# Configurer les variables d'environnement
-microk8s kubectl set env deployment/lightrag \
-  PREFECT_ACCOUNT_ID=42cb0262-af09-4eb2-9d92-97142d7fcedd \
-  PREFECT_WORKSPACE_ID=a0d5688e-41c6-4d18-bc27-294f7fd7a9e7 \
-  --from=secret/prefect-secrets
-
-  Version local : 
-  export 
-# Monter le ConfigMap dans le pod
-microk8s kubectl patch deployment lightrag --patch '
-{
-  "spec": {
-    "template": {
-      "spec": {
-        "volumes": [{
-          "name": "config-volume",
-          "configMap": {
-            "name": "prefect-config"
-          }
-        }],
-        "containers": [{
-          "name": "lightrag",
-          "volumeMounts": [{
-            "name": "config-volume",
-            "mountPath": "/home/ubuntu"
-          }]
-        }]
-      }
-    }
-  }
-}'
+# Création du ConfigMap
+microk8s kubectl create configmap lightrag-config \
+  --from-literal=NEO4J_URI=bolt://51.77.200.196:32719 \
+  --from-literal=NEO4J_USERNAME=neo4j \
+  --from-literal=PREFECT_ACCOUNT_ID=1de47cd9-a32e-4a43-8545-fd3bab9eaabe \
+  --from-literal=PREFECT_WORKSPACE_ID=59349ca6-8f64-4b16-b768-5c70d28a342e \
+  --from-literal=RABBITMQ_HOST=51.77.200.196 \
+  --from-literal=RABBITMQ_PORT=30645 \
+  --from-literal=RABBITMQ_USERNAME=rabbitmq \
+  --from-literal=VECTOR_DB_PATH=/home/ubuntu/lightrag_data
 ```
 
-### 2.5 Configuration du Volume Persistant pour LightRAG
+3. **Configuration du Volume Persistant**
 ```bash
-# Créer le fichier de configuration du volume persistant
-cat > pv-lightrag-data.yaml << 'EOL'
+# Création du PV et PVC
+cat << 'EOF' | microk8s kubectl apply -f -
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -240,95 +177,104 @@ spec:
     storage: 10Gi
   accessModes:
     - ReadWriteOnce
+  storageClassName: microk8s-hostpath
   hostPath:
     path: /home/ubuntu/lightrag_data
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: lightrag-data-pvc
+  name: lightrag-vectordb-pvc
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
-EOL
+      storage: 5Gi
+  storageClassName: microk8s-hostpath
+EOF
 
-# Créer les dossiers nécessaires
-sudo mkdir -p /home/ubuntu/lightrag_data/nano-vectorDB
-sudo chown -R ubuntu:ubuntu /home/ubuntu/lightrag_data
+# Création du répertoire de données
+mkdir -p /home/ubuntu/lightrag_data/nano-vectorDB
+```
 
-# Appliquer la configuration
-microk8s kubectl apply -f pv-lightrag-data.yaml
+4. **Déploiement de l'Application**
+```bash
+# Application du déploiement
+microk8s kubectl apply -f yaml/lightrag-deployment.yaml
 
-# Mettre à jour le déploiement pour utiliser le volume
-microk8s kubectl patch deployment lightrag --patch '
-{
-  "spec": {
-    "template": {
-      "spec": {
-        "volumes": [
-          {
-            "name": "config-volume",
-            "configMap": {
-              "name": "prefect-config"
-            }
-          },
-          {
-            "name": "lightrag-data",
-            "persistentVolumeClaim": {
-              "claimName": "lightrag-data-pvc"
-            }
-          }
-        ],
-        "containers": [{
-          "name": "lightrag",
-          "volumeMounts": [
-            {
-              "name": "config-volume",
-              "mountPath": "/home/ubuntu"
-            },
-            {
-              "name": "lightrag-data",
-              "mountPath": "/data"
-            }
-          ]
-        }]
-      }
-    }
-  }
-}'
+# Mise à jour de l'image (si nécessaire)
+microk8s kubectl set image deployment/lightrag lightrag=localhost:32000/lightrag:v5-prefect
+```
 
-# Redémarrer le déploiement pour appliquer les changements
+5. **Vérification du Déploiement**
+```bash
+# Vérification des pods
+microk8s kubectl get pods -l app=lightrag
+
+# Consultation des logs
+microk8s kubectl logs -f -l app=lightrag
+
+# Vérification des volumes
+microk8s kubectl get pv,pvc
+```
+
+6. **Maintenance**
+```bash
+# Redémarrage du déploiement
 microk8s kubectl rollout restart deployment lightrag
+
+# Suppression des anciennes images
+buildah rmi localhost:32000/lightrag:old-tag
+
+# Nettoyage complet (si nécessaire)
+microk8s kubectl delete deployment lightrag
+microk8s kubectl delete configmap lightrag-config
+microk8s kubectl delete secret lightrag-secrets
+microk8s kubectl delete pvc lightrag-vectordb-pvc
+microk8s kubectl delete pv lightrag-data-pv
 ```
 
-Cette configuration permet de persister les données de LightRAG dans `/home/ubuntu/lightrag_data/nano-vectorDB` sur le VPS, assurant ainsi que les données sont conservées même en cas de redémarrage du pod.
+### Déploiement Kubernetes
 
-### 3. Vérification et Monitoring
 ```bash
-# Vérifier le statut des pods
-microk8s kubectl get pods -n default
+# Déployer l'application
+microk8s kubectl apply -f yaml/lightrag-deployment.yaml
 
-# Voir les logs en temps réel
-microk8s kubectl logs -f $(microk8s kubectl get pods -n default | grep lightrag | awk '{print $1}') -n default
+# Mettre à jour l'image
+microk8s kubectl set image deployment/lightrag lightrag=localhost:32000/lightrag:v5-prefect
 ```
 
-### 4. Maintenance et Nettoyage
+### Secrets Kubernetes
+
 ```bash
-# Supprimer le déploiement
-microk8s kubectl delete deployment lightrag -n default
-microk8s kubectl delete configmap prefect-config
-microk8s kubectl delete secret prefect-secrets
-
-# Nettoyer les anciennes images
-buildah rmi localhost:32000/lightrag:v4-prefect-fix2
-buildah rmi --all  # Attention: supprime toutes les images
-
-# Vérifier l'espace disque
-df -h /var/snap/microk8s/common/
+# Créer les secrets
+microk8s kubectl create secret generic lightrag-secrets \
+  --from-literal=RABBITMQ_PASSWORD=xxx \
+  --from-literal=NEO4J_PASSWORD=xxx \
+  --from-literal=OVH_LLM_API_TOKEN=xxx
 ```
 
-Note : Il est recommandé de nettoyer régulièrement les anciennes images pour libérer de l'espace disque.
+## Stockage des Données
+
+### Volumes Persistants Kubernetes
+
+Les données sont stockées dans un volume persistant Kubernetes :
+
+```bash
+# Emplacement physique des données (PersistentVolume)
+/var/snap/microk8s/common/default-storage/default-lightrag-vectordb-pvc-pvc-*
+
+# Chemin d'accès simplifié
+/home/ubuntu/lightrag_data/nano-vectorDB/
+```
+
+### Structure des Données
+
+Les fichiers stockés incluent :
+- `kv_store_full_docs.json` : Documents complets
+- `kv_store_text_chunks.json` : Chunks de texte
+- `vdb_chunks.json` : Données vectorielles des chunks
+- `vdb_entities.json` : Entités extraites
+- `vdb_relationships.json` : Relations entre entités
+- `lightrag.log` : Fichier de logs
