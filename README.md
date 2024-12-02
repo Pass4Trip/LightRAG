@@ -40,36 +40,54 @@ Ce script :
 
 ## Configuration
 
-Créez un fichier `.env` à la racine du projet :
+### Gestion des Secrets avec Prefect Blocks
 
-```env
-# Neo4j
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=votre_mot_de_passe
+Le projet utilise Prefect Blocks pour gérer les secrets et les configurations de manière sécurisée :
 
-# RabbitMQ
-RABBITMQ_USER=rabbitmq
-RABBITMQ_PASSWORD=votre_mot_de_passe
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
+1. **OVH Credentials Block**
+   - Stocke le token d'accès à l'API LLM d'OVH
+   - Nom du block : "ovh-credentials"
+   ```python
+   OVHCredentials(
+       llm_api_token="votre_token_ovh"
+   )
+   ```
 
-# OpenAI/OVH
-OPENAI_API_KEY=votre_clé_api
-```
+2. **RabbitMQ Credentials Block**
+   - Stocke les identifiants de connexion RabbitMQ
+   - Nom du block : "rabbitmq-credentials"
+   ```python
+   RabbitMQCredentials(
+       username="votre_username",
+       password="votre_password",
+       host="votre_host",
+       port="votre_port"
+   )
+   ```
 
-## Dépendances Principales
+3. **Neo4j Credentials Block**
+   - Stocke les identifiants de connexion Neo4j
+   - Nom du block : "neo4j-credentials"
+   ```python
+   Neo4jCredentials(
+       uri="votre_uri",
+       username="votre_username",
+       password="votre_password"
+   )
+   ```
 
-Le projet utilise plusieurs bibliothèques essentielles :
-- accelerate >= 0.25.0
-- aioboto3 >= 11.3.0
-- hnswlib >= 0.7.0
-- nano-vectordb >= 0.0.4
-- ollama >= 0.1.6
-- openai >= 1.3.7
-- transformers >= 4.36.1
-- neo4j >= 5.14.0
-- pika >= 1.3.2
+### Configuration des Modèles LLM OVH
+
+Le projet utilise deux modèles d'OVH AI :
+
+1. **LLM pour le traitement du texte**
+   - Modèle : Meta-Llama-3_1-70B-Instruct
+   - Endpoint : llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net
+
+2. **Modèle d'Embedding**
+   - Modèle : multilingual-e5-base
+   - Endpoint : multilingual-e5-base.endpoints.kepler.ai.cloud.ovh.net
+   - Dimension des embeddings : 768
 
 ## Composants Principaux
 
@@ -138,3 +156,93 @@ UV est un gestionnaire de paquets Python ultra-rapide écrit en Rust. Pour insta
    ```bash
    uv pip install -r requirements.txt
    ```
+
+## Déploiement avec MicroK8s
+
+### Prérequis
+- MicroK8s installé et configuré
+- Registry local sur le port 32000
+- Buildah pour la gestion des conteneurs
+
+### 1. Construction de l'image
+```bash
+# Build de l'image avec optimisation
+buildah build --layers --force-rm -t localhost:32000/lightrag:v5-prefect .
+
+# Vérifier l'image
+buildah images | grep lightrag
+
+# Push vers le registry local
+buildah push localhost:32000/lightrag:v5-prefect
+```
+
+### 2. Configuration Prefect et Déploiement
+```bash
+# Créer le secret pour l'API Prefect
+microk8s kubectl create secret generic prefect-secrets \
+  --from-literal=PREFECT_API_KEY=pnu_XTUs6Jmz2AbSN8I8zAqiqlVCukkfvz3Bu649
+
+# Créer le ConfigMap pour la configuration
+microk8s kubectl create configmap prefect-config \
+  --from-file=/home/ubuntu/value_prefect_worker.yaml
+
+# Créer le déploiement
+microk8s kubectl create deployment lightrag \
+  --image=localhost:32000/lightrag:v5-prefect
+
+# Configurer les variables d'environnement
+microk8s kubectl set env deployment/lightrag \
+  PREFECT_ACCOUNT_ID=42cb0262-af09-4eb2-9d92-97142d7fcedd \
+  PREFECT_WORKSPACE_ID=a0d5688e-41c6-4d18-bc27-294f7fd7a9e7 \
+  --from=secret/prefect-secrets
+
+# Monter le ConfigMap dans le pod
+microk8s kubectl patch deployment lightrag --patch '
+{
+  "spec": {
+    "template": {
+      "spec": {
+        "volumes": [{
+          "name": "config-volume",
+          "configMap": {
+            "name": "prefect-config"
+          }
+        }],
+        "containers": [{
+          "name": "lightrag",
+          "volumeMounts": [{
+            "name": "config-volume",
+            "mountPath": "/home/ubuntu"
+          }]
+        }]
+      }
+    }
+  }
+}'
+```
+
+### 3. Vérification et Monitoring
+```bash
+# Vérifier le statut des pods
+microk8s kubectl get pods -n default
+
+# Voir les logs en temps réel
+microk8s kubectl logs -f $(microk8s kubectl get pods -n default | grep lightrag | awk '{print $1}') -n default
+```
+
+### 4. Maintenance et Nettoyage
+```bash
+# Supprimer le déploiement
+microk8s kubectl delete deployment lightrag -n default
+microk8s kubectl delete configmap prefect-config
+microk8s kubectl delete secret prefect-secrets
+
+# Nettoyer les anciennes images
+buildah rmi localhost:32000/lightrag:v4-prefect-fix2
+buildah rmi --all  # Attention: supprime toutes les images
+
+# Vérifier l'espace disque
+df -h /var/snap/microk8s/common/
+```
+
+Note : Il est recommandé de nettoyer régulièrement les anciennes images pour libérer de l'espace disque.
