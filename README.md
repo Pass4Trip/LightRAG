@@ -93,39 +93,37 @@ Le projet utilise deux modèles d'OVH AI :
 
 ### 1. Traitement des Messages RabbitMQ (`examples/lightrag_openai_compatible_demo_rabbitmq.py`)
 
-Ce composant :
-- Consomme les messages de la queue RabbitMQ
-- Traite les données des restaurants
-- Normalise les labels pour Neo4j
-- Insère les documents dans LightRAG
+Ce composant est le cœur du système, gérant le traitement des données via RabbitMQ :
 
-### 2. Intégration Neo4j
+#### Fonctionnalités Principales
+- **Consommation des Messages**
+  - Connexion automatique à RabbitMQ avec gestion des reconnexions
+  - Configuration et monitoring de la queue de messages
+  - Traitement asynchrone des messages
 
-- Stockage des relations entre entités
-- Labels normalisés pour les nœuds
-- Structure graphe optimisée pour les requêtes
+- **Traitement des Données**
+  - Normalisation des données restaurants pour Neo4j
+  - Extraction intelligente des informations avec LLM
+  - Génération automatique des labels et relations
 
-### 3. Visualisation du Graphe (`examples/graph_visual_with_html.py`)
+- **Intégration LightRAG**
+  - Insertion optimisée des documents dans la base
+  - Gestion des relations entre entités
+  - Structure de graphe optimisée pour les requêtes
 
-- Génère une visualisation interactive du graphe de connaissances
-- Affiche les relations entre restaurants et attributs
-- Nœuds colorés par type d'entité
-- Export au format HTML
+#### Gestion des Erreurs
+- Reconnexion automatique à RabbitMQ en cas de perte de connexion
+- Retry pattern pour les appels API
+- Logging détaillé pour le debugging
 
-### 4. Analyse avec NetworkX (`examples/networkX.py`)
+#### Monitoring
+- Métriques sur le traitement des messages
+- Logs en temps réel des opérations
+- Statut des connexions RabbitMQ et Neo4j
 
-- Construction d'une base de graphes en mémoire
-- Analyse des relations et de la structure
-- Export en format GraphML
+### 2. Autres Composants
 
-## Points Restants à Traiter
-
-- Certaines entités générées ne possèdent pas de connexion (**edge**)
-- Des hallucinations peuvent apparaître dans certaines réponses
-- ⚠️ Implémentation de la personnalisation via `addon_params` à corriger
-- Optimisation possible des prompts pour améliorer la qualité de l'extraction
-- Gestion des erreurs RabbitMQ et reconnexion automatique
-- Validation des données avant insertion dans Neo4j
+D'autres composants sont disponibles dans le dossier `examples/` pour la visualisation et l'analyse des données.
 
 ## Installation avec UV (Recommandé)
 
@@ -180,7 +178,7 @@ buildah push localhost:32000/lightrag:v5-prefect
 ```bash
 # Créer le secret pour l'API Prefect
 microk8s kubectl create secret generic prefect-secrets \
-  --from-literal=PREFECT_API_KEY=pnu_XTUs6Jmz2AbSN8I8zAqiqlVCukkfvz3Bu649
+  --from-literal=PREFECT_API_KEY="XXX""
 
 # Créer le ConfigMap pour la configuration
 microk8s kubectl create configmap prefect-config \
