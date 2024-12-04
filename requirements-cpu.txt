@@ -1,0 +1,26 @@
+# Core dependencies
+numpy
+pandas
+transformers
+pika
+neo4j
+prefect
+fastapi
+uvicorn
+python-dotenv
+pydantic
+nano-vectordb
+
+# Additional required dependencies
+tenacity
+requests
+pyyaml
+aiohttp
+openai
+ollama
+xxhash
+
+# Development dependencies
+pytest
+pytest-asyncio
+pytest-cov

@@ -5,14 +5,20 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     git \
     curl \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
+# Create and activate virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 # Copy requirements first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-cpu.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements-cpu.txt
 
 # Copy application code
 COPY . .
@@ -24,11 +30,11 @@ RUN pip install -e .
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/app
-ENV VECTOR_DB_PATH=/data/nano-vectorDB
+ENV VECTOR_DB_PATH=/app/data
 
 # Create data directories with proper permissions
-RUN mkdir -p /data/nano-vectorDB && \
-    chmod -R 777 /data
+RUN mkdir -p /app/data && \
+    chmod -R 777 /app/data
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
