@@ -133,6 +133,11 @@ uv pip install -r requirements.txt
 
 ### Construction et Déploiement de l'Image
 
+prérequis : s'assurer que le github est actualisé avec les derniers commits
+
+0. **Git clone de LightRAG**
+ssh ubuntu@vps-ovh "rm -rf ~/lightrag && git clone https://github.com/Pass4Trip/LightRAG.git ~/lightrag"
+
 1. **Construction de l'image**
 ```bash
 # Build de l'image
@@ -241,6 +246,25 @@ microk8s kubectl delete secret lightrag-secrets
 microk8s kubectl delete pvc lightrag-vectordb-pvc
 microk8s kubectl delete pv lightrag-data-pv
 ```
+
+### Script de Déploiement Automatisé
+
+Un script `deploy.sh` est fourni pour automatiser le processus de déploiement complet :
+
+```bash
+# Rendre le script exécutable
+chmod +x deploy.sh
+
+# Exécuter le déploiement
+./deploy.sh
+```
+
+Ce script effectue automatiquement :
+1. Suppression et re-clonage du code source
+2. Construction de l'image avec buildah
+3. Push de l'image vers le registry local
+4. Application des configurations Kubernetes
+5. Redémarrage du pod pour prendre en compte les changements
 
 ### Déploiement Kubernetes
 
