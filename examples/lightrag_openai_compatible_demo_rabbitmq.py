@@ -153,7 +153,7 @@ def setup_working_directory(base_dir, config):
         logger.info("Environnement Kubernetes détecté, utilisation du répertoire: %s", working_dir)
     else:
         # Pour Mac local, utiliser le répertoire dans le projet
-        working_dir = "/Users/vinh/Documents/LightRAG/nano-vectorDB"
+        working_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "nano-vectorDB")
         logger.info("Environnement local détecté, utilisation du répertoire: %s", working_dir)
     
     # Créer le répertoire s'il n'existe pas

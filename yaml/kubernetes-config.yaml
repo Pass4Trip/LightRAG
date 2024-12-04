@@ -8,6 +8,6 @@ data:
   RABBITMQ_PORT: "30645"
   NEO4J_URI: "bolt://51.77.200.196:32719"
   NEO4J_USERNAME: "neo4j"
-  VECTOR_DB_PATH: "/home/ubuntu/lightrag_data"
+  VECTOR_DB_PATH: "/app/data"
   PREFECT_ACCOUNT_ID: "1de47cd9-a32e-4a43-8545-fd3bab9eaabe"
   PREFECT_WORKSPACE_ID: "59349ca6-8f64-4b16-b768-5c70d28a342e"
