@@ -101,6 +101,13 @@ uv pip install -r requirements.txt
    - Endpoint : multilingual-e5-base.endpoints.kepler.ai.cloud.ovh.net
    - Dimension des embeddings : 768
 
+### Path Configuration Update
+
+**Important Change**: As of the latest update, we've standardized the `VECTOR_DB_PATH` to `/app/data` across all environments. This ensures consistent data storage in both local and Kubernetes deployments.
+
+- Local development: Uses a relative path to `nano-vectorDB`
+- Kubernetes/microk8s: Uses `/app/data` as the standard vector database path
+
 ## Architecture
 
 ### Composants Principaux
@@ -259,21 +266,36 @@ microk8s kubectl create secret generic lightrag-secrets \
 
 ### Volumes Persistants Kubernetes
 
-Les données sont stockées dans un volume persistant Kubernetes :
+Les données sont accessibles via trois chemins différents qui pointent tous vers le même emplacement physique :
 
 ```bash
-# Emplacement physique des données (PersistentVolume)
-/var/snap/microk8s/common/default-storage/default-lightrag-vectordb-pvc-pvc-*
+# 1. Chemin simplifié via lien symbolique sur le VPS
+~/lightrag_data/nano-vectorDB/
 
-# Chemin d'accès simplifié
-/home/ubuntu/lightrag_data/nano-vectorDB/
+# 2. Chemin dans le stockage microk8s sur le VPS (emplacement physique)
+/var/snap/microk8s/common/default-storage/default-lightrag-vectordb-pvc-pvc-6783594a-fcaa-42c5-a54c-15bd6de8415d/
+
+# 3. Chemin dans le pod Kubernetes
+/app/data/
 ```
+
+Pour accéder aux données depuis votre Mac local :
+```bash
+# Via le lien symbolique (recommandé)
+ssh ubuntu@vps-ovh "ls -l ~/lightrag_data/nano-vectorDB/"
+
+# Via le chemin physique
+ssh ubuntu@vps-ovh "sudo ls -l /var/snap/microk8s/common/default-storage/default-lightrag-vectordb-pvc-pvc-6783594a-fcaa-42c5-a54c-15bd6de8415d/"
+```
+
+Note: Les trois chemins sont synchronisés et les modifications faites via l'un des chemins sont immédiatement visibles dans les autres.
 
 ### Structure des Données
 
 Les fichiers stockés incluent :
 - `kv_store_full_docs.json` : Documents complets
 - `kv_store_text_chunks.json` : Chunks de texte
+- `kv_store_llm_response_cache.json` : Cache des réponses LLM
 - `vdb_chunks.json` : Données vectorielles des chunks
 - `vdb_entities.json` : Entités extraites
 - `vdb_relationships.json` : Relations entre entités
