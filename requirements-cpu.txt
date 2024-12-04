@@ -1,7 +1,6 @@
 # Core dependencies
 numpy
 pandas
-transformers
 pika
 neo4j
 prefect
@@ -19,6 +18,7 @@ aiohttp
 openai
 ollama
 xxhash
+tiktoken
 
 # Development dependencies
 pytest

@@ -9,7 +9,7 @@ spec:
     - ReadWriteOnce
   storageClassName: microk8s-hostpath
   hostPath:
-    path: /home/ubuntu/lightrag_data
+    path: /var/snap/microk8s/common/default-storage/default-lightrag-vectordb-pvc-pvc-6783594a-fcaa-42c5-a54c-15bd6de8415d
 
 ---
 apiVersion: v1
