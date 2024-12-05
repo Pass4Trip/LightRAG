@@ -13,6 +13,9 @@ ssh ubuntu@vps-ovh "git clone https://github.com/Pass4Trip/LightRAG.git ~/lightr
 # Créer et activer l'environnement virtuel
 ssh ubuntu@vps-ovh "cd ~/lightrag && python3 -m venv venv && source venv/bin/activate"
 
+# Installer les dépendances système pour les outils de build et les en-têtes de développement Python
+ssh ubuntu@vps-ovh "sudo apt-get update && sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev"
+
 # Installer les dépendances
 ssh ubuntu@vps-ovh "cd ~/lightrag && source venv/bin/activate && pip install -r requirements.txt"
 
