@@ -10,6 +10,12 @@ echo "📦 Récupération du code source..."
 ssh ubuntu@vps-ovh "rm -rf ~/lightrag"
 ssh ubuntu@vps-ovh "git clone https://github.com/Pass4Trip/LightRAG.git ~/lightrag"
 
+# Créer et activer l'environnement virtuel
+ssh ubuntu@vps-ovh "cd ~/lightrag && python3 -m venv venv && source venv/bin/activate"
+
+# Installer les dépendances
+ssh ubuntu@vps-ovh "cd ~/lightrag && source venv/bin/activate && pip install -r requirements.txt"
+
 # Build l'image avec buildah
 echo "🏗️  Construction de l'image Docker..."
 ssh ubuntu@vps-ovh "cd ~/lightrag && chmod +x scripts/build.sh && ./scripts/build.sh"
