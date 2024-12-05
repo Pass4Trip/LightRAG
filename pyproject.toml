@@ -6,7 +6,6 @@ authors = [
     {name = "Vinh", email = ""}
 ]
 dependencies = [
-    "accelerate>=0.25.0",
     "aioboto3>=11.3.0",
     "graspologic>=3.3.0",
     "hnswlib>=0.7.0",
