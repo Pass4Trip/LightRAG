@@ -19,8 +19,6 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "tenacity>=8.2.3",
     "tiktoken>=0.5.2",
-    "torch>=2.1.1",
-    "transformers>=4.36.1",
     "xxhash>=3.4.1",
     "pyvis>=0.3.2",
     "lightrag-hku==1.0.0",
