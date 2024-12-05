@@ -108,6 +108,41 @@ uv pip install -r requirements.txt
 - Local development: Uses a relative path to `nano-vectorDB`
 - Kubernetes/microk8s: Uses `/app/data` as the standard vector database path
 
+## Organisation du projet
+
+```
+LightRAG/
+├── examples/                    # Exemples d'utilisation
+├── lightrag/                   # Package principal
+├── local/                     # Versions locales des fichiers
+│   └── llm.py                # Version légère sans torch/transformers
+├── scripts/                   # Scripts de déploiement
+│   ├── build.sh              # Construction de l'image
+│   └── deploy.sh             # Déploiement sur le VPS
+├── requirements.txt           # Dépendances Python
+└── README.md                 # Documentation
+```
+
+### Version légère
+
+Pour un déploiement plus léger, nous utilisons une version simplifiée de `llm.py` (située dans `local/llm.py`) qui évite les dépendances lourdes comme `torch` et `transformers`. Cette version est automatiquement utilisée lors du build de l'image Docker.
+
+### Scripts de déploiement
+
+Le dossier `scripts/` contient les scripts nécessaires pour le déploiement :
+- `build.sh` : Construction de l'image Docker
+- `deploy.sh` : Déploiement complet sur le VPS
+
+Pour déployer l'application :
+
+```bash
+# Rendre le script exécutable
+chmod +x scripts/deploy.sh
+
+# Exécuter le déploiement
+./scripts/deploy.sh
+```
+
 ## Architecture
 
 ### Composants Principaux
@@ -253,10 +288,10 @@ Un script `deploy.sh` est fourni pour automatiser le processus de déploiement c
 
 ```bash
 # Rendre le script exécutable
-chmod +x deploy.sh
+chmod +x scripts/deploy.sh
 
 # Exécuter le déploiement
-./deploy.sh
+./scripts/deploy.sh
 ```
 
 Ce script effectue automatiquement :
