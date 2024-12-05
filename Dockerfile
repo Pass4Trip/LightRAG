@@ -18,7 +18,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy requirements first for better caching
 COPY requirements-cpu.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements-cpu.txt
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
