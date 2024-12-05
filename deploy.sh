@@ -7,7 +7,8 @@ echo "🔄 Mise à jour du déploiement LightRAG..."
 
 # Suppression du dossier existant et clone du repo sur le VPS
 echo "📦 Récupération du code source..."
-ssh ubuntu@vps-ovh "rm -rf ~/lightrag && git clone https://github.com/Pass4Trip/LightRAG.git ~/lightrag"
+ssh ubuntu@vps-ovh "rm -rf ~/lightrag"
+ssh ubuntu@vps-ovh "git clone https://github.com/Pass4Trip/LightRAG.git ~/lightrag"
 
 # Construction de l'image avec buildah sur le VPS
 echo "🏗️  Construction de l'image Docker..."
