@@ -18,10 +18,6 @@ ssh ubuntu@vps-ovh "cd ~/lightrag && buildah build --layers --force-rm -t localh
 echo "⬆️  Push de l'image vers le registry..."
 ssh ubuntu@vps-ovh "buildah push localhost:32000/lightrag:v5-prefect"
 
-# Application des configurations Kubernetes sur le VPS
-echo "🔧 Application des configurations Kubernetes..."
-ssh ubuntu@vps-ovh "microk8s kubectl apply -f ~/lightrag/yaml/kubernetes-config.yaml"
-
 # Redémarrage du pod pour prendre en compte les changements sur le VPS
 echo "🔄 Redémarrage du pod LightRAG..."
 ssh ubuntu@vps-ovh "microk8s kubectl rollout restart deployment lightrag"

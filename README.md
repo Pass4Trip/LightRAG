@@ -324,3 +324,19 @@ Les fichiers stockés incluent :
 - `vdb_entities.json` : Entités extraites
 - `vdb_relationships.json` : Relations entre entités
 - `lightrag.log` : Fichier de logs
+
+### Version Légère (sans transformers et torch)
+
+Pour utiliser une version plus légère de LightRAG sans les dépendances lourdes comme `transformers` et `torch`, vous pouvez surcharger le fichier `llm.py` :
+
+1. Créez une version modifiée de `llm.py` qui n'utilise pas transformers/torch
+2. Copiez ce fichier dans le répertoire du package :
+```bash
+cp llm.py .venv/lib/python3.9/site-packages/lightrag/llm.py
+```
+
+Cette approche permet de :
+- Réduire significativement la taille de l'image Docker
+- Éviter l'installation de dépendances lourdes
+- Garder le reste du package intact
+- Utiliser des alternatives plus légères pour l'embedding et la complétion
