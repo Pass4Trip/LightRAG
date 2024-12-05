@@ -10,9 +10,9 @@ echo "📦 Récupération du code source..."
 ssh ubuntu@vps-ovh "rm -rf ~/lightrag"
 ssh ubuntu@vps-ovh "git clone https://github.com/Pass4Trip/LightRAG.git ~/lightrag"
 
-# Construction de l'image avec buildah sur le VPS
+# Build l'image avec buildah
 echo "🏗️  Construction de l'image Docker..."
-ssh ubuntu@vps-ovh "cd ~/lightrag && buildah build --layers --force-rm -t localhost:32000/lightrag:v5-prefect ."
+ssh ubuntu@vps-ovh "cd ~/lightrag && chmod +x scripts/build.sh && ./scripts/build.sh"
 
 # Push de l'image dans le registry local sur le VPS
 echo "⬆️  Push de l'image vers le registry..."
