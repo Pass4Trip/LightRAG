@@ -9,7 +9,7 @@ LightRAG est avec intégration RabbitMQ, Neo4J (graphDB), Milvus (vectorDB), Mon
 4. [Architecture](#architecture)
 5. [Déploiement](#déploiement)
 6. [Stockage des Données](#stockage-des-données)
-
+7. [Dépannage](#dépannage)
 
 ## Prérequis
 
@@ -64,6 +64,33 @@ uv pip install -r requirements.txt
 #### RabbitMQ
 - **Port** : 5672, exposé sur le port 30645
 - **Credentials** : Configurés via RabbitMQ Credentials Block
+
+#### Milvus
+- **Port** : 19530
+- **Base de données** : `lightrag` (doit être configurée via la variable d'environnement `MILVUS_DB_NAME`)
+- **Collections** : 
+  - `relationships` : stocke les relations entre les entités
+  - `chunks` : stocke les chunks de texte vectorisés
+  - `entities` : stocke les entités extraites
+- **Configuration** :
+  ```python
+  # Variables d'environnement requises
+  MILVUS_URI="tcp://localhost:19530"  # URI de connexion
+  MILVUS_DB_NAME="lightrag"           # Nom de la base de données
+  ```
+
+#### MongoDB
+- **Port** : 27017
+- **Base de données** : `LightRAG` (attention à la casse)
+- **Collections** : Créées automatiquement selon les besoins
+- **Configuration** :
+  ```env
+  # Variables d'environnement requises
+  MONGO_URI="mongodb://root:root@localhost:27017/"  # URI de connexion
+  MONGO_DATABASE="LightRAG"                         # Nom de la base de données (sensible à la casse)
+  ```
+
+**Note importante** : Le nom de la base de données MongoDB est sensible à la casse. Assurez-vous d'utiliser exactement `LightRAG` (et non `lightrag` ou `Lightrag`).
 
 ### Gestion des Secrets avec Prefect Blocks
 
@@ -545,3 +572,36 @@ LightRAG utilise plusieurs technologies de stockage pour différents aspects de 
 
 Pour plus d'informations sur chaque composant, consultez les README spécifiques dans chaque dossier de configuration.
 
+## Dépannage
+
+### Problèmes avec Milvus
+
+1. **Collections vides ou non visibles**
+   - Vérifiez que la variable d'environnement `MILVUS_DB_NAME` est définie sur "lightrag"
+   - Utilisez le script `milvus_docker/test_milvus_connection.py` pour vérifier la connexion et lister les collections
+   ```bash
+   python3 milvus_docker/test_milvus_connection.py
+   ```
+
+2. **Warning "All chunks are already in the storage"**
+   - Ce message indique que les documents sont déjà présents dans la base de données
+   - Pour réinsérer les documents, vous devez d'abord les supprimer de la collection
+
+3. **Erreur de connexion**
+   - Vérifiez que Milvus est en cours d'exécution : `docker ps | grep milvus`
+   - Vérifiez l'URI de connexion (par défaut : tcp://localhost:19530)
+   - Assurez-vous que le port 19530 est accessible
+
+### Problèmes avec RabbitMQ
+
+1. **Erreur de connexion**
+   - Vérifiez les credentials dans la configuration
+   - Assurez-vous que le service est accessible sur le port configuré (30645)
+   - Vérifiez les logs pour plus de détails sur l'erreur
+
+### Problèmes avec Neo4j
+
+1. **Erreur de connexion**
+   - Vérifiez l'URI et les credentials dans la configuration
+   - Assurez-vous que le service est accessible sur le port configuré (32719)
+   - Vérifiez que la base de données existe et est active

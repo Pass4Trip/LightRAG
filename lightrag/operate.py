@@ -173,45 +173,55 @@ async def _merge_nodes_then_upsert(
     knowledge_graph_inst: BaseGraphStorage,
     global_config: dict,
 ):
-    already_entitiy_types = []
-    already_source_ids = []
-    already_description = []
+    """Fusionne et met à jour les nœuds dans le graphe de connaissances"""
+    try:
+        # S'assurer d'utiliser la même boucle d'événements
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+        # Vérifier si le nœud existe déjà
+        already_node = await knowledge_graph_inst.get_node(entity_name)
+        if already_node is not None:
+            already_entitiy_types = [already_node["entity_type"]]
+            already_source_ids = split_string_by_multi_markers(already_node["source_id"], [GRAPH_FIELD_SEP])
+            already_description = [already_node["description"]]
+        else:
+            already_entitiy_types = []
+            already_source_ids = []
+            already_description = []
 
-    already_node = await knowledge_graph_inst.get_node(entity_name)
-    if already_node is not None:
-        already_entitiy_types.append(already_node["entity_type"])
-        already_source_ids.extend(
-            split_string_by_multi_markers(already_node["source_id"], [GRAPH_FIELD_SEP])
+        entity_type = sorted(
+            Counter(
+                [dp["entity_type"] for dp in nodes_data] + already_entitiy_types
+            ).items(),
+            key=lambda x: x[1],
+            reverse=True,
+        )[0][0]
+        description = GRAPH_FIELD_SEP.join(
+            sorted(set([dp["description"] for dp in nodes_data] + already_description))
         )
-        already_description.append(already_node["description"])
-
-    entity_type = sorted(
-        Counter(
-            [dp["entity_type"] for dp in nodes_data] + already_entitiy_types
-        ).items(),
-        key=lambda x: x[1],
-        reverse=True,
-    )[0][0]
-    description = GRAPH_FIELD_SEP.join(
-        sorted(set([dp["description"] for dp in nodes_data] + already_description))
-    )
-    source_id = GRAPH_FIELD_SEP.join(
-        set([dp["source_id"] for dp in nodes_data] + already_source_ids)
-    )
-    description = await _handle_entity_relation_summary(
-        entity_name, description, global_config
-    )
-    node_data = dict(
-        entity_type=entity_type,
-        description=description,
-        source_id=source_id,
-    )
-    await knowledge_graph_inst.upsert_node(
-        entity_name,
-        node_data=node_data,
-    )
-    node_data["entity_name"] = entity_name
-    return node_data
+        source_id = GRAPH_FIELD_SEP.join(
+            set([dp["source_id"] for dp in nodes_data] + already_source_ids)
+        )
+        description = await _handle_entity_relation_summary(
+            entity_name, description, global_config
+        )
+        node_data = dict(
+            entity_type=entity_type,
+            description=description,
+            source_id=source_id,
+        )
+        await knowledge_graph_inst.upsert_node(
+            entity_name,
+            node_data=node_data,
+        )
+        node_data["entity_name"] = entity_name
+        return node_data
+    except Exception as e:
+        logger.error(f"Erreur lors de la fusion des nœuds : {e}")
+        return None
 
 
 async def _merge_edges_then_upsert(

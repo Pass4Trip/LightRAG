@@ -4,12 +4,14 @@ import logging
 import re
 from typing import Dict, Any
 import json
-import pika
+import aio_pika
 import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 import uuid
 from datetime import datetime
+import traceback
+import time
 
 # Load environment variables from .env file
 env_path = Path(__file__).parent.parent / '.env'
@@ -27,13 +29,14 @@ from lightrag.llm import gpt_4o_mini_complete, gpt_4o_complete
 from lightrag.utils import EmbeddingFunc
 from lightrag.prompt import PROMPTS
 from lightrag.kg.mongo_impl import MongoKVStorage
+from lightrag.kg.milvus_impl import MilvusVectorDBStorage
 
 # Print DEFAULT_ENTITY_TYPES to verify local version
 print("DEFAULT_ENTITY_TYPES:", PROMPTS["DEFAULT_ENTITY_TYPES"])
 
-# Configuration Milvus
-os.environ["MILVUS_URI"] = "tcp://localhost:19530"
-os.environ["MILVUS_DB_NAME"] = "lightrag"
+# Configuration Milvus - utiliser les valeurs de .env ou les valeurs par défaut
+if not os.environ.get("MILVUS_URI"):
+    os.environ["MILVUS_URI"] = "tcp://localhost:19530"
 
 def load_config():
     """
@@ -86,172 +89,182 @@ class RabbitMQConsumer:
     
     def __init__(self):
         # Charger la configuration
-        config = load_config()
-        self.user = config["RABBITMQ_USERNAME"]
-        self.password = config["RABBITMQ_PASSWORD"]
-        self.host = config["RABBITMQ_HOST"]
-        self.port = config["RABBITMQ_PORT"]
+        self.config = load_config()
+        self.user = self.config["RABBITMQ_USERNAME"]
+        self.password = self.config["RABBITMQ_PASSWORD"]
+        self.host = self.config["RABBITMQ_HOST"]
+        self.port = self.config["RABBITMQ_PORT"]
 
         # Configuration Neo4j
-        os.environ["NEO4J_URI"] = config["NEO4J_URI"]
-        os.environ["NEO4J_USERNAME"] = config["NEO4J_USERNAME"]
-        os.environ["NEO4J_PASSWORD"] = config["NEO4J_PASSWORD"]
+        os.environ["NEO4J_URI"] = self.config["NEO4J_URI"]
+        os.environ["NEO4J_USERNAME"] = self.config["NEO4J_USERNAME"]
+        os.environ["NEO4J_PASSWORD"] = self.config["NEO4J_PASSWORD"]
 
+        self.queue_name = "queue_vinh_test"
+        
+        # Initialiser le client OpenAI une seule fois
+        self._initialize_openai()
+
+        # Initialiser les connexions
         self.connection = None
         self.channel = None
-        self.rag = None
-        self.queue_name = "queue_vinh_test"
-
-    def initialize_rag(self):
-        """
-        Initialise l'instance LightRAG avec les configurations nécessaires.
-        """
-        # Utiliser un chemin absolu pour le dossier de travail
-        working_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "lightrag_storage"))
+        self.milvus_connection = None
         
-        if not os.path.exists(working_dir):
-            os.makedirs(working_dir)
-            logger.info(f"Dossier de travail créé : {working_dir}")
+        # Initialiser LightRAG
+        self.rag = None
+        self.initialize_rag()
 
-        self.rag = LightRAG(
-            working_dir=working_dir,
-            llm_model_func=gpt_4o_mini_complete,
-            kv_storage="MongoKVStorage",
-            vector_storage="MilvusVectorDBStorage",
-            graph_storage="Neo4JStorage",
-            log_level="DEBUG",
-        )
-        logger.info("DEBUG: LightRAG initialisé avec succès")
+    def _initialize_openai(self):
+        """Initialise le client OpenAI une seule fois"""
+        import openai
+        openai.api_key = os.environ.get("OPENAI_API_KEY")
 
     def normalize_label(self, text: str) -> str:
         """Normalise un texte pour l'utiliser comme label Neo4j."""
         # Remplacer les espaces par des underscores et convertir en majuscules
         return text.replace(" ", "_").upper()
 
-    def connect(self):
-        """Établit la connexion à RabbitMQ de manière synchrone."""
-        try:
-            # Initialiser LightRAG
-            self.initialize_rag()
-            
-            # Créer la connexion
-            self.connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host=self.host, port=self.port, credentials=pika.PlainCredentials(self.user, self.password))
+    async def _create_async_connection(self):
+        """Crée une nouvelle connexion et un nouveau canal de manière asynchrone."""
+        if self.connection is None or self.connection.is_closed:
+            self.connection = await aio_pika.connect_robust(
+                f"amqp://{self.user}:{self.password}@{self.host}:{self.port}/"
             )
-            
-            # Créer le canal
-            self.channel = self.connection.channel()
-            
-            # Déclarer la queue
-            self.channel.queue_declare(queue=self.queue_name, durable=True)
-            
-            logger.info(f"Connexion RabbitMQ établie sur {self.host}:{self.port}")
-        
-        except Exception as e:
-            logger.error(f"Erreur lors de la connexion à RabbitMQ: {str(e)}")
-            raise
+        if self.channel is None or self.channel.is_closed:
+            self.channel = await self.connection.channel()
+            await self.channel.set_qos(prefetch_count=1)
+            await self.channel.declare_queue(self.queue_name, durable=True)
+        return self.connection, self.channel
 
-    async def process_message(self, ch, method, properties, body):
-        """Traite de manière asynchrone un message reçu de RabbitMQ."""
-        try:
-
-            # Log du message brut reçu
-            logger.info(f"Message brut reçu de RabbitMQ: {body.decode('utf-8')}")
-                        
-            # Décoder le message JSON
-            data = json.loads(body)
-            restaurant_resume = data.get('resume', {})
-            restaurant_cid = data.get('cid', 'CID Unknown')
-            
-            logger.info(f"Traitement du restaurant CID {restaurant_cid}")
-            
-
+    async def process_message(self, message: aio_pika.IncomingMessage):
+        """Traite un message reçu de RabbitMQ."""
+        async with message.process():
             try:
-                logger.info("DEBUG: Début de l'insertion avec LightRAG")
-                
-                # Ajouter le texte à LightRAG et extraire les entités
-                result = await self.rag.ainsert(restaurant_resume)
-                
-                logger.info(f"DEBUG: Résultat de l'insertion: {result}")
-                logger.info(f"DEBUG: Insertion et extraction d'entités réussies pour {restaurant_cid}")
-                
-                # Acquitter le message
-                ch.basic_ack(delivery_tag=method.delivery_tag)
-            
-            except Exception as lightrag_err:
-                logger.error(f"DEBUG: Erreur lors de l'insertion/extraction avec LightRAG: {lightrag_err}")
-                import traceback
-                logger.error(traceback.format_exc())
-                
-                # Rejeter le message pour un traitement ultérieur
-                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
-        
-        except Exception as e:
-            logger.error(f"DEBUG: Erreur inattendue dans process_message: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            
-            # Rejeter le message en cas d'erreur inattendue
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+                # Vérifier que LightRAG est initialisé
+                if self.rag is None:
+                    logger.error("LightRAG n'est pas initialisé")
+                    self.initialize_rag()
+                    if self.rag is None:
+                        raise RuntimeError("Impossible d'initialiser LightRAG")
 
-    def start_consuming(self):
-        """Commence à consommer des messages de manière synchrone."""
+                # Décoder le message JSON
+                body = message.body.decode()
+                msg_data = json.loads(body)
+                logger.info(f"Message brut reçu de RabbitMQ: {body}")
+                
+                # Extraire le CID et traiter le message
+                cid = msg_data.get("cid")
+                logger.info(f"Traitement du restaurant CID {cid}")
+                
+                # Traiter le résumé avec LightRAG
+                resume = msg_data.get("resume", "")
+                if resume:
+                    logger.info(f"Début de l'insertion du document dans LightRAG pour le CID {cid}")
+                    try:
+                        await self.rag.ainsert(resume)
+                        logger.info(f"Document inséré avec succès dans LightRAG pour le CID {cid}")
+                    except Exception as e:
+                        logger.error(f"Erreur lors de l'insertion dans LightRAG: {str(e)}")
+                        logger.error(traceback.format_exc())
+                        raise
+                    
+                    logger.info(f"Message traité avec succès pour le CID {cid}")
+                else:
+                    logger.warning(f"Résumé vide pour le CID {cid}")
+                    
+            except json.JSONDecodeError as e:
+                logger.error(f"Erreur de décodage JSON: {str(e)}")
+            except Exception as e:
+                logger.error(f"Erreur inattendue dans process_message: {str(e)}")
+                logger.error(traceback.format_exc())
+                raise
+
+    async def start(self):
+        """Démarre la consommation des messages de manière asynchrone."""
         try:
-            # Configurer la consommation des messages
-            self.channel.basic_qos(prefetch_count=1)
+            # Créer la connexion et le canal
+            _, channel = await self._create_async_connection()
             
-            # Définir la fonction de callback
-            def on_message(ch, method, properties, body):
-                # Créer une tâche asynchrone pour chaque message
-                asyncio.run(self.process_message(ch, method, properties, body))
-            
-            # Configurer la consommation
-            self.channel.basic_consume(
-                queue=self.queue_name,
-                on_message_callback=on_message,
-                auto_ack=False  # Désactiver l'acquittement automatique
-            )
-            
-            logger.info(f"DEBUG: En attente de messages sur {self.queue_name}")
+            # Configurer la queue
+            queue = await channel.declare_queue(self.queue_name, durable=True)
             
             # Démarrer la consommation
-            self.channel.start_consuming()
-        
+            logger.info("En attente de messages. Pour quitter, appuyez sur CTRL+C")
+            await queue.consume(self.process_message)
+            
+            # Maintenir la connexion active
+            try:
+                await asyncio.Future()  # run forever
+            except asyncio.CancelledError:
+                pass
+            
         except Exception as e:
-            logger.error(f"DEBUG: Erreur lors de la consommation des messages: {e}")
-            import traceback
+            logger.error(f"Erreur lors de la consommation des messages: {e}")
             logger.error(traceback.format_exc())
+            raise e
+        finally:
+            await self.close()
 
-    def close(self):
-        """Ferme proprement la connexion RabbitMQ."""
-        if self.connection:
-            self.connection.close()
+    async def close(self):
+        """Ferme proprement toutes les connexions."""
+        try:
+            if self.rag:
+                self.rag.close()
+            
+            if self.channel:
+                await self.channel.close()
+            
+            if self.connection:
+                await self.connection.close()
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de la fermeture des ressources: {e}")
+
+    def initialize_rag(self):
+        """Initialise LightRAG avec la configuration appropriée."""
+        try:
+            # Définir la base de données Milvus si non définie
+            if not os.environ.get("MILVUS_DB_NAME"):
+                os.environ["MILVUS_DB_NAME"] = "lightrag"
+            
+            # Initialiser LightRAG avec le répertoire de travail actuel
+            working_dir = str(Path(__file__).parent)
+            
+            # Initialiser LightRAG
+            self.rag = LightRAG(
+                working_dir=working_dir,
+                llm_model_func=gpt_4o_mini_complete,
+                kv_storage="MongoKVStorage",
+                vector_storage="MilvusVectorDBStorage",
+                graph_storage="Neo4JStorage",
+                log_level="DEBUG",
+            )
+            logger.info("LightRAG initialisé avec succès")
+        except Exception as e:
+            logger.error(f"Erreur lors de l'initialisation de LightRAG: {str(e)}")
+            logger.error(traceback.format_exc())
+            self.rag = None
 
 if __name__ == "__main__":
     # Configuration du logging
     logging.basicConfig(
-        level=logging.INFO, 
+        level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
     # Créer le consommateur
     consumer = RabbitMQConsumer()
     
-    def main():
+    async def main():
         try:
-            # Établir la connexion
-            consumer.connect()
-            
-            # Démarrer la consommation des messages
-            consumer.start_consuming()
-        
+            await consumer.start()
+        except KeyboardInterrupt:
+            logger.info("Arrêt demandé par l'utilisateur")
         except Exception as e:
             logger.error(f"Erreur lors de l'exécution du consommateur: {e}")
-            import traceback
             logger.error(traceback.format_exc())
         finally:
-            # Fermer la connexion
-            consumer.close()
+            await consumer.close()
     
     # Exécuter la fonction principale
-    main()
+    asyncio.run(main())
