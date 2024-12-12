@@ -85,3 +85,24 @@ Pour arrêter et supprimer tous les conteneurs, y compris les orphelins :
 ```bash
 docker compose down --remove-orphans
 ```
+
+
+
+# Résolution du Problème de Connexion entre Attu et Milvus
+
+## Problème
+Le conteneur **Attu** (**upbeat_franklin**) et **Milvus** (**milvus-standalone**) sont connectés à des réseaux Docker différents, ce qui empêche leur communication.
+
+
+docker inspect -f '{{json .NetworkSettings.Networks}}' milvus-standalone
+
+docker run --name attu-container -p 8000:3000 -e MILVUS_URL=localhost:19530 zilliz/attu:v2.4
+---
+
+## Étapes pour Résoudre le Problème
+
+### 1. Connecter Attu au Réseau de Milvus
+Ajoutez le conteneur **Attu** au réseau Docker utilisé par Milvus (**milvus_docker_milvus**) :
+```bash
+
+docker network connect milvus_docker_milvus attu-container             
