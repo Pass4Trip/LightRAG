@@ -19,10 +19,12 @@ dependencies = [
     "tiktoken>=0.5.2",
     "xxhash>=3.4.1",
     "pyvis>=0.3.2",
-    "lightrag-hku==1.0.0",
     "python-dotenv>=1.0.0",
     "neo4j>=5.0.0",
-    "ollama>=0.4.2",
+    "ollama",
+    "transformers>=4.47.0",
+    "torch>=2.5.1",
+    "oracledb>=2.5.0",
 ]
 requires-python = ">=3.9"
 

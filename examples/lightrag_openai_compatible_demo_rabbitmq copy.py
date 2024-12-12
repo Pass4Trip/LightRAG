@@ -3,7 +3,6 @@ import logging
 from typing import Dict, Any
 import json
 import pika
-import requests
 from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log, retry_if_exception_type
 from requests.exceptions import HTTPError, RequestException, Timeout
 from lightrag import LightRAG
@@ -11,12 +10,13 @@ from lightrag.utils import EmbeddingFunc
 import asyncio
 import numpy as np
 import yaml
+import traceback
+import sys
 from pathlib import Path
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
+# Add the examples directory to Python path
+sys.path.append(str(Path(__file__).parent))
+from prompt import PROMPTS, GRAPH_FIELD_SEP
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -79,42 +79,59 @@ def load_config():
 
 def verify_environment():
     """
-    Vérifie que toutes les variables d'environnement requises sont présentes.
-    
-    Cette fonction vérifie les variables suivantes :
-    - RABBITMQ_HOST
-    - RABBITMQ_PORT
-    - RABBITMQ_USERNAME
-    - RABBITMQ_PASSWORD
-    - NEO4J_URI
-    - NEO4J_USERNAME
-    - NEO4J_PASSWORD
-    - OVH_LLM_API_TOKEN
-    
-    Elle affiche également les valeurs réelles des variables d'environnement utilisées.
+    Vérifie que toutes les variables d'environnement nécessaires sont présentes
+    et affiche leur statut.
     """
-    required_vars = [
-        'RABBITMQ_HOST',
-        'RABBITMQ_PORT',
-        'RABBITMQ_USERNAME',
-        'RABBITMQ_PASSWORD',
-        'NEO4J_URI',
-        'NEO4J_USERNAME',
-        'NEO4J_PASSWORD',
-        'OVH_LLM_API_TOKEN'
-    ]
-    
+    # Toutes les variables requises
+    required_vars = {
+        "Non-sensibles": {
+            "RABBITMQ_USERNAME": "Nom d'utilisateur RabbitMQ",
+            "RABBITMQ_HOST": "Hôte RabbitMQ",
+            "RABBITMQ_PORT": "Port RabbitMQ",
+            "NEO4J_URI": "URI Neo4j",
+            "NEO4J_USERNAME": "Nom d'utilisateur Neo4j",
+            "PREFECT_ACCOUNT_ID": "ID du compte Prefect",
+            "PREFECT_WORKSPACE_ID": "ID de l'espace de travail Prefect",
+            "VECTOR_DB_PATH": "Chemin de la base de données vectorielle"
+        },
+        "Secrets": {
+            "RABBITMQ_PASSWORD": "Mot de passe RabbitMQ",
+            "NEO4J_PASSWORD": "Mot de passe Neo4j",
+            "OVH_LLM_API_TOKEN": "Token API OVH LLM"
+        }
+    }
+
     missing_vars = []
-    for var in required_vars:
-        value = os.getenv(var)
-        if value is None:
-            missing_vars.append(var)
-        else:
-            # Log the actual values being used
-            logger.info(f"✅ {var} ({var}): {value}")
-            
+    status = []
+
+    # Vérifier toutes les variables
+    for category, vars_dict in required_vars.items():
+        status.append(f"\n=== {category} ===")
+        for var, description in vars_dict.items():
+            value = os.getenv(var)
+            if value is None:
+                status.append(f"❌ {description} ({var}): Non défini")
+                missing_vars.append(var)
+            else:
+                # Masquer les valeurs des secrets
+                if category == "Secrets":
+                    display_value = "********"
+                else:
+                    display_value = value
+                status.append(f"✅ {description} ({var}): {display_value}")
+
+    # Afficher le statut
+    logger.info("\nStatut des variables d'environnement:\n" + "\n".join(status))
+
+    # S'il manque des variables, lever une exception
     if missing_vars:
-        raise ValueError(f"Variables d'environnement manquantes : {', '.join(missing_vars)}")
+        raise RuntimeError(
+            f"\nVariables d'environnement manquantes:\n"
+            f"{', '.join(missing_vars)}\n"
+            f"Veuillez les définir dans votre fichier .env ou dans Kubernetes."
+        )
+
+    return True
 
 def is_kubernetes():
     """
@@ -216,7 +233,11 @@ class RabbitMQConsumer:
         self.current_retry_count = 0
         self.consecutive_500_errors = 0
         self.max_consecutive_500_errors = 5
-        self.backoff_factor = 1.5        
+        self.backoff_factor = 1.5
+        
+        # Create and set event loop
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
 
     @retry(
         stop=stop_after_attempt(5),
@@ -246,16 +267,13 @@ class RabbitMQConsumer:
         """Appelle l'API d'embedding avec retry en cas d'erreur"""
         try:
             # Calculate dynamic timeout based on consecutive errors
-            base_timeout = 120  # Increased from 30 to 120 seconds
-            timeout = base_timeout * (self.backoff_factor ** self.consecutive_500_errors)
-            logger.info(f"Using timeout of {timeout:.1f} seconds for embedding request")
+            timeout = 30 * (self.backoff_factor ** self.consecutive_500_errors)
             
             # Add request ID for tracking
             request_id = os.urandom(8).hex()
-            logger.info(f"Starting embedding request {request_id} with text length {len(text)}")
+            logger.info(f"Starting embedding request {request_id}")
             
             response = requests.post(url, data=text, headers=headers, timeout=timeout)
-            logger.info(f"Received response for request {request_id} with status {response.status_code}")
             
             if response.status_code == 500:
                 self.consecutive_500_errors += 1
@@ -274,18 +292,17 @@ class RabbitMQConsumer:
             
             response.raise_for_status()
             self.consecutive_500_errors = 0  # Reset on success
-            logger.info(f"Successfully processed request {request_id}")
             return response.json()
             
         except Timeout:
-            logger.error(f"Request {request_id} timed out after {timeout:.1f} seconds")
+            logger.error("Request timed out")
             raise
         except HTTPError as e:
             if e.response is not None:
-                logger.error(f"HTTP error {e.response.status_code} for request {request_id}: {e.response.text}")
+                logger.error(f"HTTP error {e.response.status_code}: {e.response.text}")
             raise
         except Exception as e:
-            logger.error(f"Unexpected error for request {request_id}: {str(e)}", exc_info=True)
+            logger.error(f"Unexpected error: {str(e)}", exc_info=True)
             raise
 
     async def initialize_rag(self):
@@ -339,35 +356,15 @@ class RabbitMQConsumer:
             
             embeddings = []
             for text in texts:
-                logger.info(f"Generating embedding for text of length {len(text)}")
-                
-                # Retry logic
-                max_retries = 3
-                retry_count = 0
-                while retry_count < max_retries:
-                    try:
-                        # Create a new session for each request
-                        with requests.Session() as session:
-                            response = session.post(url, data=text, headers=headers, timeout=30)
-                            if response.status_code == 200:
-                                embeddings.append(response.json())
-                                break
-                            else:
-                                logger.error(f"Error {response.status_code}: {response.text}")
-                                retry_count += 1
-                                if retry_count == max_retries:
-                                    raise Exception(f"Failed to generate embedding after {max_retries} retries")
-                                await asyncio.sleep(5 * retry_count)  # Exponential backoff
-                    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-                        logger.error(f"Connection error: {str(e)}")
-                        retry_count += 1
-                        if retry_count == max_retries:
-                            raise Exception(f"Failed to connect after {max_retries} retries: {str(e)}")
-                        await asyncio.sleep(5 * retry_count)  # Exponential backoff
+                embedding = await self.call_embedding_api(url, text, headers)
+                embeddings.append(embedding)
             
             return np.array(embeddings)
 
-         # Initialiser LightRAG
+        # Set the event loop for Neo4j
+        asyncio.set_event_loop(self.loop)
+        
+        # Initialiser LightRAG
         rag = LightRAG(
             working_dir=WORKING_DIR,
             llm_model_func=llm_model_func,
@@ -380,6 +377,8 @@ class RabbitMQConsumer:
             vector_storage="NanoVectorDBStorage",
             graph_storage="Neo4JStorage",
             log_level="DEBUG",
+            prompts=PROMPTS,
+            graph_field_sep=GRAPH_FIELD_SEP
         )
         return rag
 
@@ -493,37 +492,46 @@ class RabbitMQConsumer:
             Exception: En cas d'erreur lors du traitement du message
         """
         try:
-            # Log du message brut reçu
-            logger.info(f"Message brut reçu de RabbitMQ: {body.decode('utf-8')}")
-            
-            # Décoder le message JSON
-            data = json.loads(body)
-            restaurant_data = data.get('restaurant', {})
-            restaurant_id = restaurant_data.get('id', 'Unknown')
-            restaurant_title = restaurant_data.get('title', 'Unknown')
-            logger.info(f"Traitement du restaurant {restaurant_title} (ID: {restaurant_id})")
-            
-            # Préparer le document pour LightRAG
-            document = self.prepare_document({
-                'id': restaurant_id,
-                'name': restaurant_title,
-                'description': restaurant_data.get('description'),
-                'address': restaurant_data.get('address'),
-                'price': restaurant_data.get('price'),
-                'tags': [restaurant_data.get('categoryname', 'Restaurant')],
-                'reviews': data.get('reviews', [])
-            })
-            
-            # Ajouter le document à LightRAG
+            # Initialiser LightRAG si ce n'est pas déjà fait
             if self.rag is None:
                 self.rag = await self.initialize_rag()
+
+            # Décoder le message JSON
+            message = json.loads(body.decode())
+            restaurant_data = message.get("restaurant", {})
             
+            if not restaurant_data:
+                logging.error("Données de restaurant manquantes dans le message")
+                return
+
+            logging.info(f"Traitement du restaurant {restaurant_data.get('title')} (ID: {restaurant_data.get('id')})")
+            
+            # Préparer le document pour LightRAG
+            document = self.prepare_document(restaurant_data)
+            
+            # Insérer le document dans LightRAG
             await self.rag.ainsert(document)
-            logger.info(f"Document ajouté avec succès pour le restaurant {restaurant_title}")
+            
+            # Acquitter le message
+            ch.basic_ack(delivery_tag=method.delivery_tag)
             
         except Exception as e:
-            logger.error(f"Erreur lors du traitement du message: {str(e)}", exc_info=True)
-            raise
+            logging.error(f"Erreur lors du traitement du message: {e}")
+            if hasattr(e, '__traceback__'):
+                logging.error(traceback.format_exc())
+            # En cas d'erreur, on acquitte quand même le message pour éviter qu'il ne soit renvoyé
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+
+    def callback(self, ch, method, properties, body):
+        """Wrapper synchrone pour process_message."""
+        try:
+            asyncio.set_event_loop(self.loop)
+            self.loop.run_until_complete(self.process_message(ch, method, properties, body))
+        except Exception as e:
+            logging.error(f"Error in callback: {e}")
+            if hasattr(e, '__traceback__'):
+                logging.error(traceback.format_exc())
+            ch.basic_ack(delivery_tag=method.delivery_tag)
 
     def connect(self):
         retry_count = 0
@@ -549,9 +557,13 @@ class RabbitMQConsumer:
                 logger.error(f"Tentative {retry_count}/{self.max_retries} échouée, nouvelle tentative...")
     
     def close(self):
+        """Ferme la connexion RabbitMQ."""
+        if self.channel and not self.channel.is_closed:
+            self.channel.close()
         if self.connection and not self.connection.is_closed:
             self.connection.close()
-            logger.info("Connexion RabbitMQ fermée")
+        if self.loop and not self.loop.is_closed():
+            self.loop.close()
 
     def start_consuming(self, queue_name: str = "queue_vinh_test"):
         """
@@ -567,58 +579,23 @@ class RabbitMQConsumer:
             Exception: En cas d'erreur lors de la consommation
         """
         try:
-            # Créer un nouveau canal si nécessaire
-            if self.channel is None or self.channel.is_closed:
-                self.channel = self.connection.channel()
+            # Déclarer la queue
+            self.channel.queue_declare(queue=queue_name, durable=True)
             
-            # Déclarer la queue comme durable
-            try:
-                queue_info = self.channel.queue_declare(
-                    queue=queue_name,
-                    durable=True,
-                    passive=False  # Permet de créer la queue si elle n'existe pas
-                )
-                logger.info(f"\nInformations sur la queue {queue_name}:")
-                logger.info(f"- Nombre de messages: {queue_info.method.message_count}")
-                logger.info(f"- Nombre de consommateurs: {queue_info.method.consumer_count}")
-            except Exception as e:
-                logger.error(f"Erreur lors de la déclaration de la queue {queue_name}: {str(e)}")
-                raise
-
-            # S'assurer que les messages sont distribués équitablement
+            # Configurer la consommation des messages
             self.channel.basic_qos(prefetch_count=1)
-            
-            # Configurer la callback de traitement des messages
-            async def async_callback(ch, method, properties, body):
-                try:
-                    logger.info(f"Message reçu: {body[:200]}...")  # Afficher le début du message pour debug
-                    await self.process_message(ch, method, properties, body)
-                    # Acquitter le message seulement après traitement réussi
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                except Exception as e:
-                    logger.error(f"Erreur lors du traitement du message: {str(e)}")
-                    # En cas d'erreur, rejeter le message pour qu'il soit retraité
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
-
-            def callback(ch, method, properties, body):
-                asyncio.run(async_callback(ch, method, properties, body))
-            
-            # Configurer la consommation avec auto_ack=False pour la gestion manuelle des acquittements
             self.channel.basic_consume(
                 queue=queue_name,
-                on_message_callback=callback,
-                auto_ack=False
+                on_message_callback=self.callback
             )
             
-            logger.info(f"\nDémarrage de la consommation sur la queue {queue_name}...")
+            logging.info(f"En attente de messages sur la queue {queue_name}...")
             self.channel.start_consuming()
             
-        except KeyboardInterrupt:
-            logger.info("\nArrêt du consommateur...")
-            self.close()
         except Exception as e:
-            logger.error(f"\nErreur lors de la consommation: {str(e)}")
-            self.close()
+            logging.error(f"Erreur lors de la consommation: {e}")
+            if hasattr(e, '__traceback__'):
+                logging.error(traceback.format_exc())
             raise
 
 if __name__ == "__main__":

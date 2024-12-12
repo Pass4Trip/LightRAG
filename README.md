@@ -9,6 +9,7 @@ LightRAG est une implémentation légère de RAG (Retrieval-Augmented Generation
 4. [Architecture](#architecture)
 5. [Déploiement](#déploiement)
 6. [Stockage des Données](#stockage-des-données)
+7. [Développement Local avec LightRAG](#développement-local-avec-lightrag)
 
 ## Prérequis
 
@@ -375,3 +376,80 @@ Cette approche permet de :
 - Éviter l'installation de dépendances lourdes
 - Garder le reste du package intact
 - Utiliser des alternatives plus légères pour l'embedding et la complétion
+
+## Développement Local avec LightRAG
+
+Pour développer et modifier directement le code source de LightRAG, suivez ces étapes :
+
+### 1. Cloner le Repository LightRAG
+
+```bash
+# Créer un dossier pour le code source
+mkdir -p local_source
+cd local_source
+
+# Cloner le repository LightRAG
+git clone https://github.com/HKUDS/LightRAG.git
+```
+
+### 2. Installation en Mode Éditable
+
+Au lieu d'utiliser le package pip `lightrag-hku`, installez LightRAG en mode éditable :
+
+```bash
+# Installer LightRAG en mode éditable
+uv pip install -e local_source/LightRAG
+```
+
+### 3. Configuration du pyproject.toml
+
+Modifiez votre `pyproject.toml` pour retirer la dépendance à `lightrag-hku` puisque vous utilisez la version locale :
+
+```toml
+[tool.poetry.dependencies]
+python = "^3.9"
+# Retirer ou commenter la ligne suivante :
+# lightrag-hku = "^0.1.0"
+```
+
+### 4. Mise à jour des Requirements
+
+Régénérez votre `requirements.txt` pour refléter les changements :
+
+```bash
+uv pip freeze > requirements.txt
+```
+
+### 5. Modification des Prompts
+
+Les prompts sont définis dans `local_source/LightRAG/lightrag/prompt.py`. Vous pouvez les modifier directement :
+
+- `PROMPTS["DEFAULT_LANGUAGE"]` : Langue par défaut pour les prompts
+- `PROMPTS["entity_extraction"]` : Prompt pour l'extraction d'entités
+- `PROMPTS["entity_extraction_examples"]` : Exemples pour l'extraction d'entités
+- etc.
+
+### 6. Configuration de l'API OVH
+
+Pour utiliser les modèles OVH AI :
+
+1. Configurez votre token OVH AI dans `.env` :
+```bash
+OVH_LLM_API_TOKEN=votre_token_ici
+```
+
+2. Les endpoints sont configurés dans le code :
+- LLM : `llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net`
+- Embeddings : `multilingual-e5-base.endpoints.kepler.ai.cloud.ovh.net`
+
+### 7. Tests
+
+Vous pouvez tester la connexion aux API OVH avec :
+
+```bash
+python tests/test_connexion_api_llm_ovh.py
+```
+
+### 8. Développement
+
+Toute modification dans `local_source/LightRAG/lightrag/` sera immédiatement prise en compte grâce à l'installation en mode éditable.
