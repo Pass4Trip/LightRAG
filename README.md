@@ -453,3 +453,64 @@ python tests/test_connexion_api_llm_ovh.py
 ### 8. Développement
 
 Toute modification dans `local_source/LightRAG/lightrag/` sera immédiatement prise en compte grâce à l'installation en mode éditable.
+
+## Développement Local
+
+### Structure du Projet
+
+```
+LightRAG/
+├── lightrag/                 # Package principal
+│   ├── __init__.py           # Point d'entrée du package
+│   ├── lightrag.py           # Classe principale LightRAG
+│   ├── base.py               # Classes de base
+│   ├── llm.py                # Fonctions de traitement LLM
+│   ├── operate.py            # Opérations de traitement
+│   ├── kg/                   # Modules de gestion de graphes de connaissances
+│   └── utils.py              # Utilitaires
+├── examples/                 # Exemples d'utilisation
+└── requirements.txt          # Dépendances du projet
+```
+
+### Configuration pour le Développement Local
+
+Pour développer et tester localement :
+
+1. Clonez le dépôt
+2. Créez un environnement virtuel
+3. Installez les dépendances
+4. Ajoutez le chemin du projet au PYTHONPATH
+
+```bash
+# Exemple de configuration
+git clone https://github.com/votre-repo/LightRAG.git
+cd LightRAG
+
+# Création de l'environnement virtuel
+python -m venv .venv
+source .venv/bin/activate
+
+# Installation des dépendances
+pip install -r requirements.txt
+
+# Pour l'import local, ajoutez au début de vos scripts
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+```
+
+### Imports dans le Code
+
+Pour importer LightRAG dans vos scripts :
+
+```python
+from lightrag.lightrag import LightRAG, QueryParam
+from lightrag.llm import gpt_4o_mini_complete
+from lightrag.utils import EmbeddingFunc
+```
+
+### Résolution des Problèmes
+
+- Assurez-vous que le dossier parent est dans le PYTHONPATH
+- Vérifiez que tous les modules sont correctement importés
+- Utilisez des imports absolus de préférence
