@@ -38,33 +38,41 @@ class MilvusVectorDBStorage(BaseVectorStorage):
 
     def __post_init__(self):
         # D'abord, créer la base de données si nécessaire
+        milvus_uri = os.environ.get(
+            "MILVUS_URI",
+            os.path.join(self.global_config["working_dir"], "milvus_lite.db"),
+        )
+        logger.info(f"Configuration Milvus - URI: {milvus_uri}")
+        
         temp_client = MilvusClient(
-            uri=os.environ.get(
-                "MILVUS_URI",
-                os.path.join(self.global_config["working_dir"], "milvus_lite.db"),
-            ),
+            uri=milvus_uri,
             db_name=""  # Base de données par défaut
         )
         db_name = os.environ.get("MILVUS_DB_NAME", "")
+        logger.info(f"Configuration Milvus - DB Name: {db_name}")
+        
         self.create_database_if_not_exist(temp_client, db_name)
 
         # Ensuite, se connecter à la base de données créée
         self._client = MilvusClient(
-            uri=os.environ.get(
-                "MILVUS_URI",
-                os.path.join(self.global_config["working_dir"], "milvus_lite.db"),
-            ),
+            uri=milvus_uri,
             user=os.environ.get("MILVUS_USER", ""),
             password=os.environ.get("MILVUS_PASSWORD", ""),
             token=os.environ.get("MILVUS_TOKEN", ""),
             db_name=db_name,
         )
+        logger.info(f"Configuration Milvus - Collection: {self.namespace}, Dimension: {self.embedding_func.embedding_dim}")
+        
         self._max_batch_size = self.global_config["embedding_batch_num"]
         MilvusVectorDBStorage.create_collection_if_not_exist(
             self._client,
             self.namespace,
             dimension=self.embedding_func.embedding_dim,
         )
+        
+        # Vérifier les collections après création
+        collections = self._client.list_collections()
+        logger.info(f"Collections disponibles après initialisation : {collections}")
 
     async def upsert(self, data: dict[str, dict]):
         logger.info(f"Inserting {len(data)} vectors to {self.namespace}")
