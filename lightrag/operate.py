@@ -144,11 +144,15 @@ async def _handle_single_relationship_extraction(
     keywords = clean_str(record_attributes[4])
     weight = 1
     
-    if len(record_attributes) > 5:
-        try:
-            weight = int(record_attributes[5])
-        except ValueError:
-            logger.warning(f"Could not convert weight to integer: {record_attributes[5]}")
+    # if len(record_attributes) > 5:
+    #     try:
+    #         weight = int(record_attributes[5])
+    #     except ValueError:
+    #         logger.warning(f"Could not convert weight to integer: {record_attributes[5]}")
+
+    weight = (
+        float(record_attributes[-1]) if is_float_regex(record_attributes[-1]) else 1.0
+    )
     
     result = dict(
         src_id=src_id,
