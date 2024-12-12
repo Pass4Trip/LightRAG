@@ -10,6 +10,7 @@ LightRAG est une implémentation légère de RAG (Retrieval-Augmented Generation
 5. [Déploiement](#déploiement)
 6. [Stockage des Données](#stockage-des-données)
 7. [Développement Local avec LightRAG](#développement-local-avec-lightrag)
+8. [Installation de Milvus sur VPS OVH avec Microk8s](#installation-de-milvus-sur-vps-ovh-avec-microk8s)
 
 ## Prérequis
 
@@ -124,9 +125,6 @@ LightRAG/
 └── README.md                 # Documentation
 ```
 
-### Version légère
-
-Pour un déploiement plus léger, nous utilisons une version simplifiée de `llm.py` (située dans `local/llm.py`) qui évite les dépendances lourdes comme `torch` et `transformers`. Cette version est automatiquement utilisée lors du build de l'image Docker.
 
 ### Scripts de déploiement
 
@@ -324,32 +322,6 @@ microk8s kubectl create secret generic lightrag-secrets \
 
 ## Stockage des Données
 
-### Volumes Persistants Kubernetes
-
-Les données sont accessibles via trois chemins différents qui pointent tous vers le même emplacement physique :
-
-```bash
-# 1. Chemin simplifié via lien symbolique sur le VPS
-~/lightrag_data/nano-vectorDB/
-
-# 2. Chemin dans le stockage microk8s sur le VPS (emplacement physique)
-/var/snap/microk8s/common/default-storage/default-lightrag-vectordb-pvc-pvc-6783594a-fcaa-42c5-a54c-15bd6de8415d/
-
-# 3. Chemin dans le pod Kubernetes
-/app/data/
-```
-
-Pour accéder aux données depuis votre Mac local :
-```bash
-# Via le lien symbolique (recommandé)
-ssh ubuntu@vps-ovh "ls -l ~/lightrag_data/nano-vectorDB/"
-
-# Via le chemin physique
-ssh ubuntu@vps-ovh "sudo ls -l /var/snap/microk8s/common/default-storage/default-lightrag-vectordb-pvc-pvc-6783594a-fcaa-42c5-a54c-15bd6de8415d/"
-```
-
-Note: Les trois chemins sont synchronisés et les modifications faites via l'un des chemins sont immédiatement visibles dans les autres.
-
 ### Structure des Données
 
 Les fichiers stockés incluent :
@@ -361,45 +333,6 @@ Les fichiers stockés incluent :
 - `vdb_relationships.json` : Relations entre entités
 - `lightrag.log` : Fichier de logs
 
-### Version Légère (sans transformers et torch)
-
-Pour utiliser une version plus légère de LightRAG sans les dépendances lourdes comme `transformers` et `torch`, vous pouvez surcharger le fichier `llm.py` :
-
-1. Créez une version modifiée de `llm.py` qui n'utilise pas transformers/torch
-2. Copiez ce fichier dans le répertoire du package :
-```bash
-cp llm.py .venv/lib/python3.9/site-packages/lightrag/llm.py
-```
-
-Cette approche permet de :
-- Réduire significativement la taille de l'image Docker
-- Éviter l'installation de dépendances lourdes
-- Garder le reste du package intact
-- Utiliser des alternatives plus légères pour l'embedding et la complétion
-
-## Développement Local avec LightRAG
-
-Pour développer et modifier directement le code source de LightRAG, suivez ces étapes :
-
-### 1. Cloner le Repository LightRAG
-
-```bash
-# Créer un dossier pour le code source
-mkdir -p local_source
-cd local_source
-
-# Cloner le repository LightRAG
-git clone https://github.com/HKUDS/LightRAG.git
-```
-
-### 2. Installation en Mode Éditable
-
-Au lieu d'utiliser le package pip `lightrag-hku`, installez LightRAG en mode éditable :
-
-```bash
-# Installer LightRAG en mode éditable
-uv pip install -e local_source/LightRAG
-```
 
 ### 3. Configuration du pyproject.toml
 
@@ -418,16 +351,7 @@ Régénérez votre `requirements.txt` pour refléter les changements :
 
 ```bash
 uv pip freeze > requirements.txt
-```
-
-### 5. Modification des Prompts
-
-Les prompts sont définis dans `local_source/LightRAG/lightrag/prompt.py`. Vous pouvez les modifier directement :
-
-- `PROMPTS["DEFAULT_LANGUAGE"]` : Langue par défaut pour les prompts
-- `PROMPTS["entity_extraction"]` : Prompt pour l'extraction d'entités
-- `PROMPTS["entity_extraction_examples"]` : Exemples pour l'extraction d'entités
-- etc.
+```s instructions pour notre cas d'usage
 
 ### 6. Configuration de l'API OVH
 
@@ -514,3 +438,109 @@ from lightrag.utils import EmbeddingFunc
 - Assurez-vous que le dossier parent est dans le PYTHONPATH
 - Vérifiez que tous les modules sont correctement importés
 - Utilisez des imports absolus de préférence
+
+### Vérification de l'Import Local
+
+Pour vérifier que vous utilisez bien la version locale de LightRAG, vous pouvez créer un script de test :
+
+```python
+import sys
+from pathlib import Path
+
+# Add local LightRAG source to Python path
+sys.path.insert(0, str(Path.cwd()))
+
+import lightrag
+print('Chemin de lightrag:', lightrag.__file__)
+```
+
+La sortie devrait indiquer que lightrag est importé depuis votre dossier local :
+```bash
+Chemin de lightrag: /Users/vinh/Documents/LightRAG/lightrag/__init__.py
+```
+
+Si vous voyez un chemin différent (par exemple dans site-packages), cela signifie que vous utilisez une version installée du package au lieu de la version locale.
+
+
+
+### Personnalisation de la lib LightRAG
+
+Les fichiers principalement modifiés sont :
+
+operate.py 
+
+/Users/vinh/Documents/LightRAG/lightrag/kg/milvus_impl.py
+Correction d'une faute de frappe : MilvusVectorDBStorge → MilvusVectorDBStorage
+Ajout de méthodes pour gérer la création de bases de données Milvus
+Amélioration de la gestion des connexions et des bases de données
+
+/Users/vinh/Documents/LightRAG/lightrag/lightrag.py
+Mise à jour des références à MilvusVectorDBStorge pour utiliser MilvusVectorDBStorage
+
+/Users/vinh/Documents/LightRAG/lightrag/prompt.py (mentionné précédemment)
+
+
+**Note Importante :** Dans ce projet, nous avons modifié directement le fichier `prompt.py` de la bibliothèque LightRAG en local. Cette approche nous permet de :
+
+- Personnaliser finement les prompts d'extraction d'entités
+- Adapter le comportement de l'IA à nos besoins spécifiques
+- Expérimenter rapidement avec différentes configurations de prompts
+
+Les modifications incluent :
+- Ajustement des prompts d'extraction d'entités
+- Personnalisation des exemples et du contexte
+- Adaptation du langage et de
+
+
+
+## Architecture et Stockage
+
+LightRAG utilise plusieurs technologies de stockage pour différents aspects de son système :
+
+### Bases de Données
+
+1. **MongoDB** 
+   - Stockage clé-valeur 
+   - Utilisé pour :
+     - Cache des réponses LLM
+     - Stockage des documents complets
+     - Stockage des chunks de texte
+   - Configuration détaillée : [mongodb_docker/README.md](mongodb_docker/README.md)
+
+2. **Milvus**
+   - Stockage vectoriel
+   - Utilisé pour :
+     - Indexation et recherche vectorielle
+     - Stockage des embeddings
+   - Configuration détaillée : [milvus_docker/README.md](milvus_docker/README.md)
+
+3. **Neo4j**
+   - Base de données de graphe
+   - Utilisé pour :
+     - Modélisation des relations entre entités
+     - Requêtes de graphe complexes
+   - Configuration détaillée : [neo4j_docker/README.md](neo4j_docker/README.md)
+
+### Outils de Développement
+
+- **Docker Compose** utilisé pour la gestion des conteneurs
+- **Mongo Express** pour la visualisation des données MongoDB
+- **Volumes persistants** pour la conservation des données entre les redémarrages
+
+### Prérequis
+
+- Docker
+- Docker Compose
+- Python 3.10+
+
+### Démarrage Rapide
+
+1. Cloner le dépôt
+2. Installer les dépendances : `pip install -r requirements.txt`
+3. Démarrer les conteneurs : `docker-compose up -d`
+4. Exécuter les exemples : `python examples/lightrag_openai_demo.py`
+
+### Documentation Détaillée
+
+Pour plus d'informations sur chaque composant, consultez les README spécifiques dans chaque dossier de configuration.
+
