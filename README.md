@@ -1,6 +1,6 @@
 # LightRAG
 
-LightRAG est une implémentation légère de RAG (Retrieval-Augmented Generation) avec intégration Neo4j et RabbitMQ.
+LightRAG est avec intégration RabbitMQ, Neo4J (graphDB), Milvus (vectorDB), MongoDB (kvDB)
 
 ## Table des Matières
 1. [Prérequis](#prérequis)
@@ -9,16 +9,17 @@ LightRAG est une implémentation légère de RAG (Retrieval-Augmented Generation
 4. [Architecture](#architecture)
 5. [Déploiement](#déploiement)
 6. [Stockage des Données](#stockage-des-données)
-7. [Développement Local avec LightRAG](#développement-local-avec-lightrag)
-8. [Installation de Milvus sur VPS OVH avec Microk8s](#installation-de-milvus-sur-vps-ovh-avec-microk8s)
+
 
 ## Prérequis
 
 - Python >= 3.9
 - UV (gestionnaire de paquets Python)
-- Neo4j (base de données graphe)
-- RabbitMQ (message broker)
-- Kubernetes (microk8s)
+- Neo4j (base de données graphe) >> version OVH microk8s
+- Milvus (base de données vectorielle) >> version local Docker
+- MongoDB (base de données key-value) >> version local Docker
+- RabbitMQ (message broker) >> version OVH microk8s
+- Kubernetes (microk8s) >> version OVH 
 
 ## Installation
 
