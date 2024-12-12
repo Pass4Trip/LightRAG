@@ -26,9 +26,14 @@ from lightrag.lightrag import LightRAG, QueryParam
 from lightrag.llm import gpt_4o_mini_complete, gpt_4o_complete
 from lightrag.utils import EmbeddingFunc
 from lightrag.prompt import PROMPTS
+from lightrag.kg.mongo_impl import MongoKVStorage
 
 # Print DEFAULT_ENTITY_TYPES to verify local version
 print("DEFAULT_ENTITY_TYPES:", PROMPTS["DEFAULT_ENTITY_TYPES"])
+
+# Configuration Milvus
+os.environ["MILVUS_URI"] = "tcp://localhost:19530"
+os.environ["MILVUS_DB_NAME"] = "lightrag"
 
 def load_config():
     """
@@ -101,16 +106,19 @@ class RabbitMQConsumer:
         """
         Initialise l'instance LightRAG avec les configurations nécessaires.
         """
-        working_dir = "./nano-vectorDB"
+        # Utiliser un chemin absolu pour le dossier de travail
+        working_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "lightrag_storage"))
+        
         if not os.path.exists(working_dir):
             os.makedirs(working_dir)
+            logger.info(f"Dossier de travail créé : {working_dir}")
 
         self.rag = LightRAG(
             working_dir=working_dir,
             llm_model_func=gpt_4o_mini_complete,
-            kv_storage="JsonKVStorage",
-            vector_storage="NanoVectorDBStorage",
-            #graph_storage="Neo4JStorage",
+            kv_storage="MongoKVStorage",
+            vector_storage="MilvusVectorDBStorage",
+            graph_storage="Neo4JStorage",
             log_level="DEBUG",
         )
         logger.info("DEBUG: LightRAG initialisé avec succès")
@@ -158,51 +166,11 @@ class RabbitMQConsumer:
             logger.info(f"Traitement du restaurant CID {restaurant_cid}")
             
 
-
-            # # Vérifier que le message n'est pas vide
-            # if not message_str:
-            #     logger.warning("DEBUG: Message reçu est vide")
-            #     ch.basic_ack(delivery_tag=method.delivery_tag)
-            #     return
-            
-            # # Tenter de parser le JSON
-            # try:
-            #     message_data = json.loads(message_str)
-            #     logger.info(f"DEBUG: Message parsé: {message_data}")
-            # except json.JSONDecodeError as json_err:
-            #     logger.error(f"DEBUG: Erreur de décodage JSON: {json_err}")
-            #     logger.error(f"Message brut qui a causé l'erreur: {message_str}")
-            #     ch.basic_ack(delivery_tag=method.delivery_tag)
-            #     return
-            
-            # # Vérifier les clés requises
-            # if 'resume' not in message_data:
-            #     logger.error("DEBUG: Le message ne contient pas de clé 'resume'")
-            #     ch.basic_ack(delivery_tag=method.delivery_tag)
-            #     return
-            
-            # # Extraire le texte
-            # text = message_data.get('resume', '')
-            # restaurant_id = message_data.get('restaurant_id', 'unknown')
-            # cid = message_data.get('cid', 'unknown')
-            
-            # logger.info(f"DEBUG: Extraction d'entités pour restaurant_id: {restaurant_id}")
-            # #logger.info(f"DEBUG: Texte à traiter: {text}")
-            
-            # # Vérifier que le texte n'est pas vide
-            # if not text:
-            #     logger.warning(f"DEBUG: Texte vide pour restaurant_id: {restaurant_id}")
-            #     ch.basic_ack(delivery_tag=method.delivery_tag)
-            #     return
-            
-            # Utiliser LightRAG pour extraire les entités
             try:
                 logger.info("DEBUG: Début de l'insertion avec LightRAG")
                 
                 # Ajouter le texte à LightRAG et extraire les entités
-                result = await self.rag.ainsert(
-                    restaurant_resume
-                )
+                result = await self.rag.ainsert(restaurant_resume)
                 
                 logger.info(f"DEBUG: Résultat de l'insertion: {result}")
                 logger.info(f"DEBUG: Insertion et extraction d'entités réussies pour {restaurant_cid}")

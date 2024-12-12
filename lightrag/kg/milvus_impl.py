@@ -10,7 +10,7 @@ from pymilvus import MilvusClient
 
 
 @dataclass
-class MilvusVectorDBStorge(BaseVectorStorage):
+class MilvusVectorDBStorage(BaseVectorStorage):
     @staticmethod
     def create_collection_if_not_exist(
         client: MilvusClient, collection_name: str, **kwargs
@@ -21,7 +21,34 @@ class MilvusVectorDBStorge(BaseVectorStorage):
             collection_name, max_length=64, id_type="string", **kwargs
         )
 
+    @staticmethod
+    def create_database_if_not_exist(client: MilvusClient, db_name: str):
+        try:
+            client.list_databases()
+        except:
+            # Si la liste des bases de données échoue, on se connecte d'abord à la base par défaut
+            client = MilvusClient(
+                uri=os.environ.get("MILVUS_URI"),
+                db_name=""  # Base de données par défaut
+            )
+        
+        databases = client.list_databases()
+        if db_name not in databases:
+            client.create_database(db_name)
+
     def __post_init__(self):
+        # D'abord, créer la base de données si nécessaire
+        temp_client = MilvusClient(
+            uri=os.environ.get(
+                "MILVUS_URI",
+                os.path.join(self.global_config["working_dir"], "milvus_lite.db"),
+            ),
+            db_name=""  # Base de données par défaut
+        )
+        db_name = os.environ.get("MILVUS_DB_NAME", "")
+        self.create_database_if_not_exist(temp_client, db_name)
+
+        # Ensuite, se connecter à la base de données créée
         self._client = MilvusClient(
             uri=os.environ.get(
                 "MILVUS_URI",
@@ -30,10 +57,10 @@ class MilvusVectorDBStorge(BaseVectorStorage):
             user=os.environ.get("MILVUS_USER", ""),
             password=os.environ.get("MILVUS_PASSWORD", ""),
             token=os.environ.get("MILVUS_TOKEN", ""),
-            db_name=os.environ.get("MILVUS_DB_NAME", ""),
+            db_name=db_name,
         )
         self._max_batch_size = self.global_config["embedding_batch_num"]
-        MilvusVectorDBStorge.create_collection_if_not_exist(
+        MilvusVectorDBStorage.create_collection_if_not_exist(
             self._client,
             self.namespace,
             dimension=self.embedding_func.embedding_dim,
