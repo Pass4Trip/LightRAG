@@ -20,10 +20,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Add local LightRAG source to Python path
-local_lightrag_path = os.path.join(Path(__file__).parent.parent, 'local_source', 'LightRAG')
-sys.path.insert(0, local_lightrag_path)
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lightrag import LightRAG, QueryParam
+from lightrag.lightrag import LightRAG, QueryParam
 from lightrag.llm import gpt_4o_mini_complete, gpt_4o_complete
 from lightrag.utils import EmbeddingFunc
 from lightrag.prompt import PROMPTS
