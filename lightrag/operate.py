@@ -312,15 +312,9 @@ async def extract_entities(
 
     domain_ENTITY_TYPES = f"{prompt_domain}_ENTITY_TYPES"
     entity_types = PROMPTS.get(domain_ENTITY_TYPES, PROMPTS[domain_ENTITY_TYPES])  
-    
-    logger.info(f"!!!! Using entity_types : {entity_types}")
-    
+        
     domain_entity_extraction = f"{prompt_domain}_entity_extraction"
     entity_extract_prompt = PROMPTS.get(domain_entity_extraction, PROMPTS[domain_entity_extraction])  
-    
-
-    logger.info(f"!!!! Using entity_extract_prompt : {entity_extract_prompt}")
-
 
     domain_examples_key = f"{prompt_domain}_extraction_examples"
     examples = PROMPTS.get(domain_examples_key, PROMPTS[domain_examples_key])
@@ -339,7 +333,7 @@ async def extract_entities(
     # add example's format
     examples = examples[0].format(**example_context_base)
 
-    logger.info(f"Using type of str examples : {type(examples)}")   
+    #logger.info(f"Using type of str examples : {type(examples)}")   
 
     context_base = dict(
         tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"],
@@ -379,12 +373,14 @@ async def extract_entities(
         logger.info(f"  Completion Delimiter: {context_base['completion_delimiter']}")
         logger.info(f"  Entity Types: {context_base['entity_types']}")
         logger.info(f"  Language: {context_base['language']}")
+        #logger.info(f"  entity_extract_prompt: {entity_extract_prompt}")
         
         hint_prompt = entity_extract_prompt.format(
             **context_base, input_text="{input_text}"
         ).format(**context_base, input_text=content)
         
-        logger.info(f"Formatted Extraction Prompt (first 1000 chars): {hint_prompt[:1000]}...")
+        #logger.info(f"Formatted Extraction Prompt (first 1000 chars): {hint_prompt[:1000]}...")
+        #logger.info(f"Formatted Extraction Prompt (full text): {hint_prompt}...") 
         
         final_result = await use_llm_func(hint_prompt)
         logger.info(f"Initial LLM Response (first 1000 chars): {final_result[:1000]}...")

@@ -38,6 +38,13 @@ PROMPTS["activity_entity_extraction"] = """-Goal-
 You are given a text describing various activities (such as restaurants, concerts, or events).
 Your task is to extract structured entities, relationships, and descriptions from the text based on the following requirements.
 
+CRUCIAL INSTRUCTIONS:
+- ABSOLUTE PROHIBITION of creating, inventing, or extrapolating information not present in the original text.
+- Use ONLY information explicitly mentioned in the source text.
+- If information is not clearly indicated, do NOT attempt to guess or complete it.
+- Your goal is to be a precise and faithful extractor, not an information generator.
+- In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.
+
 Key requirements:
 
 1. **Entity Types and Descriptions:**
@@ -81,6 +88,7 @@ Key requirements:
 
 10. When finished, output {completion_delimiter}
 
+
 ######################
 -Examples-
 ######################
@@ -99,6 +107,13 @@ Output:
 PROMPTS["user_entity_extraction"] = """-Goal-
 You are given a text describing various users and their preferences. 
 Your task is to extract structured entities, relationships, and descriptions from the text based on the following requirements.
+
+CRUCIAL INSTRUCTIONS:
+- ABSOLUTE PROHIBITION of creating, inventing, or extrapolating information not present in the original text.
+- Use ONLY information explicitly mentioned in the source text.
+- If information is not clearly indicated, do NOT attempt to guess or complete it.
+- Your goal is to be a precise and faithful extractor, not an information generator.
+- In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.
 
 Key requirements:
 
@@ -140,6 +155,13 @@ Key requirements:
 9. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter. 
 
 10. When finished, output {completion_delimiter}
+
+🚨 INSTRUCTIONS CRUCIALES :
+- INTERDICTION ABSOLUE de créer, inventer ou extrapoler des informations non présentes dans le texte original.
+- Utilisez UNIQUEMENT les informations explicitement mentionnées dans le texte source.
+- Si une information n'est pas clairement indiquée, n'essayez PAS de la deviner ou de la compléter.
+- Votre objectif est d'être un extracteur précis et fidèle, pas un générateur d'informations.
+- En cas de doute sur une information, préférez NE PAS l'inclure plutôt que de risquer une inexactitude.
 
 ######################
 -Examples-
@@ -312,11 +334,11 @@ Le user Vinh adore les restaurants	calme et qui propose de la bonne viande. Je s
 
 ################
 Output:
-(entity{tuple_delimiter}Vinh{tuple_delimiter}user{tuple_delimiter}Personne{tuple_delimiter}Utilisateur nommé Vinh.){record_delimiter}
-(entity{tuple_delimiter}48 ans{tuple_delimiter}user_attribute{tuple_delimiter}Âge{tuple_delimiter}Vinh a 48 ans.){record_delimiter}
-(entity{tuple_delimiter}Serris{tuple_delimiter}user_attribute{tuple_delimiter}Adresse{tuple_delimiter}Vinh réside à Serris.){record_delimiter}
-(entity{tuple_delimiter}Restaurants calmes{tuple_delimiter}user_preference{tuple_delimiter}Préférence{tuple_delimiter}Vinh préfère les restaurants offrant une ambiance calme et reposante.){record_delimiter}
-(entity{tuple_delimiter}Bonne viande{tuple_delimiter}user_preference{tuple_delimiter}Préférence{tuple_delimiter}Vinh apprécie particulièrement les restaurants proposant de la viande de qualité supérieure.){record_delimiter}
+(entity{tuple_delimiter}Vinh{tuple_delimiter}user{tuple_delimiter}Utilisateur nommé Vinh{record_delimiter}
+(entity{tuple_delimiter}48 ans{tuple_delimiter}user_attribute{tuple_delimiter}Vinh est  48 ans.){record_delimiter}
+(entity{tuple_delimiter}Serris{tuple_delimiter}user_attribute{tuple_delimiter}Vinh réside à Serris.){record_delimiter}
+(entity{tuple_delimiter}Restaurants calmes{tuple_delimiter}user_preference{tuple_delimiter}Vinh préfère les restaurants offrant une ambiance calme et reposante.){record_delimiter}
+(entity{tuple_delimiter}Bonne viande{tuple_delimiter}user_preference{tuple_delimiter}Vinh apprécie particulièrement les restaurants proposant de la viande de qualité supérieure.){record_delimiter}
 (relationship{tuple_delimiter}Vinh{tuple_delimiter}48 ans{tuple_delimiter}Vinh est âgé de 48 ans, ce qui est une caractéristique personnelle.{tuple_delimiter}caractéristique personnelle{tuple_delimiter}0.95){record_delimiter}
 (relationship{tuple_delimiter}Vinh{tuple_delimiter}Serris{tuple_delimiter}Vinh habite à Serris, une information importante pour localiser ses préférences.{tuple_delimiter}localisation{tuple_delimiter}0.9){record_delimiter}
 (relationship{tuple_delimiter}Vinh{tuple_delimiter}Restaurants calmes{tuple_delimiter}Vinh recherche des restaurants calmes car il apprécie les lieux paisibles.{tuple_delimiter}calme, ambiance{tuple_delimiter}0.9){record_delimiter}
