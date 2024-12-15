@@ -1,0 +1,71 @@
+graph TD
+    classDef activity fill:#87CEEB,stroke:none;
+    classDef category fill:#ADD8E6,stroke:none;
+    classDef positive fill:#90EE90,stroke:none;
+    classDef negative fill:#FFB6C1,stroke:none;
+    classDef recommandation fill:#FFD700,stroke:none;
+    classDef user fill:#FFC0CB,stroke:none;
+    classDef preference fill:#FFDAB9,stroke:none;
+    classDef linkTo stroke:#FF4500,stroke-width:3px;
+
+    activity1[Activity: JUNK LYON]:::activity
+    activity2[Activity: Concert de Mylem Farmer]:::activity
+    activity3[Activity: Bistro Concert]:::activity
+    activity4[Activity: La Table du Chef]:::activity
+    activity5[Activity: Jazz Night at Blue Note]:::activity
+
+    category1[Category: Restaurant]:::category
+    category2[Category: Concert]:::category
+    category3[Category: Jazz Event]:::category
+
+    positive1[Positive Point: Ambiance chaleureuse]:::positive
+    positive2[Positive Point: Ambiance musicale]:::positive
+    positive3[Positive Point: Service exceptionnel]:::positive
+    positive4[Positive Point: Expérience gastronomique]:::positive
+
+    negative1[Negative Point: Portions insuffisantes]:::negative
+
+    recommandation1[Recommandation: Plat signature - Burger à la crème de truffe]:::recommandation
+    recommandation2[Recommandation: Activité - Visite du musée des Beaux-Arts]:::recommandation
+    recommandation3[Recommandation: Cocktail - Mojito spécial jazz]:::recommandation
+
+    user1[User: Albert]:::user
+    user2[User: Sophie]:::user
+
+    preference1[User Preference: Adore les concerts]:::preference
+    preference2[User Preference: Aime les restaurants gastronomiques]:::preference
+    preference3[User Preference: Aime les soirées jazz]:::preference
+
+    %% Relations entre les activités et catégories
+    activity1 -->|CLASSIFIED_AS| category1
+    activity3 -->|CLASSIFIED_AS| category1
+    activity2 -->|CLASSIFIED_AS| category2
+    activity4 -->|CLASSIFIED_AS| category1
+    activity5 -->|CLASSIFIED_AS| category3
+
+    %% Relations entre les activités et les points positifs/négatifs/recommandations
+    activity1 -->|HAS_FEATURE| positive1
+    activity3 -->|HAS_FEATURE| positive2
+    activity2 -->|HAS_FEATURE| positive2
+    activity4 -->|HAS_FEATURE| positive4
+    activity4 -->|HAS_FEATURE| positive3
+    activity5 -->|HAS_FEATURE| positive2
+    activity1 -->|HAS_FEATURE| negative1
+    activity1 -->|RECOMMENDS| recommandation1
+    activity4 -->|RECOMMENDS| recommandation2
+    activity5 -->|RECOMMENDS| recommandation3
+
+    %% Relations entre les utilisateurs et leurs préférences
+    user1 -->|LIKES| preference1
+    user1 -->|LIKES| preference3
+    user2 -->|LIKES| preference2
+
+    %% Relations entre les préférences et les activités ou points positifs
+    preference1 -->|INTERESTED_IN| activity2:::linkTo
+    preference1 -->|ALIGNED_WITH| positive2:::linkTo
+    preference3 -->|INTERESTED_IN| activity5:::linkTo
+    preference3 -->|ALIGNED_WITH| positive2:::linkTo
+    preference2 -->|INTERESTED_IN| activity4:::linkTo
+    preference2 -->|ALIGNED_WITH| positive4:::linkTo
+    preference2 -->|ALIGNED_WITH| positive3:::linkTo
+    preference2 -->|DISLIKES| negative1:::linkTo

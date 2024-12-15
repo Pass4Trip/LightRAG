@@ -9,13 +9,13 @@ load_dotenv(dotenv_path=env_path)
 
 def clear_mongodb_database():
     try:
+        print("🔥 Nettoyage de la base de données MongoDB en cours...")
         # Récupérer les variables d'environnement avec les mêmes noms que dans LightRAG
         mongodb_uri = os.environ.get("MONGO_URI", "mongodb://root:root@localhost:27017/")
         db_name = os.environ.get("MONGO_DATABASE", "LightRAG")
         
-        print(f" Connexion à MongoDB...")
-        print(f" Base de données cible: {db_name}")
         print(f" URI: {mongodb_uri}")
+        print(f" Base de données cible: {db_name}")
         
         # Connexion à MongoDB
         client = MongoClient(mongodb_uri)
@@ -29,20 +29,10 @@ def clear_mongodb_database():
         collections = db.list_collection_names()
         
         if not collections:
-            print("\n Aucune collection trouvée dans la base de données.")
+            print("\n Aucune collection trouvée dans la base de données MongoDB.")
             return
         
-        print("\n Collections trouvées:")
-        for coll_name in collections:
-            count = db[coll_name].count_documents({})
-            print(f"   - {coll_name} ({count} documents)")
-        
-        # Demander confirmation
-        confirmation = input(f"\n Êtes-vous sûr de vouloir supprimer toutes les collections de la base {db_name}? (oui/non): ")
-        
-        if confirmation.lower() != "oui":
-            print("\n Opération annulée.")
-            return
+        print(f"Traitement de la base de données: {db_name}")
         
         # Supprimer chaque collection
         for coll_name in collections:
@@ -52,21 +42,10 @@ def clear_mongodb_database():
             except Exception as e:
                 print(f" Erreur lors de la suppression de {coll_name}: {str(e)}")
         
-        print("\n Nettoyage terminé!")
-        
-        # Vérifier qu'il ne reste plus de collections
-        remaining_collections = db.list_collection_names()
-        if not remaining_collections:
-            print(" La base de données est maintenant vide")
-        else:
-            print(f" Il reste encore {len(remaining_collections)} collection(s)")
-        
-        # Fermer la connexion
-        client.close()
-        print("\n Déconnexion réussie!")
-        
     except Exception as e:
-        print(f" Erreur: {str(e)}")
+        print(f" Erreur lors de la suppression des collections MongoDB : {str(e)}")
+    finally:
+        client.close()
 
 if __name__ == "__main__":
     clear_mongodb_database()

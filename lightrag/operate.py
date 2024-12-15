@@ -297,7 +297,9 @@ async def extract_entities(
     entity_vdb: BaseVectorStorage,
     relationships_vdb: BaseVectorStorage,
     global_config: dict,
+    prompt_domain: str = "default"
 ) -> Union[BaseGraphStorage, None]:
+    logger.info(f"Entity extraction using prompt domain: {prompt_domain}")
     use_llm_func: callable = global_config["llm_model_func"]
     entity_extract_max_gleaning = global_config["entity_extract_max_gleaning"]
 
@@ -306,16 +308,25 @@ async def extract_entities(
     language = global_config["addon_params"].get(
         "language", PROMPTS["DEFAULT_LANGUAGE"]
     )
-    entity_types = global_config["addon_params"].get(
-        "entity_types", PROMPTS["DEFAULT_ENTITY_TYPES"]
-    )
-    example_number = global_config["addon_params"].get("example_number", None)
-    if example_number and example_number < len(PROMPTS["entity_extraction_examples"]):
-        examples = "\n".join(
-            PROMPTS["entity_extraction_examples"][: int(example_number)]
-        )
-    else:
-        examples = "\n".join(PROMPTS["entity_extraction_examples"])
+
+
+    domain_ENTITY_TYPES = f"{prompt_domain}_ENTITY_TYPES"
+    entity_types = PROMPTS.get(domain_ENTITY_TYPES, PROMPTS[domain_ENTITY_TYPES])  
+    
+    logger.info(f"!!!! Using entity_types : {entity_types}")
+    
+    domain_entity_extraction = f"{prompt_domain}_entity_extraction"
+    entity_extract_prompt = PROMPTS.get(domain_entity_extraction, PROMPTS[domain_entity_extraction])  
+    
+
+    logger.info(f"!!!! Using entity_extract_prompt : {entity_extract_prompt}")
+
+
+    domain_examples_key = f"{prompt_domain}_extraction_examples"
+    examples = PROMPTS.get(domain_examples_key, PROMPTS[domain_examples_key])
+    
+    logger.info(f"Using examples : {domain_examples_key}")
+    
 
     example_context_base = dict(
         tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"],
@@ -324,10 +335,12 @@ async def extract_entities(
         entity_types=",".join(entity_types),
         language=language,
     )
+    
     # add example's format
-    examples = examples.format(**example_context_base)
+    examples = examples[0].format(**example_context_base)
 
-    entity_extract_prompt = PROMPTS["entity_extraction"]
+    logger.info(f"Using type of str examples : {type(examples)}")   
+
     context_base = dict(
         tuple_delimiter=PROMPTS["DEFAULT_TUPLE_DELIMITER"],
         record_delimiter=PROMPTS["DEFAULT_RECORD_DELIMITER"],
@@ -337,8 +350,10 @@ async def extract_entities(
         language=language,
     )
 
-    continue_prompt = PROMPTS["entiti_continue_extraction"]
-    if_loop_prompt = PROMPTS["entiti_if_loop_extraction"]
+
+
+    continue_prompt = PROMPTS["entiti_continue_extraction"].format(**context_base)
+    if_loop_prompt = PROMPTS["entiti_if_loop_extraction"].format(**context_base)
 
     already_processed = 0
     already_entities = 0

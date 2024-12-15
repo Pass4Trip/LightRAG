@@ -8,40 +8,78 @@ PROMPTS["DEFAULT_RECORD_DELIMITER"] = "##"
 PROMPTS["DEFAULT_COMPLETION_DELIMITER"] = "<|COMPLETE|>"
 PROMPTS["process_tickers"] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-PROMPTS["DEFAULT_ENTITY_TYPES"] = ["restaurant", "positive_point", "negative_point", "recommandation"]
+PROMPTS["DEFAULT_ENTITY_TYPES"] = [
+    "activity",
+    "user",
+    "user_attribute",
+    "user_preference",
+    "positive_point",
+    "negative_point",
+    "recommandation"
+]
 
-PROMPTS["entity_extraction"] = """-Goal-
-Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
-Use {language} as output language.
 
--Steps-
-1. Identify all entities. For each identified entity, extract the following information:
-- entity_name: Name of the entity, use same language as input text. If English, capitalized the name.
-- entity_type: One of the following types: [{entity_types}]
-- entity_description: Comprehensive description of the entity's attributes and activities
-Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)
+PROMPTS["activity_ENTITY_TYPES"] = [
+    "activity",
+    "user_preference",
+    "positive_point",
+    "negative_point",
+    "recommandation"
+]
 
-2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
-For each pair of related entities, extract the following information:
-- source_entity: name of the source entity, as identified in step 1
-- target_entity: name of the target entity, as identified in step 1
-- relationship_description: explanation as to why you think the source entity and the target entity are related to each other
-- relationship_strength: a numeric score indicating strength of the relationship between the source entity and target entity
-- relationship_keywords: one or more high-level key words that summarize the overarching nature of the relationship, focusing on concepts or themes rather than specific details
-Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_keywords>{tuple_delimiter}<relationship_strength>)
+PROMPTS["user_ENTITY_TYPES"] = [
+    "user",
+    "user_attribute",
+    "user_preference"
+]
 
-3. Identify high-level key words that summarize the main concepts, themes, or topics of the entire text. These should capture the overarching ideas present in the document.
-Format the content-level key words as ("content_keywords"{tuple_delimiter}<high_level_keywords>)
 
-4. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'restaurant' entity. If an entity cannot be directly or indirectly connected to the 'restaurant' through a relationship, it should not be considered valid or relevant.
+PROMPTS["activity_entity_extraction"] = """-Goal-
+You are given a text describing various activities (such as restaurants, concerts, or events).
+Your task is to extract structured entities, relationships, and descriptions from the text based on the following requirements.
 
-5. For **positive_point**, **negative_point**, and **recommandation**, generate generic and concise labels that summarize key aspects applicable across different restaurants.
+Key requirements:
 
-6. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter. 
+1. **Entity Types and Descriptions:**
+   - **activity :** Represents any described real-world activity, venue, or event. It includes places like restaurants, events like concerts, or occasions like exhibitions. This entity should capture details such as name, type, location, ambiance, and notable attributes, ensuring versatility across different domains.
+   - **Conceptual Entities:**
+     - **positive_point :** Represents generic positive aspects applicable across multiple activities. These points must remain reusable and should not include specific details about individual activities.
+     - **negative_point :** Represents generic negative aspects linked to activities. These points must remain reusable and should not include specific details about individual activities.
+     - **recommandation :** Represents suggestions or recommendations derived from the data.
 
-7. Extract cid and use it as entity_type ="restaurant"
+2. **Extraction Entity Guideline:**
+   - For each entity, extract:
+     - entity_name: Name of the entity.
+     - entity_type: One of the types: [{entity_types}]
+     - entity_description: A detailed description of the entity's attributes, if available.
+     - Format: (entity{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<sub_activity>{tuple_delimiter}<entity_description>)
 
-8. When finished, output {completion_delimiter}
+4. **Extraction Relationships Guideline:**
+   - For each relationship, extract:
+     - source_entity: The source entity name, as identified in Extraction Entity Guideline (step 2)
+     - target_entity: The target entity name, as identified in Extraction Entity Guideline (step 2)
+     - relationship_description`: Explanation of why the entities are related.
+     - relationship_description: A specific explanation of why these entities are related. The description must explicitly mention or reference both the source and target entities and be dedicated to these entities only.
+     - relationship_keywords: one or more high-level key words that summarize the overarching nature of the relationship, focusing on concepts or themes rather than specific details
+     Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_keywords>{tuple_delimiter}<relationship_strength>)
+
+
+5. **Content-level Keywords:**
+   - Identify high-level key words that summarize the main concepts, themes, or topics of the entire text. These should capture the overarching ideas present in the document.
+   - Format the content-level key words as ("content_keywords"{tuple_delimiter}<high_level_keywords>)
+
+6. **Formatting:**
+   - Use {record_delimiter} to separate entries.
+   - End output with {completion_delimiter}.
+
+7. **Language:**
+   - All extracted entities, relationships, and keywords must be in French.
+
+8. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'restaurant' entity. If an entity cannot be directly or indirectly connected to the 'restaurant' through a relationship, it should not be considered valid or relevant.
+
+9. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter. 
+
+10. When finished, output {completion_delimiter}
 
 ######################
 -Examples-
@@ -57,12 +95,98 @@ Text: {input_text}
 Output:
 """
 
+
+PROMPTS["user_entity_extraction"] = """-Goal-
+You are given a text describing various users and their preferences. 
+Your task is to extract structured entities, relationships, and descriptions from the text based on the following requirements.
+
+Key requirements:
+
+1. **Entity Types and Descriptions:**
+   - **user :** Represents a person, identified by their name or a unique identifier.
+   - **user_attribute :** Represents specific attributes of a user, such as age, height, address, or any other personal information. These attributes are directly linked to a user.
+   - **user_preference :** Represents preferences specific to a user. These preferences describe what the user likes or dislikes.
+
+2. **Extraction Entity Guideline:**
+   - For each entity, extract:
+     - entity_name: Name of the entity.
+     - entity_type: One of the types: [{entity_types}]
+     - entity_description: A detailed description of the entity's attributes, if available.
+     - Format: (entity{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<sub_activity>{tuple_delimiter}<entity_description>)
+
+4. **Extraction Relationships Guideline:**
+   - For each relationship, extract:
+     - source_entity: The source entity name, as identified in Extraction Entity Guideline (step 2)
+     - target_entity: The target entity name, as identified in Extraction Entity Guideline (step 2)
+     - relationship_description`: Explanation of why the entities are related.
+     - relationship_description: A specific explanation of why these entities are related. The description must explicitly mention or reference both the source and target entities and be dedicated to these entities only.
+     - relationship_keywords: one or more high-level key words that summarize the overarching nature of the relationship, focusing on concepts or themes rather than specific details
+     Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_keywords>{tuple_delimiter}<relationship_strength>)
+
+
+5. **Content-level Keywords:**
+   - Identify high-level key words that summarize the main concepts, themes, or topics of the entire text. These should capture the overarching ideas present in the document.
+   - Format the content-level key words as ("content_keywords"{tuple_delimiter}<high_level_keywords>)
+
+6. **Formatting:**
+   - Use {record_delimiter} to separate entries.
+   - End output with {completion_delimiter}.
+
+7. **Language:**
+   - All extracted entities, relationships, and keywords must be in French.
+
+8. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'restaurant' entity. If an entity cannot be directly or indirectly connected to the 'restaurant' through a relationship, it should not be considered valid or relevant.
+
+9. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter. 
+
+10. When finished, output {completion_delimiter}
+
+######################
+-Examples-
+######################
+{examples}
+
+#############################
+-Real Data-
+######################
+Entity_types: {entity_types}
+Text: {input_text}
+######################
+Output:
+"""
+
+
+
+
 PROMPTS["entity_extraction_examples"] = [
     """Example 1:
+Entity_types: ["activity", "user", "location", "recommendation"]
+Text: Le restaurant JUNK LYON propose des burgers de qualité à Lyon.
 
-Entity_types: [restaurant, positive_point, negative_point, recommandation]
+Résultat attendu:
+(entity{tuple_delimiter}JUNK LYON{tuple_delimiter}restaurant{tuple_delimiter}Restaurant de burgers à Lyon)
+(entity{tuple_delimiter}Lyon{tuple_delimiter}location{tuple_delimiter}Ville du restaurant)
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Lyon{tuple_delimiter}Localisation du restaurant{tuple_delimiter}situé à{tuple_delimiter}1.0)
+""",
+
+    """Example 2:
+Entity_types: ["activity", "user", "location", "recommendation"]
+Text: Vinh, 48 ans, habite à Serris et aime les restaurants calmes qui proposent de la bonne viande.
+
+Résultat attendu:
+(entity{tuple_delimiter}Vinh{tuple_delimiter}user{tuple_delimiter}Homme de 48 ans)
+(entity{tuple_delimiter}Serris{tuple_delimiter}location{tuple_delimiter}Ville de résidence de Vinh)
+(entity{tuple_delimiter}restaurants calmes{tuple_delimiter}preference{tuple_delimiter}Type de restaurant préféré par Vinh})
+""",
+
+    """
+
+Entity_types: ["activity",
+    "positive_point",
+    "negative_point",
+    "recommandation"
+    ]
 Text:
-cid=3091293945615310311
 Résumé du Restaurant : JUNK LYON
 
 Situé à Lyon, JUNK LYON est un restaurant qui se spécialise dans les burgers, avec une fourchette de prix raisonnable allant de 10 à 20 euros. Ce lieu est particulièrement apprécié des amateurs de gastronomie décontractée et a su s’imposer comme une adresse incontournable pour les gourmands.
@@ -92,7 +216,7 @@ En somme, JUNK LYON est une adresse à considérer pour les amateurs de burgers 
 
 ################
 Output:
-(entity{tuple_delimiter}JUNK LYON{tuple_delimiter}restaurant{tuple_delimiter}Restaurant situé à Lyon, spécialisé dans les burgers avec une gamme de prix raisonnable de 10 à 20 euros. Ambiance chaleureuse et décontractée, appréciée pour ses plats comme les burgers, frites et cookies. Propose livraison, vente à emporter et repas sur place.){record_delimiter}
+(entity{tuple_delimiter}JUNK LYON{tuple_delimiter}activity{tuple_delimiter}Restaurant situé à Lyon, spécialisé dans les burgers avec une gamme de prix raisonnable de 10 à 20 euros. Ambiance chaleureuse et décontractée, appréciée pour ses plats comme les burgers, frites et cookies. Propose livraison, vente à emporter et repas sur place.){record_delimiter}
 (entity{tuple_delimiter}Qualité de la viande{tuple_delimiter}positive_point{tuple_delimiter}La viande utilisée dans les burgers est appréciée pour sa qualité supérieure.){record_delimiter}
 (entity{tuple_delimiter}Variété des burgers{tuple_delimiter}positive_point{tuple_delimiter}Le restaurant offre une variété de burgers, dont un burger veggie, adapté aux végétariens.){record_delimiter}
 (entity{tuple_delimiter}Desserts faits maison{tuple_delimiter}positive_point{tuple_delimiter}Les cookies faits maison sont particulièrement appréciés par les clients.){record_delimiter}
@@ -112,7 +236,93 @@ Output:
 (relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Prix abordables{tuple_delimiter}Le restaurant est perçu comme abordable, attirant une clientèle variée malgré des avis partagés.{tuple_delimiter}rapport qualité-prix{tuple_delimiter}0.8){record_delimiter}
 (relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Amélioration des portions{tuple_delimiter}Les portions pourraient être étoffées pour répondre aux attentes des clients.{tuple_delimiter}suggestion d’amélioration{tuple_delimiter}0.75){record_delimiter}
 (content_keywords{tuple_delimiter}restaurant, burgers, truffe, frites, cookies, portions, prix abordables, ambiance conviviale, végétarien, qualité des ingrédients){completion_delimiter}
-#############################""",
+#############################"""]
+
+
+PROMPTS["activity_extraction_examples"] = [
+    """
+
+Entity_types: ["activity",
+    "positive_point",
+    "negative_point",
+    "recommandation"
+    ]
+Text:
+Résumé du Restaurant : JUNK LYON
+
+Situé à Lyon, JUNK LYON est un restaurant qui se spécialise dans les burgers, avec une fourchette de prix raisonnable allant de 10 à 20 euros. Ce lieu est particulièrement apprécié des amateurs de gastronomie décontractée et a su s’imposer comme une adresse incontournable pour les gourmands.
+
+Ambiance et Atmosphère :
+L’ambiance du restaurant est décrite comme chaleureuse et décontractée, idéale pour un repas entre amis ou en famille. Plusieurs clients ont souligné la qualité de l’accueil, ce qui contribue à une expérience agréable.
+
+Gamme de Prix et Rapport Qualité-Prix :
+Les prix, bien que considérés comme abordables, suscitent des avis partagés sur le rapport qualité-prix. Certains clients, notamment ceux qui ont goûté plusieurs burgers, trouvent que les portions sont insuffisantes par rapport au tarif, tandis que d'autres estiment que la qualité des plats justifie le prix. La majorité des critiques récentes, notamment celles de Local Guides, semblent pencher vers une évaluation positive.
+
+Qualité du Service et des Plats :
+La qualité des plats est souvent louée, notamment les burgers, avec un accent particulier sur le burger à la crème de truffe, qui a été décrit comme exceptionnel. Les frites et les cookies sont également mentionnés comme des incontournables. Cependant, une critique a fait état d'un burger jugé « moyen », ce qui témoigne d'une certaine variabilité dans l'expérience culinaire.
+
+Points Forts et Spécialités :
+Les points forts de JUNK LYON incluent la qualité de la viande, la variété des burgers, et des desserts faits maison, en particulier les cookies. Les clients semblent s'accorder sur l'excellence des frites et du burger veggie, renforçant l’attrait de l’établissement pour les végétariens.
+
+Critiques Récurrentes et Axes d’Amélioration :
+Certains clients ont noté que les portions pourraient être améliorées, surtout pour les burgers. Cette critique est récurrente et mérite d'être considérée pour étoffer l'offre du restaurant. 
+
+Informations Pratiques et Tags :
+JUNK LYON propose divers services, y compris la livraison, la vente à emporter, et des repas sur place. L’établissement est également accessible aux personnes à mobilité réduite. Les moyens de paiement incluent les cartes de crédit et les paiements mobiles. Les tags associés au restaurant incluent « cookies », « steak », « truffe », et « végétarien », soulignant une diversité qui pourrait séduire un large public.
+
+Horaires d'Ouverture :
+Le restaurant est ouvert tous les jours de la semaine, avec des horaires étendus, ce qui permet de s'adapter aux différents emplois du temps des clients.
+
+En somme, JUNK LYON est une adresse à considérer pour les amateurs de burgers à Lyon, malgré quelques critiques sur les portions, son ambiance accueillante et la qualité de ses plats en font un lieu prisé.
+
+################
+Output:
+(entity{tuple_delimiter}JUNK LYON{tuple_delimiter}activity{tuple_delimiter}Restaurant situé à Lyon, spécialisé dans les burgers avec une gamme de prix raisonnable de 10 à 20 euros. Ambiance chaleureuse et décontractée, appréciée pour ses plats comme les burgers, frites et cookies. Propose livraison, vente à emporter et repas sur place.){record_delimiter}
+(entity{tuple_delimiter}Qualité de la viande{tuple_delimiter}positive_point{tuple_delimiter}La viande utilisée dans les burgers est appréciée pour sa qualité supérieure.){record_delimiter}
+(entity{tuple_delimiter}Variété des burgers{tuple_delimiter}positive_point{tuple_delimiter}Le restaurant offre une variété de burgers, dont un burger veggie, adapté aux végétariens.){record_delimiter}
+(entity{tuple_delimiter}Desserts faits maison{tuple_delimiter}positive_point{tuple_delimiter}Les cookies faits maison sont particulièrement appréciés par les clients.){record_delimiter}
+(entity{tuple_delimiter}Portions insuffisantes{tuple_delimiter}negative_point{tuple_delimiter}Certains clients trouvent que les portions des burgers sont trop petites par rapport au prix.){record_delimiter}
+(entity{tuple_delimiter}Burger à la crème de truffe{tuple_delimiter}positive_point{tuple_delimiter}Le burger à la crème de truffe est décrit comme exceptionnel par plusieurs clients.){record_delimiter}
+(entity{tuple_delimiter}Frites{tuple_delimiter}positive_point{tuple_delimiter}Les frites sont mentionnées comme un incontournable de l’établissement.){record_delimiter}
+(entity{tuple_delimiter}Accueil chaleureux{tuple_delimiter}positive_point{tuple_delimiter}La qualité de l’accueil contribue à une expérience agréable pour les clients.){record_delimiter}
+(entity{tuple_delimiter}Prix abordables{tuple_delimiter}positive_point{tuple_delimiter}La gamme de prix est raisonnable pour une clientèle variée, bien que certains avis divergent.){record_delimiter}
+(entity{tuple_delimiter}Amélioration des portions{tuple_delimiter}recommandation{tuple_delimiter}Étoffer les portions des burgers pour répondre aux critiques récurrentes des clients.){record_delimiter}
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Qualité de la viande{tuple_delimiter}Le restaurant est reconnu pour la qualité de la viande utilisée dans ses burgers.{tuple_delimiter}qualité des ingrédients{tuple_delimiter}0.9){record_delimiter}
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Variété des burgers{tuple_delimiter}Le restaurant propose une variété de burgers, attirant les amateurs de gastronomie décontractée et les végétariens.{tuple_delimiter}variété culinaire{tuple_delimiter}0.8){record_delimiter}
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Desserts faits maison{tuple_delimiter}Les desserts faits maison, notamment les cookies, renforcent l’attractivité du restaurant.{tuple_delimiter}qualité des desserts{tuple_delimiter}0.85){record_delimiter}
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Portions insuffisantes{tuple_delimiter}Certains clients critiquent les portions, notamment pour les burgers, ce qui constitue une critique récurrente.{tuple_delimiter}quantité des plats{tuple_delimiter}0.7){record_delimiter}
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Burger à la crème de truffe{tuple_delimiter}Le burger à la crème de truffe est une spécialité appréciée et mentionnée positivement.{tuple_delimiter}plat signature{tuple_delimiter}0.95){record_delimiter}
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Frites{tuple_delimiter}Les frites sont considérées comme un incontournable et sont souvent mentionnées positivement.{tuple_delimiter}accompagnement apprécié{tuple_delimiter}0.85){record_delimiter}
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Accueil chaleureux{tuple_delimiter}L’ambiance et l’accueil chaleureux améliorent l’expérience globale des clients.{tuple_delimiter}ambiance conviviale{tuple_delimiter}0.9){record_delimiter}
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Prix abordables{tuple_delimiter}Le restaurant est perçu comme abordable, attirant une clientèle variée malgré des avis partagés.{tuple_delimiter}rapport qualité-prix{tuple_delimiter}0.8){record_delimiter}
+(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Amélioration des portions{tuple_delimiter}Les portions pourraient être étoffées pour répondre aux attentes des clients.{tuple_delimiter}suggestion d’amélioration{tuple_delimiter}0.75){record_delimiter}
+(content_keywords{tuple_delimiter}restaurant, burgers, truffe, frites, cookies, portions, prix abordables, ambiance conviviale, végétarien, qualité des ingrédients){completion_delimiter}
+#############################"""]
+
+
+PROMPTS["user_extraction_examples"] = [
+    """
+
+Entity_types: [
+    "user",
+    "user_preference"
+  ]
+Text:
+Le user Vinh adore les restaurants	calme et qui propose de la bonne viande. Je sais que Vinh a 48 ans et habite a Serris. 
+
+################
+Output:
+(entity{tuple_delimiter}Vinh{tuple_delimiter}user{tuple_delimiter}Personne{tuple_delimiter}Utilisateur nommé Vinh.){record_delimiter}
+(entity{tuple_delimiter}48 ans{tuple_delimiter}user_attribute{tuple_delimiter}Âge{tuple_delimiter}Vinh a 48 ans.){record_delimiter}
+(entity{tuple_delimiter}Serris{tuple_delimiter}user_attribute{tuple_delimiter}Adresse{tuple_delimiter}Vinh réside à Serris.){record_delimiter}
+(entity{tuple_delimiter}Restaurants calmes{tuple_delimiter}user_preference{tuple_delimiter}Préférence{tuple_delimiter}Vinh préfère les restaurants offrant une ambiance calme et reposante.){record_delimiter}
+(entity{tuple_delimiter}Bonne viande{tuple_delimiter}user_preference{tuple_delimiter}Préférence{tuple_delimiter}Vinh apprécie particulièrement les restaurants proposant de la viande de qualité supérieure.){record_delimiter}
+(relationship{tuple_delimiter}Vinh{tuple_delimiter}48 ans{tuple_delimiter}Vinh est âgé de 48 ans, ce qui est une caractéristique personnelle.{tuple_delimiter}caractéristique personnelle{tuple_delimiter}0.95){record_delimiter}
+(relationship{tuple_delimiter}Vinh{tuple_delimiter}Serris{tuple_delimiter}Vinh habite à Serris, une information importante pour localiser ses préférences.{tuple_delimiter}localisation{tuple_delimiter}0.9){record_delimiter}
+(relationship{tuple_delimiter}Vinh{tuple_delimiter}Restaurants calmes{tuple_delimiter}Vinh recherche des restaurants calmes car il apprécie les lieux paisibles.{tuple_delimiter}calme, ambiance{tuple_delimiter}0.9){record_delimiter}
+(relationship{tuple_delimiter}Vinh{tuple_delimiter}Bonne viande{tuple_delimiter}Vinh préfère les restaurants proposant de la viande de qualité, ce qui reflète ses goûts gastronomiques.{tuple_delimiter}gastronomie, qualité{tuple_delimiter}0.85){record_delimiter}
+(content_keywords{tuple_delimiter}utilisateur, attribut, préférence, restaurants calmes, bonne viande, Serris, 48 ans){completion_delimiter}
+"""
 ]
 
 

@@ -31,7 +31,8 @@ from lightrag.prompt import PROMPTS
 from lightrag.kg.mongo_impl import MongoKVStorage
 from lightrag.kg.milvus_impl import MilvusVectorDBStorage
 
-
+# Print DEFAULT_ENTITY_TYPES to verify local version
+print("DEFAULT_ENTITY_TYPES:", PROMPTS["DEFAULT_ENTITY_TYPES"])
 
 # Configuration Milvus - utiliser les valeurs de .env ou les valeurs par défaut
 if not os.environ.get("MILVUS_URI"):
@@ -136,142 +137,47 @@ class RabbitMQConsumer:
         return self.connection, self.channel
 
     async def process_message(self, message: aio_pika.IncomingMessage):
-        """Traite les messages de différents types de manière flexible"""
-        logger.info(f"🔍 Début du traitement du message: {message}")
-        
+        """Traite un message reçu de RabbitMQ."""
         async with message.process():
             try:
-                # Décodage du message
+                # Vérifier que LightRAG est initialisé
+                if self.rag is None:
+                    logger.error("LightRAG n'est pas initialisé")
+                    self.initialize_rag()
+                    if self.rag is None:
+                        raise RuntimeError("Impossible d'initialiser LightRAG")
+
+                # Décoder le message JSON
                 body = message.body.decode()
-                logger.debug(f"📨 Corps du message décodé: {body}")
+                msg_data = json.loads(body)
+                logger.info(f"Message brut reçu de RabbitMQ: {body}")
                 
-                payload = json.loads(body)
-                logger.info(f"📦 Payload reçu: {payload}")
+                # Extraire le CID et traiter le message
+                cid = msg_data.get("cid")
+                logger.info(f"Traitement du restaurant CID {cid}")
                 
-                # Validation du type de message
-                message_type = payload.get('type')
-                if not message_type:
-                    logger.warning(f"❗ Message sans type: {payload}")
-                    return
-                
-                logger.info(f"🏷️ Type de message détecté: {message_type}")
-                
-                # Dictionnaire de stratégies de traitement
-                message_handlers = {
-                    'activity': self.process_activity_message,
-                    'user': self.process_user_message
-                }
-                
-                # Récupération et exécution du gestionnaire approprié
-                handler = message_handlers.get(message_type)
-                if handler:
-                    logger.info(f"🚀 Démarrage du traitement pour le type {message_type}")
-                    await handler(payload)
-                    logger.info(f"✅ Traitement terminé pour le type {message_type}")
-                else:
-                    logger.warning(f"❌ Type de message non géré : {message_type}")
-            
-            except json.JSONDecodeError:
-                logger.error(f"❌ Erreur de décodage JSON: {message.body}")
-            except Exception as e:
-                logger.error(f"❌ Erreur lors du traitement du message: {e}", exc_info=True)
-            finally:
-                logger.info("🏁 Fin du traitement du message")
-
-    async def process_user_message(self, payload: dict):
-        """
-        Traite les messages de type 'user'
-        
-        Args:
-            payload (dict): Charge utile du message
-        """
-        try:
-            text = payload.get('user_info', '')
-            if not text:
-                logger.warning("Message utilisateur vide")
-                return
-            
-            # Insertion avec le prompt_domain spécifique à 'user'
-            await self.insert_to_lightrag(text, prompt_domain='user')
-            
-        except Exception as e:
-            logger.error(f"Erreur lors du traitement du message utilisateur: {e}")
-            logger.error(traceback.format_exc())
-
-    async def process_activity_message(self, payload: dict):
-        """
-        Traite les messages de type 'activity'
-        
-        Args:
-            payload (dict): Charge utile du message
-        """
-        try:
-            resume = payload.get('resume')
-            cid = payload.get('cid')
-            
-            if not resume or not cid:
-                logger.warning(f"Message activity incomplet: {payload}")
-                return
-            
-            # Insertion avec le prompt_domain spécifique à 'activity'
-            await self.insert_to_lightrag(resume, prompt_domain='activity')
-        
-        except Exception as e:
-            logger.error(f"Erreur lors du traitement du message d'activité: {e}")
-            logger.error(traceback.format_exc())
-
-    async def insert_to_lightrag(self, text: str, prompt_domain: str = 'activity'):
-        """
-        Méthode d'insertion dans LightRAG
-        
-        Args:
-            text (str): Texte à insérer
-            prompt_domain (str, optional): Domaine du prompt. Defaults to 'activity'.
-        """
-        try:
-            if self.rag is None:
-                logger.error("LightRAG n'est pas initialisé")
-                return
-            
-            logger.info(f"Insertion dans LightRAG avec le domaine: {prompt_domain}")
-            await self.rag.ainsert(text, prompt_domain=prompt_domain)
-            
-        except Exception as e:
-            logger.error(f"Erreur lors de l'insertion dans LightRAG: {e}")
-            logger.error(traceback.format_exc())
-
-    async def consume(self):
-        """
-        Consomme les messages de la file d'attente RabbitMQ avec un timeout
-        """
-        try:
-            # Créer la connexion et le canal si nécessaire
-            await self.connect()
-            
-            # Déclarer la file d'attente
-            queue = await self.channel.declare_queue(self.queue_name, auto_delete=False)
-            
-            logger.info(f"🔄 Démarrage de la consommation de la file {self.queue_name}")
-            
-            async with queue.iterator() as queue_iter:
-                async for message in queue_iter:
+                # Traiter le résumé avec LightRAG
+                resume = msg_data.get("resume", "")
+                if resume:
+                    logger.info(f"Début de l'insertion du document dans LightRAG pour le CID {cid}")
                     try:
-                        logger.debug(f"📥 Message reçu de la file {self.queue_name}")
-                        await self.process_message(message)
+                        await self.rag.ainsert(resume)
+                        logger.info(f"Document inséré avec succès dans LightRAG pour le CID {cid}")
                     except Exception as e:
-                        logger.error(f"❌ Erreur lors du traitement du message: {e}", exc_info=True)
-                        # Rejeter le message en cas d'erreur
-                        await message.reject(requeue=False)
-        
-        except asyncio.CancelledError:
-            logger.warning("🛑 Consommation annulée")
-        except Exception as e:
-            logger.error(f"❌ Erreur dans la consommation des messages: {e}", exc_info=True)
-        finally:
-            logger.info("🏁 Fin de la consommation des messages")
-            # Fermer la connexion si nécessaire
-            if hasattr(self, 'connection') and self.connection:
-                await self.connection.close()
+                        logger.error(f"Erreur lors de l'insertion dans LightRAG: {str(e)}")
+                        logger.error(traceback.format_exc())
+                        raise
+                    
+                    logger.info(f"Message traité avec succès pour le CID {cid}")
+                else:
+                    logger.warning(f"Résumé vide pour le CID {cid}")
+                    
+            except json.JSONDecodeError as e:
+                logger.error(f"Erreur de décodage JSON: {str(e)}")
+            except Exception as e:
+                logger.error(f"Erreur inattendue dans process_message: {str(e)}")
+                logger.error(traceback.format_exc())
+                raise
 
     async def start(self):
         """Démarre la consommation des messages de manière asynchrone."""
@@ -282,6 +188,7 @@ class RabbitMQConsumer:
             # Configurer la queue
             queue = await channel.declare_queue(self.queue_name, durable=True)
             
+            # Démarrer la consommation
             logger.info("En attente de messages. Pour quitter, appuyez sur CTRL+C")
             await queue.consume(self.process_message)
             
@@ -330,7 +237,7 @@ class RabbitMQConsumer:
                 kv_storage="MongoKVStorage",
                 vector_storage="MilvusVectorDBStorage",
                 graph_storage="Neo4JStorage",
-                log_level="INFO",
+                log_level="DEBUG",
             )
             logger.info("LightRAG initialisé avec succès")
         except Exception as e:

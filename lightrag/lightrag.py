@@ -143,6 +143,11 @@ class LightRAG:
     addon_params: dict = field(default_factory=dict)
     convert_response_to_json_func: callable = convert_response_to_json
 
+
+    # Nouveau paramètre avec valeur par défaut
+    prompt_domain: str = field(default="activity")
+
+
     def __post_init__(self):
         log_file = os.path.join("lightrag.log")
         set_logger(log_file)
@@ -251,7 +256,13 @@ class LightRAG:
         loop = always_get_an_event_loop()
         return loop.run_until_complete(self.ainsert(string_or_strings))
 
-    async def ainsert(self, string_or_strings):
+    async def ainsert(self, string_or_strings, **kwargs):
+        # Récupérer le prompt_domain soit de kwargs, soit de l'instance
+        prompt_domain = kwargs.get('prompt_domain', self.prompt_domain)
+        
+        # Log du domaine de prompt utilisé
+        logger.info(f"Inserting with prompt domain: {prompt_domain}")
+        
         update_storage = False
         try:
             if isinstance(string_or_strings, str):
@@ -298,7 +309,7 @@ class LightRAG:
             logger.info(f"[New Chunks] inserting {len(inserting_chunks)} chunks")
 
             await self.chunks_vdb.upsert(inserting_chunks)
-
+            
             logger.info("[Entity Extraction]...")
             maybe_new_kg = await extract_entities(
                 inserting_chunks,
@@ -306,6 +317,7 @@ class LightRAG:
                 entity_vdb=self.entities_vdb,
                 relationships_vdb=self.relationships_vdb,
                 global_config=asdict(self),
+                prompt_domain=prompt_domain
             )
             if maybe_new_kg is None:
                 logger.warning("No new entities and relationships found")
