@@ -605,3 +605,34 @@ Pour plus d'informations sur chaque composant, consultez les README spécifiques
    - Vérifiez l'URI et les credentials dans la configuration
    - Assurez-vous que le service est accessible sur le port configuré (32719)
    - Vérifiez que la base de données existe et est active
+
+## Branches Spéciales
+
+### 🔬 clean-neo4j_milvus_mongodb_fineTune
+
+**Version Fine-Tuned de LightRAG**
+
+Cette branche représente une version améliorée et optimisée de LightRAG, avec un focus sur :
+
+- 🧠 **Extraction d'Entités Avancée** 
+  - Amélioration des prompts pour les domaines `user` et `activity`
+  - Génération systématique de relations entre entités
+  - Stratégies d'extraction plus dynamiques et contextuelles
+
+- 🔗 **Intégration Multi-Base de Données**
+  - Optimisation des interactions entre Neo4j, Milvus et MongoDB
+  - Stratégies de modélisation de graphe plus flexibles
+  - Amélioration de la cohérence des données entre différents systèmes de stockage
+
+- 🚀 **Performance et Fine-Tuning**
+  - Réduction de la redondance dans l'extraction d'entités
+  - Amélioration de la précision des embeddings
+  - Optimisation des requêtes inter-bases de données
+
+#### Principaux Changements
+- Refactoring des prompts d'extraction d'entités
+- Ajout de scripts utilitaires pour la gestion des bases de données
+- Amélioration de la modularité du code
+- Correction de bugs mineurs
+
+**⚠️ Note**: Cette branche est en cours de développement et de test. Utilisez-la avec précaution.
