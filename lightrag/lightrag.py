@@ -326,6 +326,101 @@ class LightRAG:
 
             await self.full_docs.upsert(new_docs)
             await self.text_chunks.upsert(inserting_chunks)
+            
+            # Ajout de la logique de catégorisation des activités après l'insertion
+            if update_storage and self.chunk_entity_relation_graph is not None:
+                from .config.activity_categories import activity_categories_manager
+                
+                # Log du début du processus de catégorisation
+                logger.info("🔍 Début de la catégorisation des activités")
+                
+                async def categorize_activities():
+                    # Récupérer le modèle LLM de manière sécurisée
+                    use_model_func = self.global_config.get("llm_model_func") if hasattr(self, 'global_config') else None
+                    
+                    # Préparer la session Neo4j
+                    async with self.chunk_entity_relation_graph._driver.session() as session:
+                        # Initialiser les catégories et la relation
+                        init_query = """
+                        // Créer les catégories prédéfinies si elles n'existent pas
+                        MERGE (restauration:ActivityCategory {name: 'Restauration'})
+                        MERGE (culture:ActivityCategory {name: 'Culture et Loisirs'})
+                        MERGE (sport:ActivityCategory {name: 'Sport et Fitness'})
+                        MERGE (voyage:ActivityCategory {name: 'Voyage et Tourisme'})
+                        MERGE (formation:ActivityCategory {name: 'Formation et Éducation'})
+                        MERGE (bienetre:ActivityCategory {name: 'Bien-être et Santé'})
+                        MERGE (pro:ActivityCategory {name: 'Événements Professionnels'})
+                        MERGE (unknown:ActivityCategory {name: 'Unknown'})
+                        
+                        // Requête pour récupérer les activités sans catégorie
+                        WITH 1 as dummy
+                        MATCH (n {entity_type: 'activity'})
+                        WHERE NOT (n)-[:CLASSIFIED_AS]->(:ActivityCategory)
+                        RETURN n.description as description, id(n) as node_id
+                        """
+                        
+                        # Exécuter l'initialisation et récupérer les activités
+                        result = await session.run(init_query)
+                        activities = await result.data()
+                        
+                        # Initialiser les compteurs
+                        categorized_count, unknown_count = 0, 0
+                        
+                        # Traiter chaque activité
+                        for activity in activities:
+                            node_id = activity['node_id']
+                            description = activity['description']
+                            
+                            # Déterminer la catégorie
+                            category = activity_categories_manager.get_category(description)
+                            
+                            # Essayer avec LLM si catégorie inconnue
+                            if category == "Unknown" and use_model_func:
+                                try:
+                                    llm_prompt = f"""
+                                    Analyse la description suivante et détermine sa catégorie parmi ces options :
+                                    {", ".join(activity_categories_manager.list_categories())}
+                                    
+                                    Description : "{description}"
+                                    
+                                    Réponds uniquement avec le nom de la catégorie. 
+                                    Si aucune catégorie ne correspond, réponds "Unknown".
+                                    """
+                                    
+                                    llm_response = await use_model_func(llm_prompt)
+                                    llm_category = llm_response.strip().title()
+                                    
+                                    category = llm_category if llm_category in activity_categories_manager.list_categories() else "Unknown"
+                                except Exception as e:
+                                    logger.warning(f"❌ Échec de la catégorisation LLM : {e}")
+                                    category = "Unknown"
+                            
+                            # Mettre à jour les compteurs
+                            if category == "Unknown":
+                                unknown_count += 1
+                            else:
+                                categorized_count += 1
+                            
+                            # Créer la relation de catégorisation
+                            try:
+                                relation_query = """
+                                MATCH (activity) WHERE id(activity) = $node_id
+                                WITH activity
+                                MATCH (cat:ActivityCategory {name: $category_name})
+                                MERGE (activity)-[:CLASSIFIED_AS]->(cat)
+                                """
+                                await session.run(relation_query, node_id=node_id, category_name=category)
+                            except Exception as e:
+                                logger.error(f"❌ Erreur lors de la catégorisation de l'activité {node_id} : {e}")
+                        
+                        # Log récapitulatif
+                        logger.info(f"✅ Catégorisation terminée")
+                        logger.info(f"📊 Résumé :")
+                        logger.info(f"   - Activités catégorisées : {categorized_count}")
+                        logger.info(f"   - Activités non catégorisées : {unknown_count}")
+                
+                # Exécuter la catégorisation
+                await categorize_activities()
         finally:
             if update_storage:
                 await self._insert_done()
