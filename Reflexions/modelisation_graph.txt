@@ -8,42 +8,43 @@ graph TD
     classDef preference fill:#FFDAB9,stroke:none;
     classDef linkTo stroke:#FF4500,stroke-width:3px;
 
-    activity1[Activity: JUNK LYON]:::activity
-    activity2[Activity: Concert de Mylem Farmer]:::activity
-    activity3[Activity: Bistro Concert]:::activity
-    activity4[Activity: La Table du Chef]:::activity
-    activity5[Activity: Jazz Night at Blue Note]:::activity
+    activity1["entity_type: activity,<br>labels: junk lyon,<br>description: restaurant spécialisé en burgers avec une ambiance conviviale et décontractée,<br>source_id: chunk-1a2b3c4d5678ef901234"]:::activity
+    activity2["entity_type: activity,<br>labels: concert de mylem farmer,<br>description: concert en plein air de mylem farmer, très attendu cette saison,<br>source_id: chunk-2b3c4d5e6789fa012345"]:::activity
+    activity3["entity_type: activity,<br>labels: bistro concert,<br>description: soirée concert dans un bistro local proposant des performances live,<br>source_id: chunk-3c4d5e6f7890ab123456"]:::activity
+    activity4["entity_type: activity,<br>labels: la table du chef,<br>description: restaurant gastronomique reconnu pour sa cuisine d'exception,<br>source_id: chunk-4d5e6f7a8901bc234567"]:::activity
+    activity5["entity_type: activity,<br>labels: jazz night at blue note,<br>description: soirée jazz dans une salle réputée pour son ambiance musicale unique,<br>source_id: chunk-5e6f7a8b9012cd345678"]:::activity
 
-    category1[Category: Restaurant]:::category
-    category2[Category: Concert]:::category
-    category3[Category: Jazz Event]:::category
+    category1["entity_type: category,<br>labels: restaurant,<br>description: catégorie pour les activités de restauration,<br>source_id: chunk-6f7a8b9c0123de456789"]:::category
+    category2["entity_type: category,<br>labels: concert,<br>description: catégorie pour les événements musicaux,<br>source_id: chunk-7a8b9c0d1234ef567890"]:::category
+    category3["entity_type: category,<br>labels: jazz event,<br>description: catégorie spécifique pour les événements jazz,<br>source_id: chunk-8b9c0d1e2345fa678901"]:::category
 
-    positive1[Positive Point: Ambiance chaleureuse]:::positive
-    positive2[Positive Point: Ambiance musicale]:::positive
-    positive3[Positive Point: Service exceptionnel]:::positive
-    positive4[Positive Point: Expérience gastronomique]:::positive
+    positive1["entity_type: positive_point,<br>labels: accessibilité,<br>description: l'établissement propose des installations adaptées pour les personnes à mobilité réduite,<br>source_id: chunk-9c0d1e2f3456ab789012"]:::positive
+    positive2["entity_type: positive_point,<br>labels: ambiance musicale,<br>description: une ambiance musicale qui agrémente l'expérience des clients,<br>source_id: chunk-0d1e2f3a4567bc890123"]:::positive
+    positive3["entity_type: positive_point,<br>labels: service exceptionnel,<br>description: un service attentionné et de qualité,<br>source_id: chunk-1e2f3a4b5678cd901234"]:::positive
+    positive4["entity_type: positive_point,<br>labels: expérience gastronomique,<br>description: une expérience culinaire de haute qualité,<br>source_id: chunk-2f3a4b5c6789de012345"]:::positive
 
-    negative1[Negative Point: Portions insuffisantes]:::negative
+    negative1["entity_type: negative_point,<br>labels: portions insuffisantes,<br>description: certaines critiques soulignent que les portions des burgers sont jugées insuffisantes pour le prix,<br>source_id: chunk-3a4b5c6d7890ef123456"]:::negative
+    negative2["entity_type: negative_point,<br>labels: rapport qualité-prix,<br>description: des avis partagés, certains clients estimant le prix trop élevé pour la qualité reçue,<br>source_id: chunk-4b5c6d7e8901fa234567"]:::negative
 
-    recommandation1[Recommandation: Plat signature - Burger à la crème de truffe]:::recommandation
-    recommandation2[Recommandation: Activité - Visite du musée des Beaux-Arts]:::recommandation
-    recommandation3[Recommandation: Cocktail - Mojito spécial jazz]:::recommandation
+    recommandation1["entity_type: recommandation,<br>labels: amélioration des portions,<br>description: revoir la taille des portions pour mieux satisfaire les attentes des clients,<br>source_id: chunk-5c6d7e8f9012bc345678"]:::recommandation
+    recommandation2["entity_type: recommandation,<br>labels: visite du musée des beaux-arts,<br>description: proposer une visite culturelle dans un musée de renom,<br>source_id: chunk-6d7e8f9a0123cd456789"]:::recommandation
+    recommandation3["entity_type: recommandation,<br>labels: cocktail mojito spécial jazz,<br>description: mettre en avant un cocktail spécial adapté aux soirées jazz,<br>source_id: chunk-7e8f9a0b1234de567890"]:::recommandation
 
-    user1[User: Albert]:::user
-    user2[User: Sophie]:::user
+    user1["entity_type: user,<br>labels: albert,<br>description: utilisateur intéressé par les concerts et les événements jazz,<br>source_id: chunk-8f9a0b1c2345ef678901"]:::user
+    user2["entity_type: user,<br>labels: sophie,<br>description: utilisatrice appréciant les restaurants gastronomiques et les activités culturelles,<br>source_id: chunk-9a0b1c2d3456fa789012"]:::user
 
-    preference1[User Preference: Adore les concerts]:::preference
-    preference2[User Preference: Aime les restaurants gastronomiques]:::preference
-    preference3[User Preference: Aime les soirées jazz]:::preference
+    preference1["entity_type: preference,<br>labels: adore les concerts,<br>description: préfère assister à des concerts en live,<br>source_id: chunk-0b1c2d3e4567bc890123"]:::preference
+    preference2["entity_type: preference,<br>labels: aime les restaurants gastronomiques,<br>description: apprécie les restaurants haut de gamme avec une cuisine raffinée,<br>source_id: chunk-1c2d3e4f5678cd901234"]:::preference
+    preference3["entity_type: preference,<br>labels: aime les soirées jazz,<br>description: particulièrement intéressé par les événements de jazz live,<br>source_id: chunk-2d3e4f5a6789de012345"]:::preference
 
-    %% Relations entre les activités et catégories
+    %% relations entre les activités et catégories
     activity1 -->|CLASSIFIED_AS| category1
     activity3 -->|CLASSIFIED_AS| category1
     activity2 -->|CLASSIFIED_AS| category2
     activity4 -->|CLASSIFIED_AS| category1
     activity5 -->|CLASSIFIED_AS| category3
 
-    %% Relations entre les activités et les points positifs/négatifs/recommandations
+    %% relations entre les activités et les points positifs/négatifs/recommandations
     activity1 -->|HAS_FEATURE| positive1
     activity3 -->|HAS_FEATURE| positive2
     activity2 -->|HAS_FEATURE| positive2
@@ -51,16 +52,17 @@ graph TD
     activity4 -->|HAS_FEATURE| positive3
     activity5 -->|HAS_FEATURE| positive2
     activity1 -->|HAS_FEATURE| negative1
+    activity1 -->|HAS_FEATURE| negative2
     activity1 -->|RECOMMENDS| recommandation1
     activity4 -->|RECOMMENDS| recommandation2
     activity5 -->|RECOMMENDS| recommandation3
 
-    %% Relations entre les utilisateurs et leurs préférences
+    %% relations entre les utilisateurs et leurs préférences
     user1 -->|LIKES| preference1
     user1 -->|LIKES| preference3
     user2 -->|LIKES| preference2
 
-    %% Relations entre les préférences et les activités ou points positifs
+    %% relations entre les préférences et les activités ou points positifs
     preference1 -->|INTERESTED_IN| activity2:::linkTo
     preference1 -->|ALIGNED_WITH| positive2:::linkTo
     preference3 -->|INTERESTED_IN| activity5:::linkTo

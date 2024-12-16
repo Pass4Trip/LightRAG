@@ -72,7 +72,8 @@ if __name__ == "__main__":
     try:
         # Exemple d'utilisation
         #question = "Quels sont les restaurants avec une bonne accessibilité PMR?"
-        question = "Quels sont les restaurants avec un bon acceuil ?" 
+        #question = "Sais tu si je dois proposer à Vinh une nouvelle offre de voyager dédié au jeu de moins de 25 ans ?" 
+        question = "Liste moi ce que tu sais sur Vinh qui me permettra de lui proposer la meilleur activté le week end prochain" 
         response = query_lightrag(question)
         print(f"\nQuestion: {question}")
         print(f"\nRéponse: {response}")

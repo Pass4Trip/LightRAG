@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 from dataclasses import dataclass
 from typing import Any, Union, Tuple, List, Dict
 import inspect
@@ -207,6 +208,18 @@ class Neo4JStorage(BaseGraphStorage):
 
             return edges
 
+    RELATION_TYPE_MAPPING = {
+        # Structure : (source_type, target_type) : new_label
+        ('activity', 'positive_point'): 'HAS_FEATURE',
+        ('positive_point', 'activity'): 'HAS_FEATURE',
+        ('activity', 'negative_point'): 'HAS_FEATURE',
+        ('negative_point', 'activity'): 'HAS_FEATURE',
+        ('activity', 'recommandation'): 'RECOMMENDS',
+        ('recommandation', 'activity'): 'RECOMMENDS',
+        ('user', 'user_preference'): 'LIKES',
+        ('user_preference', 'user'): 'LIKES'
+    }
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
@@ -224,27 +237,47 @@ class Neo4JStorage(BaseGraphStorage):
         Upsert a node in the Neo4j database.
 
         Args:
-            node_id: The unique identifier for the node (used as label)
+            node_id: The unique identifier for the node
             node_data: Dictionary of node properties
         """
+        # Vérification de la connexion
+        if not self._driver:
+            logger.error("❌ Connexion Neo4j non initialisée")
+            return
+
+        # Log détaillé pour comprendre le contenu exact
+        logger.info(f"DEBUG upsert_node - node_id: {node_id}")
+        logger.info(f"DEBUG upsert_node - node_data: {node_data}")
+        logger.info(f"DEBUG upsert_node - node_data keys: {list(node_data.keys())}")
+
         label = node_id.strip('"')
+        logger.info(f"DEBUG upsert_node - label: {label}")
+        
         properties = node_data
 
         async def _do_upsert(tx: AsyncManagedTransaction):
-            query = f"""
-            MERGE (n:`{label}`)
-            SET n += $properties
-            """
-            await tx.run(query, properties=properties)
-            logger.debug(
-                f"Upserted node with label '{label}' and properties: {properties}"
-            )
+            try:
+                query = f"""
+                MERGE (n:`{label}`)
+                SET n += $properties
+                RETURN n
+                """
+                result = await tx.run(query, properties=properties)
+                record = await result.single()
+                
+                if record:
+                    logger.info(f"✅ Nœud créé/mis à jour avec succès : {label}")
+                else:
+                    logger.warning(f"⚠️ Aucun nœud créé pour : {label}")
+            except Exception as e:
+                logger.error(f"❌ Erreur lors de la création du nœud : {e}")
+                raise
 
         try:
             async with self._driver.session() as session:
                 await session.execute_write(_do_upsert)
         except Exception as e:
-            logger.error(f"Error during upsert: {str(e)}")
+            logger.error(f"Erreur lors de l'exécution de la transaction : {e}")
             raise
 
     @retry(
@@ -274,17 +307,40 @@ class Neo4JStorage(BaseGraphStorage):
         edge_properties = edge_data
 
         async def _do_upsert_edge(tx: AsyncManagedTransaction):
+            # Récupérer les types de nœuds source et target
+            type_query = f"""
+            MATCH (source:`{source_node_label}`), (target:`{target_node_label}`)
+            RETURN 
+                source.entity_type as source_type, 
+                target.entity_type as target_type
+            """
+            type_result = await tx.run(type_query)
+            type_record = await type_result.single()
+            
+            # Déterminer le type de relation
+            new_label = 'DIRECTED'
+            if type_record:
+                source_type = type_record['source_type']
+                target_type = type_record['target_type']
+                
+                # Recherche dynamique dans le mapping
+                relation_key = (source_type, target_type)
+                new_label = self.RELATION_TYPE_MAPPING.get(relation_key, 'DIRECTED')
+            
+            # Ajouter le type de relation aux propriétés
+            edge_properties['type'] = new_label
+            
             query = f"""
             MATCH (source:`{source_node_label}`)
             WITH source
             MATCH (target:`{target_node_label}`)
-            MERGE (source)-[r:DIRECTED]->(target)
+            MERGE (source)-[r:{new_label}]->(target)
             SET r += $properties
             RETURN r
             """
             await tx.run(query, properties=edge_properties)
             logger.debug(
-                f"Upserted edge from '{source_node_label}' to '{target_node_label}' with properties: {edge_properties}"
+                f"Upserted edge from '{source_node_label}' to '{target_node_label}' with type: {new_label}, properties: {edge_properties}"
             )
 
         try:
@@ -296,3 +352,105 @@ class Neo4JStorage(BaseGraphStorage):
 
     async def _node2vec_embed(self):
         print("Implemented but never called.")
+
+    async def categorize_activities(
+        self, 
+        activity_categories_manager, 
+        use_model_func=None, 
+        session=None
+    ) -> Dict[str, int]:
+        """
+        Catégorise les activités dans la base de données Neo4j.
+        
+        Args:
+            activity_categories_manager: Gestionnaire des catégories d'activités
+            use_model_func: Fonction optionnelle pour générer des catégories via LLM
+            session: Session Neo4j optionnelle
+        
+        Returns:
+            Dictionnaire avec les compteurs de catégorisation
+        """
+        # Relation type mapping
+        RELATION_TYPE_MAPPING = {
+            ('activity', 'ActivityCategory'): 'CLASSIFIED_AS',
+        }
+        
+        # Utiliser la session existante ou en créer une nouvelle
+        if session is None:
+            session = self._driver.session()
+        
+        async with session:
+            # Initialiser les catégories prédéfinies
+            init_query = """
+            MERGE (restauration:ActivityCategory {name: 'Restauration'})
+            MERGE (culture:ActivityCategory {name: 'Culture et Loisirs'})
+            MERGE (sport:ActivityCategory {name: 'Sport et Fitness'})
+            MERGE (voyage:ActivityCategory {name: 'Voyage et Tourisme'})
+            MERGE (formation:ActivityCategory {name: 'Formation et Éducation'})
+            MERGE (bienetre:ActivityCategory {name: 'Bien-être et Santé'})
+            MERGE (pro:ActivityCategory {name: 'Événements Professionnels'})
+            MERGE (unknown:ActivityCategory {name: 'Unknown'})
+            
+            // Requête pour récupérer les activités sans catégorie
+            WITH 1 as dummy
+            MATCH (n {entity_type: 'activity'})
+            WHERE NOT (n)-[:CLASSIFIED_AS]->(:ActivityCategory)
+            RETURN n.description as description, elementId(n) as node_id, labels(n) as node_labels
+            """
+            
+            # Exécuter l'initialisation et récupérer les activités
+            result = await session.run(init_query)
+            activities = await result.data()
+            
+            # Compteurs de catégorisation
+            categorization_counts = {
+                'total': 0,
+                'categorized': 0,
+                'uncategorized': 0
+            }
+            
+            for activity in activities:
+                description = activity['description']
+                node_id = activity['node_id']
+                node_labels = activity['node_labels']
+                
+                # Utiliser le gestionnaire de catégories pour déterminer la catégorie
+                if use_model_func:
+                    category = await use_model_func(description)
+                else:
+                    category = activity_categories_manager.get_category(description)
+                
+                # Catégorisation par défaut si aucune catégorie n'est trouvée
+                if not category:
+                    category = 'Unknown'
+                    categorization_counts['uncategorized'] += 1
+                else:
+                    categorization_counts['categorized'] += 1
+                
+                categorization_counts['total'] += 1
+                
+                # Requête pour créer la relation de catégorisation
+                categorize_query = """
+                MATCH (activity) WHERE elementId(activity) = $node_id
+                WITH activity
+                MATCH (cat:ActivityCategory {name: $category_name})
+                MERGE (activity)-[r:CLASSIFIED_AS]->(cat)
+                RETURN activity, cat
+                """
+                
+                try:
+                    await session.run(
+                        categorize_query, 
+                        node_id=node_id, 
+                        category_name=category
+                    )
+                    logger.info(f"🏷️ Catégorisation de l'activité {node_id} dans la catégorie {category}")
+                except Exception as e:
+                    logger.error(f"❌ Erreur lors de la catégorisation de l'activité {node_id} : {e}")
+            
+            logger.info("📊 Résumé de la catégorisation :")
+            logger.info(f"   - Total d'activités : {categorization_counts['total']}")
+            logger.info(f"   - Activités catégorisées : {categorization_counts['categorized']}")
+            logger.info(f"   - Activités non catégorisées : {categorization_counts['uncategorized']}")
+            
+            return categorization_counts

@@ -21,7 +21,6 @@ PROMPTS["DEFAULT_ENTITY_TYPES"] = [
 
 PROMPTS["activity_ENTITY_TYPES"] = [
     "activity",
-    "user_preference",
     "positive_point",
     "negative_point",
     "recommandation"
