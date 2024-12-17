@@ -85,7 +85,9 @@ Key requirements:
 
 9. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter. 
 
-10. When finished, output {completion_delimiter}
+10. It is CRITICAL to extract ONLY ONE node with entity_type="activity" per message. The only node that can have entity_type="activity" is the one designated in the phrase: Résumé du Restaurant
+
+11. When finished, output {completion_delimiter}
 
 
 ######################
@@ -152,6 +154,8 @@ Key requirements:
 8. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'restaurant' entity. If an entity cannot be directly or indirectly connected to the 'restaurant' through a relationship, it should not be considered valid or relevant.
 
 9. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter. 
+
+10. It is CRITICAL to extract ONLY ONE node with entity_type="user" per message. The only node that can have entity_type="user" is the one designated in the phrase: Les informations suivantes concernent
 
 10. When finished, output {completion_delimiter}
 
