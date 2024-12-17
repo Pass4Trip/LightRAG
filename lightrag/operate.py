@@ -438,6 +438,7 @@ async def extract_entities(
             "activity": [],
             "user": [],
             "user_preference": [],
+            "user_attribute": [],
             "other": []
         }
 
@@ -484,6 +485,8 @@ async def extract_entities(
                     entity_types["user"].append(if_entities["entity_name"])
                 elif if_entities["entity_type"] == "user_preference":
                     entity_types["user_preference"].append(if_entities["entity_name"])
+                elif if_entities["entity_type"] == "user_attribute":
+                    entity_types["user_attribute"].append(if_entities["entity_name"])
                 else:
                     entity_types["other"].append(if_entities["entity_name"])                
                 continue
@@ -512,7 +515,21 @@ async def extract_entities(
                 maybe_edges[(user, preference)].append(default_relation)
                 logger.info(f"Generated User-Preference Relation: {default_relation}")
 
-        # 2. Lier les activités à leur contexte principal (s'il existe)
+        # 2. Lier les attributs utilisateur aux utilisateurs
+        for user in entity_types["user"]:
+            for attribute in entity_types["user_attribute"]:
+                default_relation = {
+                    "src_id": user,
+                    "tgt_id": attribute,
+                    "description": f"Attribut de {user}",
+                    "keywords": "information utilisateur",
+                    "weight": 1,
+                    "source_id": chunk_key
+                }
+                maybe_edges[(user, attribute)].append(default_relation)
+                logger.info(f"Generated User-Attribute Relation: {default_relation}")
+
+        # 3. Lier les activités à leur contexte principal (s'il existe)
         if len(entity_types["activity"]) > 0:
             main_activity = entity_types["activity"][0]  # Première activité comme contexte principal
             for other_entity in entity_types["other"]:
