@@ -369,7 +369,7 @@ async def extract_entities(
     already_entities = 0
     already_relations = 0
 
-    async def _process_single_content(chunk_key_dp: tuple[str, TextChunkSchema]):
+    async def _process_single_content(chunk_key_dp: tuple[str, TextChunkSchema], use_history: bool = True):
         nonlocal already_processed, already_entities, already_relations
         chunk_key = chunk_key_dp[0]
         chunk_dp = chunk_key_dp[1]
@@ -389,31 +389,33 @@ async def extract_entities(
         logger.info(f"  Completion Delimiter: {context_base['completion_delimiter']}")
         logger.info(f"  Entity Types: {context_base['entity_types']}")
         logger.info(f"  Language: {context_base['language']}")
-        #logger.info(f"  entity_extract_prompt: {entity_extract_prompt}")
         
         hint_prompt = entity_extract_prompt.format(
             **context_base, input_text="{input_text}"
         ).format(**context_base, input_text=content)
         
-        #logger.info(f"Formatted Extraction Prompt (first 1000 chars): {hint_prompt[:1000]}...")
-        #logger.info(f"Formatted Extraction Prompt (full text): {hint_prompt}...") 
-        
         final_result = await use_llm_func(hint_prompt)
         logger.info(f"Initial LLM Response (first 1000 chars): {final_result[:1000]}...")
         
-        history = pack_user_ass_to_openai_messages(hint_prompt, final_result)
+        history = pack_user_ass_to_openai_messages(hint_prompt, final_result) if use_history else None
         for now_glean_index in range(entity_extract_max_gleaning):
-            glean_result = await use_llm_func(continue_prompt, history_messages=history)
+            glean_result = await use_llm_func(
+                continue_prompt, 
+                history_messages=history if use_history else None
+            )
             logger.info(f"Gleaning iteration {now_glean_index + 1} result (first 500 chars): {glean_result[:500]}...")
 
-            history += pack_user_ass_to_openai_messages(continue_prompt, glean_result)
+            if use_history:
+                history += pack_user_ass_to_openai_messages(continue_prompt, glean_result)
+            
             final_result += glean_result
             
             if now_glean_index == entity_extract_max_gleaning - 1:
                 break
 
             if_loop_result: str = await use_llm_func(
-                if_loop_prompt, history_messages=history
+                if_loop_prompt, 
+                history_messages=history if use_history else None
             )
             if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
             logger.info(f"Should continue gleaning? Answer: {if_loop_result}")

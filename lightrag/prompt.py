@@ -298,26 +298,26 @@ En somme, JUNK LYON est une adresse à considérer pour les amateurs de burgers 
 
 ################
 Output:
-(entity{tuple_delimiter}JUNK LYON{tuple_delimiter}activity{tuple_delimiter}Restaurant situé à Lyon, spécialisé dans les burgers avec une gamme de prix raisonnable de 10 à 20 euros. Ambiance chaleureuse et décontractée, appréciée pour ses plats comme les burgers, frites et cookies. Propose livraison, vente à emporter et repas sur place.){record_delimiter}
-(entity{tuple_delimiter}Qualité de la viande{tuple_delimiter}positive_point{tuple_delimiter}La viande utilisée dans les burgers est appréciée pour sa qualité supérieure.){record_delimiter}
-(entity{tuple_delimiter}Variété des burgers{tuple_delimiter}positive_point{tuple_delimiter}Le restaurant offre une variété de burgers, dont un burger veggie, adapté aux végétariens.){record_delimiter}
-(entity{tuple_delimiter}Desserts faits maison{tuple_delimiter}positive_point{tuple_delimiter}Les cookies faits maison sont particulièrement appréciés par les clients.){record_delimiter}
-(entity{tuple_delimiter}Portions insuffisantes{tuple_delimiter}negative_point{tuple_delimiter}Certains clients trouvent que les portions des burgers sont trop petites par rapport au prix.){record_delimiter}
-(entity{tuple_delimiter}Burger à la crème de truffe{tuple_delimiter}positive_point{tuple_delimiter}Le burger à la crème de truffe est décrit comme exceptionnel par plusieurs clients.){record_delimiter}
-(entity{tuple_delimiter}Frites{tuple_delimiter}positive_point{tuple_delimiter}Les frites sont mentionnées comme un incontournable de l’établissement.){record_delimiter}
-(entity{tuple_delimiter}Accueil chaleureux{tuple_delimiter}positive_point{tuple_delimiter}La qualité de l’accueil contribue à une expérience agréable pour les clients.){record_delimiter}
-(entity{tuple_delimiter}Prix abordables{tuple_delimiter}positive_point{tuple_delimiter}La gamme de prix est raisonnable pour une clientèle variée, bien que certains avis divergent.){record_delimiter}
-(entity{tuple_delimiter}Amélioration des portions{tuple_delimiter}recommandation{tuple_delimiter}Étoffer les portions des burgers pour répondre aux critiques récurrentes des clients.){record_delimiter}
-(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Qualité de la viande{tuple_delimiter}Le restaurant est reconnu pour la qualité de la viande utilisée dans ses burgers.{tuple_delimiter}qualité des ingrédients{tuple_delimiter}0.9){record_delimiter}
-(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Variété des burgers{tuple_delimiter}Le restaurant propose une variété de burgers, attirant les amateurs de gastronomie décontractée et les végétariens.{tuple_delimiter}variété culinaire{tuple_delimiter}0.8){record_delimiter}
-(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Desserts faits maison{tuple_delimiter}Les desserts faits maison, notamment les cookies, renforcent l’attractivité du restaurant.{tuple_delimiter}qualité des desserts{tuple_delimiter}0.85){record_delimiter}
-(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Portions insuffisantes{tuple_delimiter}Certains clients critiquent les portions, notamment pour les burgers, ce qui constitue une critique récurrente.{tuple_delimiter}quantité des plats{tuple_delimiter}0.7){record_delimiter}
-(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Burger à la crème de truffe{tuple_delimiter}Le burger à la crème de truffe est une spécialité appréciée et mentionnée positivement.{tuple_delimiter}plat signature{tuple_delimiter}0.95){record_delimiter}
-(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Frites{tuple_delimiter}Les frites sont considérées comme un incontournable et sont souvent mentionnées positivement.{tuple_delimiter}accompagnement apprécié{tuple_delimiter}0.85){record_delimiter}
-(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Accueil chaleureux{tuple_delimiter}L’ambiance et l’accueil chaleureux améliorent l’expérience globale des clients.{tuple_delimiter}ambiance conviviale{tuple_delimiter}0.9){record_delimiter}
-(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Prix abordables{tuple_delimiter}Le restaurant est perçu comme abordable, attirant une clientèle variée malgré des avis partagés.{tuple_delimiter}rapport qualité-prix{tuple_delimiter}0.8){record_delimiter}
-(relationship{tuple_delimiter}JUNK LYON{tuple_delimiter}Amélioration des portions{tuple_delimiter}Les portions pourraient être étoffées pour répondre aux attentes des clients.{tuple_delimiter}suggestion d’amélioration{tuple_delimiter}0.75){record_delimiter}
-(content_keywords{tuple_delimiter}restaurant, burgers, truffe, frites, cookies, portions, prix abordables, ambiance conviviale, végétarien, qualité des ingrédients){completion_delimiter}
+("entity"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"activity"{tuple_delimiter}"Restaurant situé à Lyon, spécialisé dans les burgers avec une gamme de prix raisonnable de 10 à 20 euros. Ambiance chaleureuse et décontractée, appréciée pour ses plats comme les burgers, frites et cookies. Propose livraison, vente à emporter et repas sur place."){record_delimiter}
+("entity"{tuple_delimiter}"Qualité de la viande"{tuple_delimiter}"positive_point"{tuple_delimiter}"La viande utilisée dans les burgers est appréciée pour sa qualité supérieure."){record_delimiter}
+("entity"{tuple_delimiter}"Variété des burgers"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant offre une variété de burgers, dont un burger veggie, adapté aux végétariens."){record_delimiter}
+("entity"{tuple_delimiter}"Desserts faits maison"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les cookies faits maison sont particulièrement appréciés par les clients."){record_delimiter}
+("entity"{tuple_delimiter}"Portions insuffisantes"{tuple_delimiter}"negative_point"{tuple_delimiter}"Certains clients trouvent que les portions des burgers sont trop petites par rapport au prix."){record_delimiter}
+("entity"{tuple_delimiter}"Burger à la crème de truffe"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le burger à la crème de truffe est décrit comme exceptionnel par plusieurs clients."){record_delimiter}
+("entity"{tuple_delimiter}"Frites"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les frites sont mentionnées comme un incontournable de l’établissement."){record_delimiter}
+("entity"{tuple_delimiter}"Accueil chaleureux"{tuple_delimiter}"positive_point"{tuple_delimiter}"La qualité de l’accueil contribue à une expérience agréable pour les clients."){record_delimiter}
+("entity"{tuple_delimiter}"Prix abordables"{tuple_delimiter}"positive_point"{tuple_delimiter}"La gamme de prix est raisonnable pour une clientèle variée, bien que certains avis divergent."){record_delimiter}
+("entity"{tuple_delimiter}"Amélioration des portions"{tuple_delimiter}"recommandation"{tuple_delimiter}"Étoffer les portions des burgers pour répondre aux critiques récurrentes des clients."){record_delimiter}
+("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Qualité de la viande"{tuple_delimiter}"Le restaurant est reconnu pour la qualité de la viande utilisée dans ses burgers."{tuple_delimiter}"qualité des ingrédients"{tuple_delimiter}0.9){record_delimiter}
+("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Variété des burgers"{tuple_delimiter}"Le restaurant propose une variété de burgers, attirant les amateurs de gastronomie décontractée et les végétariens."{tuple_delimiter}"variété culinaire"{tuple_delimiter}0.8){record_delimiter}
+("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Desserts faits maison"{tuple_delimiter}"Les desserts faits maison, notamment les cookies, renforcent l’attractivité du restaurant."{tuple_delimiter}"qualité des desserts"{tuple_delimiter}0.85){record_delimiter}
+("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Portions insuffisantes"{tuple_delimiter}"Certains clients critiquent les portions, notamment pour les burgers, ce qui constitue une critique récurrente."{tuple_delimiter}"quantité des plats"{tuple_delimiter}0.7){record_delimiter}
+("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Burger à la crème de truffe"{tuple_delimiter}"Le burger à la crème de truffe est une spécialité appréciée et mentionnée positivement."{tuple_delimiter}"plat signature"{tuple_delimiter}0.95){record_delimiter}
+("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Frites"{tuple_delimiter}"Les frites sont considérées comme un incontournable et sont souvent mentionnées positivement."{tuple_delimiter}"accompagnement apprécié"{tuple_delimiter}0.85){record_delimiter}
+("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Accueil chaleureux"{tuple_delimiter}"L’ambiance et l’accueil chaleureux améliorent l’expérience globale des clients."{tuple_delimiter}"ambiance conviviale"{tuple_delimiter}0.9){record_delimiter}
+("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Prix abordables"{tuple_delimiter}"Le restaurant est perçu comme abordable, attirant une clientèle variée malgré des avis partagés."{tuple_delimiter}"rapport qualité-prix"{tuple_delimiter}0.8){record_delimiter}
+("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Amélioration des portions"{tuple_delimiter}"Les portions pourraient être étoffées pour répondre aux attentes des clients."{tuple_delimiter}"suggestion d’amélioration"{tuple_delimiter}0.75){record_delimiter}
+("content_keywords"{tuple_delimiter}"restaurant, burgers, truffe, frites, cookies, portions, prix abordables, ambiance conviviale, végétarien, qualité des ingrédients"){completion_delimiter}
 #############################"""]
 
 
@@ -329,20 +329,20 @@ Entity_types: [
     "user_preference"
   ]
 Text:
-Le user Vinh adore les restaurants	calme et qui propose de la bonne viande. Je sais que Vinh a 48 ans et habite a Serris. 
+Les informations suivantes concernent Vinh : Vinh adore les restaurants	calme et qui propose de la bonne viande. Je sais que Vinh a 48 ans et habite a Serris. 
 
 ################
 Output:
-(entity{tuple_delimiter}Vinh{tuple_delimiter}user{tuple_delimiter}Utilisateur nommé Vinh{record_delimiter}
-(entity{tuple_delimiter}48 ans{tuple_delimiter}user_attribute{tuple_delimiter}Vinh est  48 ans.){record_delimiter}
-(entity{tuple_delimiter}Serris{tuple_delimiter}user_attribute{tuple_delimiter}Vinh réside à Serris.){record_delimiter}
-(entity{tuple_delimiter}Restaurants calmes{tuple_delimiter}user_preference{tuple_delimiter}Vinh préfère les restaurants offrant une ambiance calme et reposante.){record_delimiter}
-(entity{tuple_delimiter}Bonne viande{tuple_delimiter}user_preference{tuple_delimiter}Vinh apprécie particulièrement les restaurants proposant de la viande de qualité supérieure.){record_delimiter}
-(relationship{tuple_delimiter}Vinh{tuple_delimiter}48 ans{tuple_delimiter}Vinh est âgé de 48 ans, ce qui est une caractéristique personnelle.{tuple_delimiter}caractéristique personnelle{tuple_delimiter}0.95){record_delimiter}
-(relationship{tuple_delimiter}Vinh{tuple_delimiter}Serris{tuple_delimiter}Vinh habite à Serris, une information importante pour localiser ses préférences.{tuple_delimiter}localisation{tuple_delimiter}0.9){record_delimiter}
-(relationship{tuple_delimiter}Vinh{tuple_delimiter}Restaurants calmes{tuple_delimiter}Vinh recherche des restaurants calmes car il apprécie les lieux paisibles.{tuple_delimiter}calme, ambiance{tuple_delimiter}0.9){record_delimiter}
-(relationship{tuple_delimiter}Vinh{tuple_delimiter}Bonne viande{tuple_delimiter}Vinh préfère les restaurants proposant de la viande de qualité, ce qui reflète ses goûts gastronomiques.{tuple_delimiter}gastronomie, qualité{tuple_delimiter}0.85){record_delimiter}
-(content_keywords{tuple_delimiter}utilisateur, attribut, préférence, restaurants calmes, bonne viande, Serris, 48 ans){completion_delimiter}
+("entity"{tuple_delimiter}"Vinh"{tuple_delimiter}"user"{tuple_delimiter}"Utilisateur nommé Vinh"){record_delimiter}
+("entity"{tuple_delimiter}"48 ans"{tuple_delimiter}"user_attribute"{tuple_delimiter}"Vinh à 48 ans"){record_delimiter}
+("entity"{tuple_delimiter}"Serris"{tuple_delimiter}"user_attribute"{tuple_delimiter}"Vinh réside à Serris"){record_delimiter}
+("entity"{tuple_delimiter}"Restaurants calmes"{tuple_delimiter}"user_preference"{tuple_delimiter}"Vinh préfère les restaurants offrant une ambiance calme et reposante"){record_delimiter}
+("entity"{tuple_delimiter}"Bonne viande"{tuple_delimiter}"user_preference"{tuple_delimiter}"Vinh apprécie particulièrement les restaurants proposant de la viande de qualité supérieure"){record_delimiter}
+("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"48 ans"{tuple_delimiter}"Vinh est âgé de 48 ans"{tuple_delimiter}0.95){record_delimiter}
+("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"Serris"{tuple_delimiter}"Vinh habite à Serris, une information importante pour localiser ses préférences."{tuple_delimiter}"localisation"{tuple_delimiter}0.9){record_delimiter}
+("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"Restaurants calmes"{tuple_delimiter}"Vinh recherche des restaurants calmes car il apprécie les lieux paisibles."{tuple_delimiter}"calme, ambiance"{tuple_delimiter}0.9){record_delimiter}
+("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"Bonne viande"{tuple_delimiter}"Vinh préfère les restaurants proposant de la viande de qualité, ce qui reflète ses goûts gastronomiques."{tuple_delimiter}"gastronomie, qualité"{tuple_delimiter}0.85){record_delimiter}
+("content_keywords"{tuple_delimiter}"restaurants calmes, bonne viande, Serris, 48 ans"){completion_delimiter}
 """
 ]
 
