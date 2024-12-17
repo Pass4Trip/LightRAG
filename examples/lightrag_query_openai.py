@@ -1,24 +1,43 @@
 import os
-from dotenv import load_dotenv
-from pathlib import Path
 import sys
+import logging
+import re
+from typing import Dict, Any
+import json
+import aio_pika
+import asyncio
+from pathlib import Path
+from dotenv import load_dotenv
+import uuid
+from datetime import datetime
+import traceback
+import time
+
+# Load environment variables from .env file
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add local LightRAG source to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from lightrag.lightrag import LightRAG, QueryParam
-from lightrag.llm import gpt_4o_mini_complete
+from lightrag.llm import gpt_4o_mini_complete, gpt_4o_complete
+from lightrag.utils import EmbeddingFunc
+from lightrag.prompt import PROMPTS
+from lightrag.kg.mongo_impl import MongoKVStorage
+from lightrag.kg.milvus_impl import MilvusVectorDBStorage
 
 
-import logging
 
-# Configuration du logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configuration Milvus - utiliser les valeurs de .env ou les valeurs par défaut
+if not os.environ.get("MILVUS_URI"):
+    os.environ["MILVUS_URI"] = "tcp://localhost:19530"
 
-# Chargement des variables d'environnement
-load_dotenv()
-
+    
 def init_lightrag():
     """
     Initialise LightRAG avec MongoDB, Neo4j et Milvus
@@ -73,7 +92,7 @@ if __name__ == "__main__":
         # Exemple d'utilisation
         #question = "Quels sont les restaurants avec une bonne accessibilité PMR?"
         #question = "Sais tu si je dois proposer à Vinh une nouvelle offre de voyager dédié au jeu de moins de 25 ans ?" 
-        question = "Liste moi ce que tu sais sur Vinh qui me permettra de lui proposer la meilleur activté le week end prochain" 
+        question = "Conseil moi un restaurant tendance et avec de des bon burgers" 
         response = query_lightrag(question)
         print(f"\nQuestion: {question}")
         print(f"\nRéponse: {response}")
