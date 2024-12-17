@@ -45,14 +45,20 @@ class ActivityCategoriesManager:
         """
         description_lower = description.lower()
         
+        logger.info(f"🔍 Recherche de catégorie pour la description : {description_lower}")
+        
         for category, keywords in self._categories.items():
             # Ignorer la catégorie "Unknown"
             if category == "Unknown":
                 continue
             
-            if any(keyword in description_lower for keyword in keywords):
+            matching_keywords = [keyword for keyword in keywords if keyword in description_lower]
+            if matching_keywords:
+                logger.info(f"✅ Catégorie trouvée : {category}")
+                logger.info(f"   Mots-clés correspondants : {matching_keywords}")
                 return category
         
+        logger.warning(f"❌ Aucune catégorie trouvée, utilisation de la catégorie par défaut : {self._default_category}")
         return self._default_category
     
     def add_category(self, category_name: str, keywords: List[str]):

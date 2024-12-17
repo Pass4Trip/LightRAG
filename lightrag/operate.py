@@ -415,6 +415,17 @@ async def extract_entities(
 
         maybe_nodes = defaultdict(list)
         maybe_edges = defaultdict(list)
+
+        
+        # Collecter tous les noms d'entités par type
+        entity_types = {
+            "activity": [],
+            "user": [],
+            "user_preference": [],
+            "other": []
+        }
+
+
         for record in records:
             logger.info(f"Processing Record: {record}")
             record = re.search(r"\((.*)\)", record)
@@ -435,6 +446,16 @@ async def extract_entities(
             if if_entities is not None:
                 logger.info(f"Found Entity: {if_entities}")
                 maybe_nodes[if_entities["entity_name"]].append(if_entities)
+                
+                # Collecter les entités par type
+                if if_entities["entity_type"] == "activity":
+                    entity_types["activity"].append(if_entities["entity_name"])
+                elif if_entities["entity_type"] == "user":
+                    entity_types["user"].append(if_entities["entity_name"])
+                elif if_entities["entity_type"] == "user_preference":
+                    entity_types["user_preference"].append(if_entities["entity_name"])
+                else:
+                    entity_types["other"].append(if_entities["entity_name"])                
                 continue
 
             if_relation = await _handle_single_relationship_extraction(
@@ -446,6 +467,36 @@ async def extract_entities(
                     if_relation
                 )
         
+        # Stratégie intelligente de génération de relations
+        # 1. Relations utilisateur-préférence
+        for user in entity_types["user"]:
+            for preference in entity_types["user_preference"]:
+                default_relation = {
+                    "src_id": user,
+                    "tgt_id": preference,
+                    "description": f"Préférence personnelle de {user}",
+                    "keywords": "préférence personnelle",
+                    "weight": 1,
+                    "source_id": chunk_key
+                }
+                maybe_edges[(user, preference)].append(default_relation)
+                logger.info(f"Generated User-Preference Relation: {default_relation}")
+
+        # 2. Lier les activités à leur contexte principal (s'il existe)
+        if len(entity_types["activity"]) > 0:
+            main_activity = entity_types["activity"][0]  # Première activité comme contexte principal
+            for other_entity in entity_types["other"]:
+                default_relation = {
+                    "src_id": main_activity,
+                    "tgt_id": other_entity,
+                    "description": f"Contexte lié à {main_activity}",
+                    "keywords": "contexte",
+                    "weight": 1,
+                    "source_id": chunk_key
+                }
+                maybe_edges[(main_activity, other_entity)].append(default_relation)
+                logger.info(f"Generated Activity Context Relation: {default_relation}")
+
         logger.info(f"DEBUG: Extracted Entities for Chunk {chunk_key}:")
         for entity_type, entities in maybe_nodes.items():
             logger.info(f"  Entity Type {entity_type}: {len(entities)} entities")
