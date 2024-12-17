@@ -217,7 +217,9 @@ class Neo4JStorage(BaseGraphStorage):
         ('activity', 'recommandation'): 'RECOMMENDS',
         ('recommandation', 'activity'): 'RECOMMENDS',
         ('user', 'user_preference'): 'LIKES',
-        ('user_preference', 'user'): 'LIKES'
+        ('user_preference', 'user'): 'LIKES',
+        ('user', 'user_attribute'): 'HAS_INFORMATION',
+        ('user_attribute', 'user'): 'HAS_INFORMATION',
     }
 
     @retry(
@@ -250,9 +252,19 @@ class Neo4JStorage(BaseGraphStorage):
         logger.info(f"DEBUG upsert_node - node_data: {node_data}")
         logger.info(f"DEBUG upsert_node - node_data keys: {list(node_data.keys())}")
 
+        # Validation des propriétés
+        if "custom_id" in node_data:
+            logger.info(f"Custom ID trouvé pour le nœud {node_id}: {node_data['custom_id']}")
+
+        # Vérifier que toutes les propriétés sont des types supportés par Neo4j
+        for key, value in node_data.items():
+            if not isinstance(value, (str, int, float, bool, list)):
+                logger.warning(f"⚠️ Propriété {key} de type {type(value)} non supportée par Neo4j, conversion en str")
+                node_data[key] = str(value)
+
         label = node_id.strip('"')
         logger.info(f"DEBUG upsert_node - label: {label}")
-        
+
         properties = node_data
 
         async def _do_upsert(tx: AsyncManagedTransaction):
@@ -264,7 +276,7 @@ class Neo4JStorage(BaseGraphStorage):
                 """
                 result = await tx.run(query, properties=properties)
                 record = await result.single()
-                
+
                 if record:
                     logger.info(f"✅ Nœud créé/mis à jour avec succès : {label}")
                 else:
@@ -316,20 +328,20 @@ class Neo4JStorage(BaseGraphStorage):
             """
             type_result = await tx.run(type_query)
             type_record = await type_result.single()
-            
+
             # Déterminer le type de relation
             new_label = 'DIRECTED'
             if type_record:
                 source_type = type_record['source_type']
                 target_type = type_record['target_type']
-                
+
                 # Recherche dynamique dans le mapping
                 relation_key = (source_type, target_type)
                 new_label = self.RELATION_TYPE_MAPPING.get(relation_key, 'DIRECTED')
-            
+
             # Ajouter le type de relation aux propriétés
             edge_properties['type'] = new_label
-            
+
             query = f"""
             MATCH (source:`{source_node_label}`)
             WITH source

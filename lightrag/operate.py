@@ -187,10 +187,24 @@ async def _merge_nodes_then_upsert(
             already_entitiy_types = [already_node["entity_type"]]
             already_source_ids = split_string_by_multi_markers(already_node["source_id"], [GRAPH_FIELD_SEP])
             already_description = [already_node["description"]]
+            # Récupérer les metadata existantes
+            already_metadata = {k: v for k, v in already_node.items() 
+                              if k not in ["entity_type", "description", "source_id", "entity_name"]}
         else:
             already_entitiy_types = []
             already_source_ids = []
             already_description = []
+            already_metadata = {}
+
+        # Fusionner les metadata de tous les nœuds
+        metadata = {}
+        for node in nodes_data:
+            node_metadata = {k: v for k, v in node.items() 
+                           if k not in ["entity_type", "description", "source_id", "entity_name"]}
+            metadata.update(node_metadata)
+        
+        # Combiner avec les metadata existantes
+        metadata.update(already_metadata)
 
         entity_type = sorted(
             Counter(
@@ -212,6 +226,7 @@ async def _merge_nodes_then_upsert(
             entity_type=entity_type,
             description=description,
             source_id=source_id,
+            **metadata  # Ajouter les metadata au nœud
         )
         await knowledge_graph_inst.upsert_node(
             entity_name,
@@ -297,7 +312,8 @@ async def extract_entities(
     entity_vdb: BaseVectorStorage,
     relationships_vdb: BaseVectorStorage,
     global_config: dict,
-    prompt_domain: str = "default"
+    prompt_domain: str = "default",
+    metadata: dict = None
 ) -> Union[BaseGraphStorage, None]:
     logger.info(f"Entity extraction using prompt domain: {prompt_domain}")
     use_llm_func: callable = global_config["llm_model_func"]
@@ -445,6 +461,20 @@ async def extract_entities(
             )
             if if_entities is not None:
                 logger.info(f"Found Entity: {if_entities}")
+                
+                # Récupérer les metadata spécifiques au type d'entité
+                entity_metadata = {}
+                if metadata:
+                    if prompt_domain == "activity" and "cid" in metadata:
+                        entity_metadata["custom_id"] = metadata["cid"]
+                    elif prompt_domain == "user" and "user_id" in metadata:
+                        entity_metadata["custom_id"] = metadata["user_id"]
+                
+                # Ajouter les metadata à l'entité si disponibles
+                if entity_metadata and if_entities["entity_type"] == prompt_domain:
+                    if_entities.update(entity_metadata)
+                    logger.info(f"Added metadata to entity: {entity_metadata}")
+                
                 maybe_nodes[if_entities["entity_name"]].append(if_entities)
                 
                 # Collecter les entités par type
