@@ -326,8 +326,9 @@ class Neo4JStorage(BaseGraphStorage):
                 source.entity_type as source_type, 
                 target.entity_type as target_type
             """
-            type_result = await tx.run(type_query)
-            type_record = await type_result.single()
+            
+            result = await tx.run(type_query)
+            type_record = await result.single()
 
             # Déterminer le type de relation
             new_label = 'DIRECTED'
@@ -466,3 +467,82 @@ class Neo4JStorage(BaseGraphStorage):
             logger.info(f"   - Activités non catégorisées : {categorization_counts['uncategorized']}")
             
             return categorization_counts
+
+    async def merge_duplicate_users(self):
+        """
+        Fusionne les nœuds utilisateurs qui ont le même custom_id.
+        Conserve toutes les relations existantes.
+        """
+        if not self._driver:
+            logger.error("❌ Connexion Neo4j non initialisée")
+            return
+
+        async def _do_merge(tx):
+            # Trouver les custom_id qui ont des doublons
+            find_duplicates_query = """
+            MATCH (u:user)
+            WHERE u.custom_id IS NOT NULL
+            WITH u.custom_id as cid, collect(u) as users
+            WHERE size(users) > 1
+            RETURN cid, users
+            """
+            
+            result = await tx.run(find_duplicates_query)
+            records = await result.records()  # Utiliser records() au lieu de fetch()
+            
+            for record in records:
+                custom_id = record["cid"]
+                users = record["users"]
+                logger.info(f"Fusion des utilisateurs avec custom_id: {custom_id}")
+                
+                # Garder le premier nœud et fusionner les autres
+                primary_user = users[0]
+                duplicate_users = users[1:]
+                
+                for duplicate in duplicate_users:
+                    # Transférer toutes les relations entrantes
+                    merge_in_query = """
+                    MATCH (duplicate) WHERE id(duplicate) = $duplicate_id
+                    MATCH (primary) WHERE id(primary) = $primary_id
+                    MATCH (source)-[r]->(duplicate)
+                    WHERE NOT source = primary
+                    CALL apoc.merge.relationship(source, type(r), r.properties, primary) YIELD rel
+                    DELETE r
+                    """
+                    
+                    # Transférer toutes les relations sortantes
+                    merge_out_query = """
+                    MATCH (duplicate) WHERE id(duplicate) = $duplicate_id
+                    MATCH (primary) WHERE id(primary) = $primary_id
+                    MATCH (duplicate)-[r]->(target)
+                    WHERE NOT target = primary
+                    CALL apoc.merge.relationship(primary, type(r), r.properties, target) YIELD rel
+                    DELETE r
+                    """
+                    
+                    # Supprimer le nœud dupliqué
+                    delete_query = """
+                    MATCH (n) WHERE id(n) = $node_id
+                    DETACH DELETE n
+                    """
+                    
+                    params = {
+                        "duplicate_id": duplicate.id,
+                        "primary_id": primary_user.id,
+                        "node_id": duplicate.id
+                    }
+                    
+                    try:
+                        await tx.run(merge_in_query, params)
+                        await tx.run(merge_out_query, params)
+                        await tx.run(delete_query, params)
+                        logger.info(f"✅ Nœud fusionné et supprimé: {duplicate.id}")
+                    except Exception as e:
+                        logger.error(f"❌ Erreur lors de la fusion du nœud {duplicate.id}: {str(e)}")
+
+        try:
+            async with self._driver.session() as session:
+                await session.execute_write(_do_merge)
+                logger.info("✅ Fusion des utilisateurs terminée")
+        except Exception as e:
+            logger.error(f"❌ Erreur lors de la fusion des utilisateurs: {str(e)}")

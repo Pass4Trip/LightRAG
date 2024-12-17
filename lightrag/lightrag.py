@@ -259,6 +259,8 @@ class LightRAG:
     async def ainsert(self, string_or_strings, **kwargs):
         # Récupérer le prompt_domain soit de kwargs, soit de l'instance
         prompt_domain = kwargs.get('prompt_domain', self.prompt_domain)
+        # Récupérer les metadata
+        metadata = kwargs.get('metadata', {})
         
         # Log du domaine de prompt utilisé
         logger.info(f"Inserting with prompt domain: {prompt_domain}")
@@ -317,7 +319,8 @@ class LightRAG:
                 entity_vdb=self.entities_vdb,
                 relationships_vdb=self.relationships_vdb,
                 global_config=asdict(self),
-                prompt_domain=prompt_domain
+                prompt_domain=prompt_domain,
+                metadata=metadata
             )
             if maybe_new_kg is None:
                 logger.warning("No new entities and relationships found")

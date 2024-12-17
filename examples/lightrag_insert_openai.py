@@ -187,12 +187,18 @@ class RabbitMQConsumer:
         """
         try:
             text = payload.get('user_info', '')
+            user_id = payload.get('user_id')
+            
             if not text:
                 logger.warning("Message utilisateur vide")
                 return
             
-            # Insertion avec le prompt_domain spécifique à 'user'
-            await self.insert_to_lightrag(text, prompt_domain='user')
+            # Insertion avec le prompt_domain et metadata
+            await self.insert_to_lightrag(
+                text, 
+                prompt_domain='user',
+                metadata={'user_id': user_id} if user_id else None
+            )
             
         except Exception as e:
             logger.error(f"Erreur lors du traitement du message utilisateur: {e}")
@@ -213,20 +219,25 @@ class RabbitMQConsumer:
                 logger.warning(f"Message activity incomplet: {payload}")
                 return
             
-            # Insertion avec le prompt_domain spécifique à 'activity'
-            await self.insert_to_lightrag(resume, prompt_domain='activity')
+            # Insertion avec le prompt_domain et metadata
+            await self.insert_to_lightrag(
+                resume, 
+                prompt_domain='activity',
+                metadata={'cid': cid}
+            )
         
         except Exception as e:
             logger.error(f"Erreur lors du traitement du message d'activité: {e}")
             logger.error(traceback.format_exc())
 
-    async def insert_to_lightrag(self, text: str, prompt_domain: str = 'activity'):
+    async def insert_to_lightrag(self, text: str, prompt_domain: str = 'activity', metadata: dict = None):
         """
         Méthode d'insertion dans LightRAG
         
         Args:
             text (str): Texte à insérer
             prompt_domain (str, optional): Domaine du prompt. Defaults to 'activity'.
+            metadata (dict, optional): Métadonnées associées au texte. Defaults to None.
         """
         try:
             if self.rag is None:
@@ -234,7 +245,7 @@ class RabbitMQConsumer:
                 return
             
             logger.info(f"Insertion dans LightRAG avec le domaine: {prompt_domain}")
-            await self.rag.ainsert(text, prompt_domain=prompt_domain)
+            await self.rag.ainsert(text, prompt_domain=prompt_domain, metadata=metadata)
             
         except Exception as e:
             logger.error(f"Erreur lors de l'insertion dans LightRAG: {e}")
