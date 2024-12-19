@@ -718,9 +718,35 @@ async def extract_entities(
         # Log détaillé avant l'insertion dans Milvus
         logger.info(" Préparation de l'insertion dans Milvus (Relations)")
         logger.info(f" Nombre de relations à insérer : {len(data_for_vdb)}")
+        
+        # Mise à jour de Neo4j avec relation_id
         for relation_id, relation_data in data_for_vdb.items():
             logger.info(f" ID Relation : {relation_id}")
             logger.info(f" Données Relation : {relation_data}")
+            
+            # Récupérer l'arête existante
+            existing_edge = await knowledge_graph_inst.get_edge(
+                relation_data["src_id"], 
+                relation_data["tgt_id"]
+            )
+            
+            # Préparer les données de la relation
+            if existing_edge is None:
+                edge_data = {"relation_id": relation_id}
+            else:
+                # Copier toutes les données existantes et ajouter relation_id
+                edge_data = dict(existing_edge)
+                edge_data["relation_id"] = relation_id
+            
+            # Log pour vérification
+            logger.info(f"Données de la relation avant mise à jour : {edge_data}")
+            
+            # Mettre à jour la relation Neo4j
+            await knowledge_graph_inst.upsert_edge(
+                relation_data["src_id"], 
+                relation_data["tgt_id"], 
+                edge_data=edge_data
+            )
         
         await relationships_vdb.upsert(data_for_vdb)
     
@@ -1149,7 +1175,6 @@ async def _get_edge_data(
     query_param: QueryParam,
 ):
     results = await relationships_vdb.query(keywords, top_k=query_param.top_k)
-
     if not len(results):
         return "", "", ""
 
