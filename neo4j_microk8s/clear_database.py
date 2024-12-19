@@ -54,6 +54,33 @@ class Neo4jCleaner:
         finally:
             self.driver.close()
 
+    def execute_cypher_query(self, query, parameters=None):
+        """
+        Exécute une requête Cypher avec des paramètres optionnels
+        
+        Args:
+            query (str): Requête Cypher à exécuter
+            parameters (dict, optional): Paramètres de la requête
+        
+        Returns:
+            list: Résultats de la requête
+        """
+        try:
+            with self.driver.session() as session:
+                result = session.run(query, parameters or {})
+                return [record.values()[0] for record in result]
+        except Exception as e:
+            logger.error(f"Erreur lors de l'exécution de la requête Cypher : {e}")
+            raise
+
+    def close(self):
+        """
+        Ferme la connexion au driver Neo4j
+        """
+        if self.driver:
+            self.driver.close()
+            logger.info("Connexion Neo4j fermée.")
+
 def main():
     cleaner = Neo4jCleaner()
     cleaner.clear_database()
