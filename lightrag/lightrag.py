@@ -4,7 +4,7 @@ from tqdm.asyncio import tqdm as tqdm_async
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from functools import partial
-from typing import Type, cast
+from typing import Type, cast, Optional, List, Dict, Any
 
 from lightrag.llm import (
     gpt_4o_mini_complete,
@@ -377,7 +377,25 @@ class LightRAG:
         return loop.run_until_complete(self.ainsert_custom_kg(custom_kg))
 
     async def ainsert_custom_kg(self, custom_kg: dict):
+        """
+        Asynchronous method to insert custom knowledge graph data.
+        
+        Args:
+            custom_kg: Custom knowledge graph data
+        
+        Returns:
+            bool: Indicates if storage was updated
+        """
+        # Log d'entrée DÉTAILLÉ
+        logger.info("🚀 DÉBUT de ainsert_custom_kg")
+        logger.info(f"🔍 Docs reçus : {len(custom_kg.get('docs', []))}")
+        logger.info(f"🔍 Entities_data reçus : {len(custom_kg.get('entities', []))}")
+
+        # Reste du code inchangé
         update_storage = False
+        all_entities_data = []
+
+        # Le reste de la méthode reste identique
         try:
             # Insert chunks into vector storage
             all_chunks_data = {}
@@ -413,12 +431,22 @@ class LightRAG:
                         f"Entity '{entity_name}' has an UNKNOWN source_id. Please check the source mapping."
                     )
 
-                # Prepare node data
+                # Compute Milvus ID once and reuse it
+                milvus_id = compute_mdhash_id(entity_data["entity_name"].upper(), prefix="ent-")
                 node_data = {
                     "entity_type": entity_type,
                     "description": description,
                     "source_id": source_id,
+                    "milvus_id": milvus_id
                 }
+                # Debug log DÉTAILLÉ
+                logger.info(f"🔍 DEBUG Before upsert_node - entity_name: {entity_name}")
+                logger.info(f"🔍 DEBUG Before upsert_node - entity_data: {entity_data}")
+                logger.info(f"🔍 DEBUG Before upsert_node - node_data: {node_data}")
+                logger.info(f"🔍 DEBUG Before upsert_node - node_data keys: {list(node_data.keys())}")
+                logger.info(f"🔍 DEBUG Before upsert_node - milvus_id: {milvus_id}")
+                logger.info(f"🔍 DEBUG Before upsert_node - milvus_id type: {type(milvus_id)}")
+
                 # Insert node data into the knowledge graph
                 await self.chunk_entity_relation_graph.upsert_node(
                     entity_name, node_data=node_data
@@ -482,7 +510,7 @@ class LightRAG:
             # Insert entities into vector storage if needed
             if self.entities_vdb is not None:
                 data_for_vdb = {
-                    compute_mdhash_id(dp["entity_name"], prefix="ent-"): {
+                    dp["milvus_id"]: {  # Utiliser l'ID déjà calculé
                         "content": dp["entity_name"] + dp["description"],
                         "entity_name": dp["entity_name"],
                     }

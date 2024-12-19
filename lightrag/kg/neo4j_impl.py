@@ -247,38 +247,60 @@ class Neo4JStorage(BaseGraphStorage):
             logger.error("❌ Connexion Neo4j non initialisée")
             return
 
-        # Log détaillé pour comprendre le contenu exact
-        logger.info(f"DEBUG upsert_node - node_id: {node_id}")
-        logger.info(f"DEBUG upsert_node - node_data: {node_data}")
-        logger.info(f"DEBUG upsert_node - node_data keys: {list(node_data.keys())}")
+        # Log TRÈS détaillé
+        logger.info(f"🔍 DEBUG upsert_node - node_id: {node_id}")
+        logger.info(f"🔍 DEBUG upsert_node - node_data BRUT: {node_data}")
+        logger.info(f"🔍 DEBUG upsert_node - node_data keys: {list(node_data.keys())}")
+        logger.info(f"🔍 DEBUG upsert_node - node_data types: {[type(val) for val in node_data.values()]}")
 
         # Validation des propriétés
         if "custom_id" in node_data:
-            logger.info(f"Custom ID trouvé pour le nœud {node_id}: {node_data['custom_id']}")
+            logger.info(f"🏷️ Custom ID trouvé pour le nœud {node_id}: {node_data['custom_id']}")
 
         # Vérifier que toutes les propriétés sont des types supportés par Neo4j
-        for key, value in node_data.items():
+        for key, value in list(node_data.items()):
             if not isinstance(value, (str, int, float, bool, list)):
                 logger.warning(f"⚠️ Propriété {key} de type {type(value)} non supportée par Neo4j, conversion en str")
                 node_data[key] = str(value)
 
+        # Ajout explicite du milvus_id s'il existe
+        if 'milvus_id' in node_data:
+            logger.info(f"🌟 Milvus ID trouvé : {node_data['milvus_id']}")
+        else:
+            logger.warning("❌ Aucun Milvus ID trouvé dans node_data")
+
         label = node_id.strip('"')
-        logger.info(f"DEBUG upsert_node - label: {label}")
+        logger.info(f"🏷️ Label du nœud : {label}")
 
         properties = node_data
 
         async def _do_upsert(tx: AsyncManagedTransaction):
             try:
+                # Convertir toutes les propriétés en types supportés par Neo4j
+                clean_properties = {}
+                for key, value in properties.items():
+                    if isinstance(value, (str, int, float, bool)):
+                        clean_properties[key] = value
+                    else:
+                        clean_properties[key] = str(value)
+
+                # Log détaillé des propriétés
+                logger.info(f"🧹 clean_properties avant insertion: {clean_properties}")
+                logger.info(f"🧹 clean_properties keys: {list(clean_properties.keys())}")
+
                 query = f"""
                 MERGE (n:`{label}`)
-                SET n += $properties
+                SET n = $properties
                 RETURN n
                 """
-                result = await tx.run(query, properties=properties)
+                result = await tx.run(query, properties=clean_properties)
                 record = await result.single()
 
                 if record:
                     logger.info(f"✅ Nœud créé/mis à jour avec succès : {label}")
+                    # Log du nœud inséré
+                    node_record = record.data()['n']
+                    logger.info(f"🔬 DEBUG nœud inséré : {node_record}")
                 else:
                     logger.warning(f"⚠️ Aucun nœud créé pour : {label}")
             except Exception as e:
@@ -289,7 +311,7 @@ class Neo4JStorage(BaseGraphStorage):
             async with self._driver.session() as session:
                 await session.execute_write(_do_upsert)
         except Exception as e:
-            logger.error(f"Erreur lors de l'exécution de la transaction : {e}")
+            logger.error(f"❌ Erreur lors de l'exécution de la transaction : {e}")
             raise
 
     @retry(

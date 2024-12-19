@@ -315,6 +315,27 @@ async def extract_entities(
     prompt_domain: str = "default",
     metadata: dict = None
 ) -> Union[BaseGraphStorage, None]:
+    """
+    Extract entities from text chunks and process them.
+    
+    Args:
+        chunks: Dictionary of text chunks
+        knowledge_graph_inst: Graph storage instance
+        entity_vdb: Entity vector database
+        relationships_vdb: Relationships vector database
+        global_config: Global configuration dictionary
+        prompt_domain: Prompt domain for extraction
+        metadata: Additional metadata
+    
+    Returns:
+        BaseGraphStorage: Updated knowledge graph instance
+    """
+    # Log d'entrée DÉTAILLÉ
+    logger.info("🚀 DÉBUT de extract_entities")
+    logger.info(f"🔍 Nombre de chunks : {len(chunks)}")
+    logger.info(f"🔍 Domaine du prompt : {prompt_domain}")
+    logger.info(f"🔍 Métadonnées : {metadata}")
+
     logger.info(f"Entity extraction using prompt domain: {prompt_domain}")
     use_llm_func: callable = global_config["llm_model_func"]
     entity_extract_max_gleaning = global_config["entity_extract_max_gleaning"]
@@ -569,6 +590,10 @@ async def extract_entities(
         )
         return dict(maybe_nodes), dict(maybe_edges)
 
+
+
+
+
     results = []
     for result in tqdm_async(
         asyncio.as_completed([_process_single_content(c) for c in ordered_chunks]),
@@ -578,6 +603,8 @@ async def extract_entities(
     ):
         results.append(await result)
 
+
+
     maybe_nodes = defaultdict(list)
     maybe_edges = defaultdict(list)
     for m_nodes, m_edges in results:
@@ -585,6 +612,7 @@ async def extract_entities(
             maybe_nodes[k].extend(v)
         for k, v in m_edges.items():
             maybe_edges[tuple(sorted(k))].extend(v)
+
     logger.info("Inserting entities into storage...")
     logger.info(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
     logger.info(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
@@ -642,6 +670,36 @@ async def extract_entities(
             }
             for dp in all_entities_data
         }
+        
+        # Log détaillé avant l'insertion dans Milvus
+        logger.info(" Préparation de l'insertion dans Milvus (Entités)")
+        logger.info(f" Nombre d'entités à insérer : {len(data_for_vdb)}")
+        
+        # Mise à jour de Neo4j avec l'entity_id
+        for entity_id, entity_data in data_for_vdb.items():
+            logger.info(f" ID Entité : {entity_id}")
+            logger.info(f" Données Entité : {entity_data}")
+            
+            # Récupérer le nœud existant
+            existing_node = await knowledge_graph_inst.get_node(entity_data["entity_name"])
+            
+            # Préparer les données du nœud
+            if existing_node is None:
+                node_data = {"entity_id": entity_id}
+            else:
+                # Copier toutes les données existantes et ajouter entity_id
+                node_data = dict(existing_node)
+                node_data["entity_id"] = entity_id
+            
+            # Log pour vérification
+            logger.info(f"Données du nœud apres mise à jour : {node_data}")
+            
+            # Mettre à jour le nœud Neo4j
+            await knowledge_graph_inst.upsert_node(
+                entity_data["entity_name"], 
+                node_data=node_data
+            )
+        
         await entity_vdb.upsert(data_for_vdb)
 
     if relationships_vdb is not None:
@@ -656,8 +714,16 @@ async def extract_entities(
             }
             for dp in all_relationships_data
         }
+        
+        # Log détaillé avant l'insertion dans Milvus
+        logger.info(" Préparation de l'insertion dans Milvus (Relations)")
+        logger.info(f" Nombre de relations à insérer : {len(data_for_vdb)}")
+        for relation_id, relation_data in data_for_vdb.items():
+            logger.info(f" ID Relation : {relation_id}")
+            logger.info(f" Données Relation : {relation_data}")
+        
         await relationships_vdb.upsert(data_for_vdb)
-
+    
     return knowledge_graph_inst
 
 

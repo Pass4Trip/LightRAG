@@ -86,7 +86,25 @@ Pour arrêter et supprimer tous les conteneurs, y compris les orphelins :
 docker compose down --remove-orphans
 ```
 
+## Attu (Interface Web Milvus)
 
+### Installation
+```bash
+docker run -d --name milvus-attu -p 8000:3000 zilliz/attu:latest
+```
+
+### Connexion à Attu
+
+- **URL** : `http://localhost:8000`
+- **Paramètres de connexion** :
+  - Host: `localhost` ou `host.docker.internal`
+  - Port: `19530`
+  - Pas de credentials par défaut
+
+### Dépannage
+- Vérifiez que le conteneur Milvus est en cours d'exécution
+- Assurez-vous que le port 19530 est ouvert
+- Utilisez `docker logs milvus-standalone` pour voir les logs du serveur
 
 # Résolution du Problème de Connexion entre Attu et Milvus
 
@@ -106,3 +124,4 @@ Ajoutez le conteneur **Attu** au réseau Docker utilisé par Milvus (**milvus_do
 ```bash
 
 docker network connect milvus_docker_milvus attu-container             
+```
