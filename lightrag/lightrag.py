@@ -213,7 +213,7 @@ class LightRAG:
             namespace="entities",
             global_config=asdict(self),
             embedding_func=self.embedding_func,
-            meta_fields={"entity_name"},
+            meta_fields={"entity_name", "entity_type"},
         )
         self.relationships_vdb = self.vector_db_storage_cls(
             namespace="relationships",

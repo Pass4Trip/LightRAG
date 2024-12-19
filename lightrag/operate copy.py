@@ -667,7 +667,6 @@ async def extract_entities(
             compute_mdhash_id(dp["entity_name"], prefix="ent-"): {
                 "content": dp["entity_name"] + dp["description"],
                 "entity_name": dp["entity_name"],
-                "entity_type": dp.get("entity_type", "Unknown")
             }
             for dp in all_entities_data
         }
@@ -686,15 +685,11 @@ async def extract_entities(
             
             # Préparer les données du nœud
             if existing_node is None:
-                node_data = {
-                    "entity_id": entity_id,
-                    "entity_type": entity_data.get("entity_type", "Unknown")
-                }
+                node_data = {"entity_id": entity_id}
             else:
-                # Copier toutes les données existantes et ajouter entity_id et entity_type
+                # Copier toutes les données existantes et ajouter entity_id
                 node_data = dict(existing_node)
                 node_data["entity_id"] = entity_id
-                node_data["entity_type"] = existing_node.get("entity_type", entity_data.get("entity_type", "Unknown"))
             
             # Log pour vérification
             logger.info(f"Données du nœud apres mise à jour : {node_data}")
@@ -704,11 +699,6 @@ async def extract_entities(
                 entity_data["entity_name"], 
                 node_data=node_data
             )
-            
-            # Mettre à jour les données pour Milvus avec entity_type
-            entity_data_for_vdb = entity_data.copy()
-            entity_data_for_vdb["entity_type"] = node_data["entity_type"]
-            data_for_vdb[entity_id] = entity_data_for_vdb
         
         await entity_vdb.upsert(data_for_vdb)
 
