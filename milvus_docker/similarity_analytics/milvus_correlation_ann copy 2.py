@@ -67,6 +67,48 @@ class Neo4jQueryExecutor:
             self.driver.close()
             logger.info("Connexion Neo4j fermée.")
 
+    def get_node_details(self, node_ids):
+        """
+        Récupère les détails supplémentaires des nœuds depuis Neo4j
+        
+        Args:
+            node_ids (list): Liste des IDs de nœuds à récupérer
+        
+        Returns:
+            dict: Dictionnaire avec les détails des nœuds, indexés par leur ID
+        """
+        try:
+            # Préparer la requête Cypher pour récupérer les détails
+            cypher_query = """
+            MATCH (n)
+            WHERE n.entity_id IN $node_ids
+            RETURN 
+                n.entity_id AS entity_id, 
+                labels(n) AS labels, 
+                n.description AS description, 
+                n.entity_type AS entity_type
+            """
+            
+            # Exécuter la requête
+            with self.driver.session() as session:
+                result = session.run(cypher_query, {"node_ids": node_ids})
+                
+                # Convertir les résultats en dictionnaire
+                node_details = {}
+                for record in result:
+                    node_id = record['entity_id']
+                    node_details[node_id] = {
+                        'labels': record['labels'],
+                        'description': record['description'] or 'Pas de description',
+                        'entity_type': record['entity_type'] or 'Type non spécifié'
+                    }
+                
+                return node_details
+        
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des détails des nœuds : {e}")
+            return {}
+
 # Paramètres de connexion Milvus
 MILVUS_HOST = "localhost"
 MILVUS_PORT = "19530"
@@ -112,7 +154,8 @@ def get_user_preferences_nodes(neo4j_client, custom_id):
     """
     
     try:
-        return neo4j_client.execute_cypher_query(query, {"custom_id": custom_id})[0]
+        res = neo4j_client.execute_cypher_query(query, {"custom_id": custom_id})
+        return res[0]
     except Exception as e:
         logger.error(f"Erreur lors de la récupération des préférences utilisateur : {e}")
         return []
@@ -139,7 +182,20 @@ def get_positive_points_nodes(neo4j_client):
         logger.error(f"Erreur lors de la récupération des points positifs : {e}")
         return []
 
-def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_ids, top_k=5):
+def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    """
+    Calcule la similarité cosinus entre deux vecteurs.
+    
+    Args:
+        vec1 (np.ndarray): Premier vecteur
+        vec2 (np.ndarray): Deuxième vecteur
+    
+    Returns:
+        float: Similarité cosinus (plus proche de 0 = plus similaire)
+    """
+    return 1 - np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+
+def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_ids, top_k=5, distance_threshold=0.5):
     """
     Calcule les corrélations ANN avec un filtrage sur les nœuds cibles
     
@@ -148,6 +204,7 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
         node_ids (list): Liste des IDs de nœuds sources
         target_node_ids (list): Liste des IDs de nœuds cibles
         top_k (int, optional): Nombre de corrélations à retourner. Défaut à 5.
+        distance_threshold (float, optional): Seuil de distance maximal. Défaut à 0.5.
     
     Returns:
         list: Liste des corrélations ANN filtrées
@@ -186,6 +243,7 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
             
             # Extraire l'embedding du nœud source
             source_embedding = source_results[0].get('vector')
+            source_content = source_results[0].get('content')
             
             if source_embedding is None:
                 logger.warning(f"Pas d'embedding trouvé pour le nœud {source_node_id}")
@@ -193,38 +251,68 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
             
             # Recherche des voisins les plus proches
             search_params = {
-                "metric_type": "COSINE",
-                "params": {"nprobe": 10}
+                "metric_type": "COSINE",  # Similarité cosinus
+                "params": {
+                    "nlist": 1024,  # Nombre de clusters pour l'indexation IVF
+                    "nprobe": 20    # Réduction du nombre de clusters à sonder
+                }
             }
             
             results = collection.search(
                 data=[source_embedding],
                 anns_field="vector",
                 param=search_params,
-                limit=top_k + 1,  # +1 pour exclure le nœud source lui-même
+                limit=10000,
                 output_fields=["id", "content"]
             )
             
             # Filtrer et formater les résultats
             source_correlations = []
+            
             for result in results[0]:
+                # Filtres supplémentaires
                 if (result.id not in [source_node_id] and 
-                    result.id in target_node_ids):
-                    source_correlations.append({
-                        "correlated_node_id": result.id,
-                        "distance": result.distance,
-                        "content": result.entity.get('content')
-                    })
+                    result.id in target_node_ids and
+                    result.distance < distance_threshold):
+
+                    # Récupérer l'embedding du nœud corrélé
+                    correlated_query_expr = f'id == "{result.id}"'
+                    correlated_results = collection.query(
+                        expr=correlated_query_expr, 
+                        output_fields=["vector"]
+                    )
+                    
+                    if correlated_results:
+                        correlated_embedding = correlated_results[0].get('vector')
+                        
+                        # Calculer la similarité cosinus
+                        cosine_sim = cosine_similarity(
+                            np.array(source_embedding), 
+                            np.array(correlated_embedding)
+                        )
+                        
+                        source_correlations.append({
+                            "correlated_node_id": result.id,
+                            "distance": result.distance,
+                            "cosine_similarity": cosine_sim,
+                            "content": result.entity.get('content')
+                        })
                 
                 if len(source_correlations) == top_k:
                     break
+            
+            # Trier les corrélations par similarité cosinus
+            source_correlations.sort(key=lambda x: x['cosine_similarity'])
             
             # Ajouter les corrélations si non vides
             if source_correlations:
                 correlations.append({
                     "source_node_id": source_node_id,
-                    "correlations": source_correlations
+                    "correlations": source_correlations[:top_k]
                 })
+            else:
+                # Log supplémentaire si aucune corrélation n'est trouvée
+                logger.warning(f"Aucune corrélation trouvée pour le nœud {source_node_id}")
         
         return correlations
     
@@ -240,48 +328,74 @@ def main():
     neo4j_client = Neo4jQueryExecutor()
     
     try:
+        # ANSI color codes
+        RESET = "\033[0m"
+        BOLD = "\033[1m"
+        BLUE = "\033[94m"
+        GREEN = "\033[92m"
+        YELLOW = "\033[93m"
+        MAGENTA = "\033[95m"
+        RED = "\033[91m"
+        
         # Exemple avec un utilisateur spécifique
         custom_id = 'lea'
         
         # Récupérer les IDs des préférences utilisateur
         user_preference_node_ids = get_user_preferences_nodes(neo4j_client, custom_id)
-        logger.info(f"IDs des préférences utilisateur : {user_preference_node_ids}")
+
         
         # Récupérer les IDs des points positifs
         positive_points_node_ids = get_positive_points_nodes(neo4j_client)
-        logger.info(f"IDs des points positifs : {positive_points_node_ids}")
+    
+
         
         # Calculer les corrélations ANN
         correlations = compute_ann_correlations_with_filter(
             collection_name="entities", 
             node_ids=user_preference_node_ids, 
-            target_node_ids=positive_points_node_ids
+            target_node_ids=positive_points_node_ids,
+            distance_threshold=0.8  # Augmentation du seuil
         )
         
         # Afficher les résultats
-        print("\nRésultats des corrélations :")
-        for result in correlations:
-            source_node_id = result['source_node_id']
+        print(f"\n{BOLD}🔍 Résultats des corrélations ANN{RESET}")
+        print("=" * 50)
+        
+        # Récupérer les détails des nœuds sources
+        node_details = neo4j_client.get_node_details(user_preference_node_ids)
+        
+        for source_node_id in user_preference_node_ids:
+            # Afficher les informations du nœud source
+            source_details = node_details.get(source_node_id, {})
+            print(f"\n{'🌟' * 10} {BLUE}Nœud Source : {source_node_id}{RESET} {'🌟' * 10}")
+            print(f"{GREEN}  ◽ Labels     : {', '.join(source_details.get('labels', ['Aucun']))}{RESET}")
+            print(f"{YELLOW}  ◽ Description: {source_details.get('description', 'Pas de description')}{RESET}")
+            print(f"{MAGENTA}  ◽ Type       : {source_details.get('entity_type', 'Non spécifié')}{RESET}")
             
-            # Préparer la liste des nœuds corrélés
-            cypher_node_list = [source_node_id] + [corr['correlated_node_id'] for corr in result['correlations']]
+            # Rechercher les corrélations pour ce nœud source
+            source_correlations = next((
+                result['correlations'] for result in correlations 
+                if result['source_node_id'] == source_node_id
+            ), None)
             
-            # Générer la requête Cypher
-            cypher_query = f"""
-MATCH (n)
-WHERE n.entity_id IN {cypher_node_list}
-RETURN n
-"""
+            # Afficher les corrélations ou un message si aucune n'est trouvée
+            if source_correlations:
+                print(f"\n{BOLD}Corrélations :{RESET}")
+                for corr in source_correlations:
+                    correlated_node_id = corr['correlated_node_id']
+                    node_corr_details = neo4j_client.get_node_details([correlated_node_id])
+                    node_corr_details = node_corr_details.get(correlated_node_id, {})
+                    
+                    print(f"\n{GREEN}  🔗 Nœud Corrélé : {correlated_node_id}{RESET}")
+                    print(f"{GREEN}    ◽ Labels     : {', '.join(node_corr_details.get('labels', ['Aucun']))}{RESET}")
+                    print(f"{YELLOW}    ◽ Description: {node_corr_details.get('description', 'Pas de description')}{RESET}")
+                    print(f"{MAGENTA}    ◽ Type       : {node_corr_details.get('entity_type', 'Non spécifié')}{RESET}")
+                    print(f"{BLUE}    ◽ Distance   : {corr['distance']}{RESET}")
+                    print(f"{BLUE}    ◽ Similarité cosinus : {corr['cosine_similarity']}{RESET}")
+            else:
+                print(f"\n{RED}  ❌ Aucune corrélation trouvée pour ce nœud{RESET}")
             
-            print(f"\nNœud source : {source_node_id}")
-            print("Requête Cypher :")
-            print(cypher_query)
-            
-            print("Corrélations :")
-            for corr in result['correlations']:
-                print(f"  - Nœud : {corr['correlated_node_id']}")
-                print(f"    Distance : {corr['distance']}")
-                print(f"    Contenu : {corr['content']}")
+            print("-" * 50)
     
     except Exception as e:
         logger.error(f"Erreur lors de l'exécution : {e}")

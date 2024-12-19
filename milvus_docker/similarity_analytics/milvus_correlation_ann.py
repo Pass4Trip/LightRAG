@@ -182,7 +182,20 @@ def get_positive_points_nodes(neo4j_client):
         logger.error(f"Erreur lors de la récupération des points positifs : {e}")
         return []
 
-def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_ids, top_k=5, distance_threshold=0.8):
+def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    """
+    Calcule la similarité cosinus entre deux vecteurs.
+    
+    Args:
+        vec1 (np.ndarray): Premier vecteur
+        vec2 (np.ndarray): Deuxième vecteur
+    
+    Returns:
+        float: Similarité cosinus (plus proche de 0 = plus similaire)
+    """
+    return 1 - np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+
+def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_ids, top_k_milvus=1000, top_k_cosine=5, distance_threshold=0.5):
     """
     Calcule les corrélations ANN avec un filtrage sur les nœuds cibles
     
@@ -190,7 +203,8 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
         collection_name (str): Nom de la collection Milvus
         node_ids (list): Liste des IDs de nœuds sources
         target_node_ids (list): Liste des IDs de nœuds cibles
-        top_k (int, optional): Nombre de corrélations à retourner. Défaut à 5.
+        top_k_milvus (int, optional): Nombre de résultats Milvus. Défaut à 10.
+        top_k_cosine (int, optional): Nombre de résultats après similarité cosinus. Défaut à 5.
         distance_threshold (float, optional): Seuil de distance maximal. Défaut à 0.5.
     
     Returns:
@@ -211,7 +225,6 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
         # Charger la collection
         collection = Collection(collection_name)
         collection.load()
-        
         
         # Préparer les résultats
         correlations = []
@@ -237,7 +250,6 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
                 logger.warning(f"Pas d'embedding trouvé pour le nœud {source_node_id}")
                 continue
             
-            
             # Recherche des voisins les plus proches
             search_params = {
                 "metric_type": "COSINE",  # Similarité cosinus
@@ -247,25 +259,13 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
                 }
             }
             
-            # results = collection.search(
-            #     data=[source_embedding],
-            #     anns_field="vector",
-            #     param=search_params,
-            #     limit=top_k + 1,  # +1 pour exclure le nœud source lui-même
-            #     output_fields=["id", "content"]
-            # )
-            
             results = collection.search(
-            data=[source_embedding],
-            anns_field="vector",
-            param=search_params,
-            limit=10000,
-            #limit=top_k + 1,  # +1 pour exclure potentiellement le nœud source lui-même
-            output_fields=["id", "content"]
+                data=[source_embedding],
+                anns_field="vector",
+                param=search_params,
+                limit=top_k_milvus,
+                output_fields=["id", "content"]
             )
-
-                    
-            
             
             # Filtrer et formater les résultats
             source_correlations = []
@@ -276,14 +276,34 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
                     result.id in target_node_ids and
                     result.distance < distance_threshold):
 
-                    source_correlations.append({
-                        "correlated_node_id": result.id,
-                        "distance": result.distance,
-                        "content": result.entity.get('content')
-                    })
-                
-                if len(source_correlations) == top_k:
-                    break
+                    # Récupérer l'embedding du nœud corrélé
+                    correlated_query_expr = f'id == "{result.id}"'
+                    correlated_results = collection.query(
+                        expr=correlated_query_expr, 
+                        output_fields=["vector"]
+                    )
+                    
+                    if correlated_results:
+                        correlated_embedding = correlated_results[0].get('vector')
+                        
+                        # Calculer la similarité cosinus
+                        cosine_sim = cosine_similarity(
+                            np.array(source_embedding), 
+                            np.array(correlated_embedding)
+                        )
+                        
+                        source_correlations.append({
+                            "correlated_node_id": result.id,
+                            "distance": result.distance,
+                            "cosine_similarity": cosine_sim,
+                            "content": result.entity.get('content')
+                        })
+            
+            # Trier les corrélations par similarité cosinus
+            source_correlations.sort(key=lambda x: x['cosine_similarity'])
+            
+            # Limiter au top_k_cosine
+            source_correlations = source_correlations[:top_k_cosine]
             
             # Ajouter les corrélations si non vides
             if source_correlations:
@@ -294,9 +314,6 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
             else:
                 # Log supplémentaire si aucune corrélation n'est trouvée
                 logger.warning(f"Aucune corrélation trouvée pour le nœud {source_node_id}")
-
-
-        
         
         return correlations
     
@@ -322,7 +339,7 @@ def main():
         RED = "\033[91m"
         
         # Exemple avec un utilisateur spécifique
-        custom_id = 'alice'
+        custom_id = 'lea'
         
         # Récupérer les IDs des préférences utilisateur
         user_preference_node_ids = get_user_preferences_nodes(neo4j_client, custom_id)
@@ -338,6 +355,8 @@ def main():
             collection_name="entities", 
             node_ids=user_preference_node_ids, 
             target_node_ids=positive_points_node_ids,
+            top_k_milvus=1000, 
+            top_k_cosine=5, 
             distance_threshold=0.8  # Augmentation du seuil
         )
         
@@ -375,6 +394,7 @@ def main():
                     print(f"{YELLOW}    ◽ Description: {node_corr_details.get('description', 'Pas de description')}{RESET}")
                     print(f"{MAGENTA}    ◽ Type       : {node_corr_details.get('entity_type', 'Non spécifié')}{RESET}")
                     print(f"{BLUE}    ◽ Distance   : {corr['distance']}{RESET}")
+                    print(f"{BLUE}    ◽ Similarité cosinus : {corr['cosine_similarity']}{RESET}")
             else:
                 print(f"\n{RED}  ❌ Aucune corrélation trouvée pour ce nœud{RESET}")
             
