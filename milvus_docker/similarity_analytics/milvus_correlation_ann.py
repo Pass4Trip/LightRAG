@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from neo4j import GraphDatabase
 import numpy as np
 import logging
+from openai import OpenAI
+import json
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, 
@@ -321,6 +323,261 @@ def compute_ann_correlations_with_filter(collection_name, node_ids, target_node_
         logger.error(f"Erreur lors du calcul des corrélations ANN : {e}")
         return []
 
+def validate_correlation_with_gpt(
+    source_description: str, 
+    correlated_description: str, 
+    model: str = "gpt-4o-mini"
+) -> dict:
+    """
+    Valide la corrélation entre un nœud source et un nœud corrélé en utilisant GPT.
+    
+    Args:
+        source_description (str): Description du nœud source
+        correlated_description (str): Description du nœud corrélé
+        model (str, optional): Modèle GPT à utiliser. Défaut à "gpt-4o-mini".
+    
+    Returns:
+        dict: Résultat de la validation GPT
+    """
+    try:
+        client = OpenAI()
+        
+        # Prompt de validation
+        prompt = f"""
+        Tâche : Analyser la compatibilité entre une préférence utilisateur et un point positif de restaurant.
+
+        Préférence Utilisateur : {source_description}
+        Point Positif Restaurant : {correlated_description}
+
+        Instructions :
+        1. Évalue si le point positif du restaurant correspond à la préférence de l'utilisateur.
+        2. Génère un score de compatibilité entre 0 et 1.
+        3. Fournis une justification détaillée.
+        4. Si compatible, génère une description de recommandation personnalisée.
+
+        Format de réponse JSON :
+        {{
+            "is_valid": bool,
+            "compatibility_score": float,
+            "justification": str,
+            "recommendation_description": str
+        }}
+        """
+        
+        response = client.chat.completions.create(
+            model=model,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": "Tu es un assistant spécialisé en recommandations personnalisées de restaurants."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        # Parser la réponse JSON
+        validation_result = json.loads(response.choices[0].message.content)
+        
+        return validation_result
+    
+    except Exception as e:
+        logger.error(f"Erreur lors de la validation GPT : {e}")
+        return {
+            "is_valid": False,
+            "compatibility_score": 0.0,
+            "justification": f"Erreur de validation : {str(e)}",
+            "recommendation_description": ""
+        }
+
+def enrich_correlations_with_gpt_validation(correlations, neo4j_client):
+    """
+    Enrichit les corrélations avec une validation GPT.
+    
+    Args:
+        correlations (list): Liste des corrélations ANN
+        neo4j_client (Neo4jQueryExecutor): Client Neo4j
+    
+    Returns:
+        list: Corrélations enrichies avec validation GPT
+    """
+    try:
+        # Récupérer les détails des nœuds sources et corrélés
+        all_node_ids = set()
+        for correlation_group in correlations:
+            all_node_ids.add(correlation_group['source_node_id'])
+            for corr in correlation_group['correlations']:
+                all_node_ids.add(corr['correlated_node_id'])
+        
+        # Récupérer les détails des nœuds
+        node_details = neo4j_client.get_node_details(list(all_node_ids))
+        
+        # Enrichir les corrélations
+        for correlation_group in correlations:
+            source_node_id = correlation_group['source_node_id']
+            source_description = node_details.get(source_node_id, {}).get('description', '')
+            
+            for corr in correlation_group['correlations']:
+                correlated_node_id = corr['correlated_node_id']
+                correlated_description = node_details.get(correlated_node_id, {}).get('description', '')
+                
+                # Validation GPT
+                gpt_validation = validate_correlation_with_gpt(
+                    source_description, 
+                    correlated_description
+                )
+                
+                # Ajouter la validation GPT à la corrélation
+                corr['gpt_validation'] = gpt_validation
+        
+        return correlations
+    
+    except Exception as e:
+        logger.error(f"Erreur lors de l'enrichissement des corrélations : {e}")
+        return correlations
+
+def create_gpt_validated_relationships(neo4j_client, correlations):
+    """
+    Crée des relations 'RECO' dans Neo4j pour les corrélations validées par GPT.
+    
+    Args:
+        neo4j_client (Neo4jQueryExecutor): Client Neo4j
+        correlations (list): Liste des corrélations ANN avec validation GPT
+    
+    Returns:
+        int: Nombre de relations créées
+    """
+    try:
+        # Requête Cypher pour vérifier les relations existantes
+        check_existing_relation_query = """
+        MATCH (source {entity_id: $source_id})-[r:RECO]->(target {entity_id: $target_id})
+        RETURN r.status AS status, id(r) AS relationship_id
+        """
+        
+        # Requête Cypher pour supprimer une relation existante
+        delete_relation_query = """
+        MATCH ()-[r]->() WHERE id(r) = $relationship_id
+        DELETE r
+        """
+        
+        # Requête Cypher pour créer les relations
+        create_relation_query = """
+        MATCH (source {entity_id: $source_id}), (target {entity_id: $target_id})
+        CREATE (source)-[r:RECO {
+            description: $description,
+            weight_distance_cosine: $weight_distance,
+            weight_similarity_cosine: $weight_similarity,
+            llm_compatibility_score: $compatibility_score,
+            status: 'a valider'
+        }]->(target)
+        RETURN id(r) AS relationship_id
+        """
+        
+        relationships_created = 0
+        
+        # Parcourir les corrélations
+        for correlation_group in correlations:
+            source_node_id = correlation_group['source_node_id']
+            
+            for corr in correlation_group['correlations']:
+                # Vérifier si la corrélation est validée par GPT
+                gpt_validation = corr.get('gpt_validation', {})
+                if gpt_validation.get('is_valid', False):
+                    # Préparer les paramètres pour la requête
+                    params = {
+                        'source_id': source_node_id,
+                        'target_id': corr['correlated_node_id'],
+                        'description': gpt_validation.get('justification', ''),
+                        'weight_distance': corr['distance'],
+                        'weight_similarity': corr['cosine_similarity'],
+                        'compatibility_score': gpt_validation.get('compatibility_score', 0.0)
+                    }
+                    
+                    # Exécuter la requête Cypher
+                    with neo4j_client.driver.session() as session:
+                        # Vérifier s'il existe déjà une relation
+                        existing_relation = session.run(
+                            check_existing_relation_query, 
+                            {
+                                'source_id': source_node_id, 
+                                'target_id': corr['correlated_node_id']
+                            }
+                        ).single()
+                        
+                        if existing_relation:
+                            existing_status = existing_relation['status']
+                            existing_relationship_id = existing_relation['relationship_id']
+                            
+                            if existing_status == 'a valider':
+                                # Supprimer la relation existante
+                                session.run(
+                                    delete_relation_query, 
+                                    {'relationship_id': existing_relationship_id}
+                                )
+                                logger.info(f"Relation existante supprimée : {source_node_id} -> {corr['correlated_node_id']}")
+                            elif existing_status == 'done':
+                                # Ne pas créer de nouvelle relation
+                                logger.info(f"Relation déjà validée, pas de nouvelle création : {source_node_id} -> {corr['correlated_node_id']}")
+                                continue
+                        
+                        # Créer la nouvelle relation
+                        result = session.run(create_relation_query, params)
+                        relationship_id = result.single()['relationship_id']
+                        relationships_created += 1
+                        
+                        logger.info(f"Relation RECO créée : {source_node_id} -> {corr['correlated_node_id']} (ID relation: {relationship_id})")
+        
+        return relationships_created
+    
+    except Exception as e:
+        logger.error(f"Erreur lors de la création des relations : {e}")
+        return 0
+
+def verify_gpt_validated_relationships(neo4j_client, custom_id):
+    """
+    Vérifie les relations RECO créées pour un utilisateur spécifique.
+    
+    Args:
+        neo4j_client (Neo4jQueryExecutor): Client Neo4j
+        custom_id (str): ID de l'utilisateur
+    
+    Returns:
+        list: Liste des relations RECO trouvées
+    """
+    try:
+        # Requête Cypher pour récupérer les relations RECO
+        cypher_query = """
+        MATCH (source {custom_id: $custom_id})-[r:RECO]->(target)
+        RETURN 
+            source.entity_id AS source_id, 
+            target.entity_id AS target_id, 
+            r.description AS description,
+            r.weight_distance_cosine AS weight_distance,
+            r.weight_similarity_cosine AS weight_similarity,
+            r.llm_compatibility_score AS compatibility_score,
+            r.status AS status
+        """
+        
+        # Exécuter la requête
+        with neo4j_client.driver.session() as session:
+            result = session.run(cypher_query, {"custom_id": custom_id})
+            
+            # Convertir les résultats en liste de dictionnaires
+            relationships = []
+            for record in result:
+                relationships.append({
+                    'source_id': record['source_id'],
+                    'target_id': record['target_id'],
+                    'description': record['description'],
+                    'weight_distance': record['weight_distance'],
+                    'weight_similarity': record['weight_similarity'],
+                    'compatibility_score': record['compatibility_score'],
+                    'status': record['status']
+                })
+            
+            return relationships
+    
+    except Exception as e:
+        logger.error(f"Erreur lors de la vérification des relations : {e}")
+        return []
+
 def main():
     """
     Exemple d'utilisation de la fonction de corrélation ANN avec filtrage.
@@ -344,21 +601,43 @@ def main():
         # Récupérer les IDs des préférences utilisateur
         user_preference_node_ids = get_user_preferences_nodes(neo4j_client, custom_id)
 
-        
         # Récupérer les IDs des points positifs
         positive_points_node_ids = get_positive_points_nodes(neo4j_client)
     
-
-        
         # Calculer les corrélations ANN
         correlations = compute_ann_correlations_with_filter(
             collection_name="entities", 
             node_ids=user_preference_node_ids, 
             target_node_ids=positive_points_node_ids,
             top_k_milvus=1000, 
-            top_k_cosine=5, 
+            top_k_cosine=1, 
             distance_threshold=0.8  # Augmentation du seuil
         )
+        
+        # Enrichir les corrélations avec validation GPT
+        correlations = enrich_correlations_with_gpt_validation(correlations, neo4j_client)
+        
+        # Créer les relations pour les corrélations validées
+        relationships_created = create_gpt_validated_relationships(neo4j_client, correlations)
+        print(f"\n{GREEN}✨ Nombre de relations RECO créées : {relationships_created}{RESET}")
+        
+        # Vérifier les relations créées
+        verified_relationships = verify_gpt_validated_relationships(neo4j_client, custom_id)
+        
+        # Afficher les relations vérifiées
+        print(f"\n{BOLD}🔗 Relations RECO vérifiées :{RESET}")
+        if verified_relationships:
+            for rel in verified_relationships:
+                print("\n" + "-" * 50)
+                print(f"{BLUE}Source ID:{RESET} {rel['source_id']}")
+                print(f"{BLUE}Target ID:{RESET} {rel['target_id']}")
+                print(f"{YELLOW}Description:{RESET} {rel['description']}")
+                print(f"{GREEN}Distance Weight:{RESET} {rel['weight_distance']}")
+                print(f"{GREEN}Similarity Weight:{RESET} {rel['weight_similarity']}")
+                print(f"{MAGENTA}Compatibility Score:{RESET} {rel['compatibility_score']}")
+                print(f"{RED}Status:{RESET} {rel['status']}")
+        else:
+            print(f"\n{RED}❌ Aucune relation RECO trouvée{RESET}")
         
         # Afficher les résultats
         print(f"\n{BOLD}🔍 Résultats des corrélations ANN{RESET}")
@@ -395,6 +674,14 @@ def main():
                     print(f"{MAGENTA}    ◽ Type       : {node_corr_details.get('entity_type', 'Non spécifié')}{RESET}")
                     print(f"{BLUE}    ◽ Distance   : {corr['distance']}{RESET}")
                     print(f"{BLUE}    ◽ Similarité cosinus : {corr['cosine_similarity']}{RESET}")
+                    
+                    # Afficher la validation GPT
+                    gpt_validation = corr.get('gpt_validation', {})
+                    print(f"{MAGENTA}    ◽ Validation GPT :{RESET}")
+                    print(f"      - Validité : {gpt_validation.get('is_valid', False)}")
+                    print(f"      - Score de compatibilité : {gpt_validation.get('compatibility_score', 0.0)}")
+                    print(f"      - Justification : {gpt_validation.get('justification', 'Aucune')}")
+                    print(f"      - Description de recommandation : {gpt_validation.get('recommendation_description', 'Aucune')}")
             else:
                 print(f"\n{RED}  ❌ Aucune corrélation trouvée pour ce nœud{RESET}")
             
