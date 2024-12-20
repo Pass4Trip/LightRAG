@@ -48,7 +48,7 @@ def init_lightrag():
     # Création du répertoire de travail s'il n'existe pas
     if not os.path.exists(working_dir):
         os.makedirs(working_dir)
-        logger.info(f"Répertoire de travail créé: {working_dir}")
+        logger.debug(f"Répertoire de travail créé: {working_dir}")
     
     try:
         # Initialisation de LightRAG
@@ -60,7 +60,7 @@ def init_lightrag():
             graph_storage="Neo4JStorage",     # Neo4j pour le graphe
             log_level="INFO"
         )
-        logger.info("LightRAG initialisé avec succès")
+        logger.debug("LightRAG initialisé avec succès")
         return rag
     except Exception as e:
         logger.error(f"Erreur lors de l'initialisation de LightRAG: {str(e)}")
