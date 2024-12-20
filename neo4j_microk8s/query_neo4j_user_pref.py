@@ -168,14 +168,14 @@ class UserContextEnhancer:
 
     def _refine_user_context(self, user_info, query_context):
         """
-        Enrichit la requête en utilisant toutes les informations de l'utilisateur
+        Enrichit la requête en utilisant les informations de l'utilisateur
         
         Args:
-            user_info (dict): Informations complètes de l'utilisateur depuis Neo4j
+            user_info (dict): Informations de l'utilisateur depuis Neo4j
             query_context (str): Contexte de la requête initiale
         
         Returns:
-            dict: Informations utilisateur avec requête enrichie
+            dict: Informations utilisateur avec suggestions
         """
         # Collecter TOUTES les informations disponibles
         all_user_info = []
@@ -210,61 +210,95 @@ class UserContextEnhancer:
         
         # Préparer le prompt pour GPT-4o-mini
         prompt = f"""
-Contexte de recherche : Personnalisation d'une requête de restaurant
+Contexte de recherche : Suggestions de restaurants basées sur les préférences utilisateur
 
 Requête originale : "{query_context}"
 
-Informations utilisateur complètes :
+Informations utilisateur extraites de Neo4j :
 {json.dumps(all_user_info, indent=2)}
 
 Objectif : 
-1. Analyse toutes les informations disponibles
-2. Sélectionne uniquement les éléments pertinents pour enrichir la requête
-3. Crée une requête naturelle qui intègre subtilement les préférences
+1. Utiliser UNIQUEMENT les informations factuelles de l'utilisateur
+2. Filtrer les données pertinentes pour la recherche de restaurant
+3. Proposer des suggestions basées strictement sur les préférences existantes
 
-Critères de sélection :
-- Pertinence par rapport à la recherche de restaurant
-- Impact potentiel sur le choix du restaurant
-- Clarté et concision de l'enrichissement
+Consignes de filtrage :
+- Ne pas inventer ou déduire de nouvelles préférences
+- Extraire uniquement les informations directement liées à la recherche de restaurant
+- Rester factuel et précis
 
-Fournis une requête enrichie qui guide efficacement la recherche, 
-en mettant en valeur les aspects les plus significatifs des préférences de l'utilisateur.
+Format de réponse attendu :
+- Une phrase d'introduction commençant par "💡 Options bonus :"
+- Liste à puces des suggestions basées SUR LES DONNÉES EXISTANTES
+- Ton : Neutre et informatif
+- Suggestions extraites directement des préférences utilisateur
+
+Exemple de filtrage :
+- Si "cuisine végétarienne" est une préférence : suggérer des restaurants végétariens
+- Si "ambiance décontractée" est présente : mentionner des lieux avec cette atmosphère
+
+Contraintes importantes :
+- AUCUNE suggestion qui ne provient pas directement des données
+- Utiliser uniquement les descriptions et mots-clés existants
+- Garder les suggestions courtes et factuelles
+
+Exemple complet de traitement :
+🔍 Question Initiale : "Je cherche un restaurant"
+👤 Données Neo4j :
+- Préférence : "Cuisine végétarienne"
+- Attribut : "Budget modéré"
+- Mot-clé : "Alimentation durable"
+
+💡 Suggestions attendues :
+- Restaurants végétariens correspondant à un budget modéré
+- Établissements proposant une cuisine respectueuse de l'environnement
+
+📝 Requête enrichie finale :
+"Je cherche un restaurant. 💡 Options bonus : Restaurants végétariens à prix modéré, avec une approche durable."
 """
         
         try:
-            # Utiliser GPT-4o-mini pour générer la requête enrichie
+            # Utiliser GPT-4o-mini pour générer les suggestions
             response = self.openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "Tu es un assistant expert en personnalisation de requêtes de recherche."},
+                    {"role": "system", "content": "Tu es un assistant qui filtre et présente des suggestions de restaurants basées uniquement sur les données existantes."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=250,
-                temperature=0.7
+                temperature=0.5  # Réduire la température pour plus de précision
             )
             
-            # Récupérer la requête enrichie
-            enriched_query = response.choices[0].message.content.strip()
+            # Récupérer les suggestions
+            suggestions = response.choices[0].message.content.strip()
             
             # Fallback si la génération échoue
-            if not enriched_query:
-                enriched_query = query_context
+            if not suggestions:
+                suggestions = "💡 Options bonus : Aucune suggestion spécifique basée sur vos préférences."
             
-            user_info['enriched_query'] = enriched_query
+            # Générer la requête enrichie finale
+            requete_enrichie = f"{query_context}. {suggestions}"
+            
+            user_info['restaurant_suggestions'] = suggestions
+            user_info['requete_enrichie'] = requete_enrichie
             return user_info
         
         except Exception as e:
-            logger.error(f"Erreur lors de l'enrichissement de la requête : {e}")
-            user_info['enriched_query'] = query_context
+            logger.error(f"Erreur lors de la génération des suggestions : {e}")
+            user_info['restaurant_suggestions'] = "💡 Options bonus : Aucune suggestion spécifique basée sur vos préférences."
+            user_info['requete_enrichie'] = query_context
             return user_info
 
-def main():
+def main(username=None):
     # Initialisation des composants
     graphQuery = Neo4jQuery()
     enhancer = UserContextEnhancer(graphQuery)
     
+    # Utiliser le nom d'utilisateur passé en argument ou par défaut
+    if username is None:
+        username = "lea"
+    
     # Exemple de requête de restaurant
-    username = "lea"
     query_context = "Je cherche un restaurant pour ce soir"
     
     # Récupérer les préférences utilisateur
@@ -283,7 +317,7 @@ def main():
     
     # Affichage riche et coloré
     console.print(Panel.fit(
-        Markdown("## 🍽️ Profil Utilisateur : Lea"),
+        Markdown(f"## 🍽️ Profil Utilisateur : {username.capitalize()}"),
         title="Analyse de Préférences Culinaires",
         border_style="bold blue"
     ))
@@ -309,15 +343,31 @@ def main():
         border_style="bold magenta"
     ))
     
-    # Requête enrichie
+    # Suggestions
+    console.print(Panel(
+        Markdown(f"""
+### Suggestions de Restaurants
+{user_preferences.get('restaurant_suggestions', 'Aucune suggestion disponible')}
+"""),
+        title="💡 Suggestions",
+        border_style="bold green"
+    ))
+    
+    # Requête enrichie finale
     console.print(Panel(
         Markdown(f"""
 ### Requête Enrichie
-{user_preferences.get('enriched_query', 'Aucune requête enrichie disponible')}
+{user_preferences.get('requete_enrichie', 'Aucune requête enrichie disponible')}
 """),
-        title="🌟 Requête Enrichie",
+        title="💡 Requête Enrichie",
         border_style="bold green"
     ))
 
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    # Permettre de passer le nom d'utilisateur en argument
+    if len(sys.argv) > 1:
+        main(sys.argv[1])
+    else:
+        main()
