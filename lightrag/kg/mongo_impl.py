@@ -16,7 +16,7 @@ class MongoKVStorage(BaseKVStorage):
         )
         database = client.get_database(os.environ.get("MONGO_DATABASE", "LightRAG"))
         self._data = database.get_collection(self.namespace)
-        logger.info(f"Use MongoDB as KV {self.namespace}")
+        logger.debug(f"Use MongoDB as KV {self.namespace}")
 
     async def all_keys(self) -> list[str]:
         return [x["_id"] for x in self._data.find({}, {"_id": 1})]

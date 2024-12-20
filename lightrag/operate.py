@@ -116,7 +116,7 @@ async def _handle_single_entity_extraction(
         source_id=entity_source_id,
     )
     
-    logger.info(f"DEBUG: Returning entity: {result}")
+    logger.debug(f"DEBUG: Returning entity: {result}")
     return result
 
 
@@ -163,7 +163,7 @@ async def _handle_single_relationship_extraction(
         source_id=chunk_key,
     )
     
-    logger.info(f"DEBUG: Returning relationship: {result}")
+    logger.debug(f"DEBUG: Returning relationship: {result}")
     return result
 
 
@@ -312,6 +312,7 @@ async def extract_entities(
     entity_vdb: BaseVectorStorage,
     relationships_vdb: BaseVectorStorage,
     global_config: dict,
+    text_chunks: BaseKVStorage[TextChunkSchema],
     prompt_domain: str = "default",
     metadata: dict = None
 ) -> Union[BaseGraphStorage, None]:
@@ -331,12 +332,12 @@ async def extract_entities(
         BaseGraphStorage: Updated knowledge graph instance
     """
     # Log d'entrée DÉTAILLÉ
-    logger.info("🚀 DÉBUT de extract_entities")
-    logger.info(f"🔍 Nombre de chunks : {len(chunks)}")
-    logger.info(f"🔍 Domaine du prompt : {prompt_domain}")
-    logger.info(f"🔍 Métadonnées : {metadata}")
+    logger.debug("🚀 DÉBUT de extract_entities")
+    logger.debug(f"🔍 Nombre de chunks : {len(chunks)}")
+    logger.debug(f"🔍 Domaine du prompt : {prompt_domain}")
+    logger.debug(f"🔍 Métadonnées : {metadata}")
 
-    logger.info(f"Entity extraction using prompt domain: {prompt_domain}")
+    logger.debug(f"Entity extraction using prompt domain: {prompt_domain}")
     use_llm_func: callable = global_config["llm_model_func"]
     entity_extract_max_gleaning = global_config["entity_extract_max_gleaning"]
 
@@ -356,7 +357,7 @@ async def extract_entities(
     domain_examples_key = f"{prompt_domain}_extraction_examples"
     examples = PROMPTS.get(domain_examples_key, PROMPTS[domain_examples_key])
     
-    logger.info(f"Using examples : {domain_examples_key}")
+    logger.debug(f"Using examples : {domain_examples_key}")
     
 
     example_context_base = dict(
@@ -395,21 +396,21 @@ async def extract_entities(
         chunk_key = chunk_key_dp[0]
         chunk_dp = chunk_key_dp[1]
         
-        logger.info(f"DEBUG: Processing chunk: {chunk_key}")
-        logger.info(f"DEBUG: Chunk content: {chunk_dp.get('content', 'NO CONTENT')}")
+        logger.debug(f"DEBUG: Processing chunk: {chunk_key}")
+        logger.debug(f"DEBUG: Chunk content: {chunk_dp.get('content', 'NO CONTENT')}")
 
         content = chunk_dp["content"]
         
-        logger.info(f"Processing content for chunk_key: {chunk_key}")
-        logger.info(f"Content to process: {content[:500]}...")  # Log first 500 chars of content
+        logger.debug(f"Processing content for chunk_key: {chunk_key}")
+        logger.debug(f"Content to process: {content[:500]}...")  # Log first 500 chars of content
         
         # Log the context base parameters
-        logger.info(f"Context Base Parameters:")
-        logger.info(f"  Tuple Delimiter: {context_base['tuple_delimiter']}")
-        logger.info(f"  Record Delimiter: {context_base['record_delimiter']}")
-        logger.info(f"  Completion Delimiter: {context_base['completion_delimiter']}")
-        logger.info(f"  Entity Types: {context_base['entity_types']}")
-        logger.info(f"  Language: {context_base['language']}")
+        logger.debug(f"Context Base Parameters:")
+        logger.debug(f"  Tuple Delimiter: {context_base['tuple_delimiter']}")
+        logger.debug(f"  Record Delimiter: {context_base['record_delimiter']}")
+        logger.debug(f"  Completion Delimiter: {context_base['completion_delimiter']}")
+        logger.debug(f"  Entity Types: {context_base['entity_types']}")
+        logger.debug(f"  Language: {context_base['language']}")
         #logger.info(f"  entity_extract_prompt: {entity_extract_prompt}")
         
         hint_prompt = entity_extract_prompt.format(
@@ -420,12 +421,12 @@ async def extract_entities(
         #logger.info(f"Formatted Extraction Prompt (full text): {hint_prompt}...") 
         
         final_result = await use_llm_func(hint_prompt)
-        logger.info(f"Initial LLM Response (first 1000 chars): {final_result[:1000]}...")
+        logger.debug(f"Initial LLM Response (first 1000 chars): {final_result[:1000]}...")
         
         history = pack_user_ass_to_openai_messages(hint_prompt, final_result)
         for now_glean_index in range(entity_extract_max_gleaning):
             glean_result = await use_llm_func(continue_prompt, history_messages=history)
-            logger.info(f"Gleaning iteration {now_glean_index + 1} result (first 500 chars): {glean_result[:500]}...")
+            logger.debug(f"Gleaning iteration {now_glean_index + 1} result (first 500 chars): {glean_result[:500]}...")
 
             history += pack_user_ass_to_openai_messages(continue_prompt, glean_result)
             final_result += glean_result
@@ -437,18 +438,18 @@ async def extract_entities(
                 if_loop_prompt, history_messages=history
             )
             if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
-            logger.info(f"Should continue gleaning? Answer: {if_loop_result}")
+            logger.debug(f"Should continue gleaning? Answer: {if_loop_result}")
             if if_loop_result != "yes":
                 break
 
-        logger.info(f"Final Complete Result (first 1000 chars): {final_result[:1000]}...")
+        logger.debug(f"Final Complete Result (first 1000 chars): {final_result[:1000]}...")
         
         records = split_string_by_multi_markers(
             final_result,
             [context_base["record_delimiter"], context_base["completion_delimiter"]],
         )
-        logger.info(f"Split Records Count: {len(records)}")
-        logger.info(f"Split Records: {records}")
+        logger.debug(f"Split Records Count: {len(records)}")
+        logger.debug(f"Split Records: {records}")
 
         maybe_nodes = defaultdict(list)
         maybe_edges = defaultdict(list)
@@ -465,7 +466,7 @@ async def extract_entities(
 
 
         for record in records:
-            logger.info(f"Processing Record: {record}")
+            logger.debug(f"Processing Record: {record}")
             record = re.search(r"\((.*)\)", record)
             if record is None:
                 logger.warning(f"No parentheses found in record")
@@ -476,13 +477,13 @@ async def extract_entities(
             )
             # Strip quotes from each attribute
             record_attributes = [attr.strip().strip('"').strip("'") for attr in record_attributes]
-            logger.info(f"Record Attributes: {record_attributes}")
+            logger.debug(f"Record Attributes: {record_attributes}")
             
             if_entities = await _handle_single_entity_extraction(
                 record_attributes, chunk_key
             )
             if if_entities is not None:
-                logger.info(f"Found Entity: {if_entities}")
+                logger.debug(f"Found Entity: {if_entities}")
                 
                 # Récupérer les metadata spécifiques au type d'entité
                 entity_metadata = {}
@@ -495,7 +496,7 @@ async def extract_entities(
                 # Ajouter les metadata à l'entité si disponibles
                 if entity_metadata and if_entities["entity_type"] == prompt_domain:
                     if_entities.update(entity_metadata)
-                    logger.info(f"Added metadata to entity: {entity_metadata}")
+                    logger.debug(f"Added metadata to entity: {entity_metadata}")
                 
                 maybe_nodes[if_entities["entity_name"]].append(if_entities)
                 
@@ -516,7 +517,7 @@ async def extract_entities(
                 record_attributes, chunk_key
             )
             if if_relation is not None:
-                logger.info(f"Found Relationship: {if_relation}")
+                logger.debug(f"Found Relationship: {if_relation}")
                 maybe_edges[(if_relation["src_id"], if_relation["tgt_id"])].append(
                     if_relation
                 )
@@ -534,7 +535,7 @@ async def extract_entities(
                     "source_id": chunk_key
                 }
                 maybe_edges[(user, preference)].append(default_relation)
-                logger.info(f"Generated User-Preference Relation: {default_relation}")
+                logger.debug(f"Generated User-Preference Relation: {default_relation}")
 
         # 2. Lier les attributs utilisateur aux utilisateurs
         for user in entity_types["user"]:
@@ -548,7 +549,7 @@ async def extract_entities(
                     "source_id": chunk_key
                 }
                 maybe_edges[(user, attribute)].append(default_relation)
-                logger.info(f"Generated User-Attribute Relation: {default_relation}")
+                logger.debug(f"Generated User-Attribute Relation: {default_relation}")
 
         # 3. Lier les activités à leur contexte principal (s'il existe)
         if len(entity_types["activity"]) > 0:
@@ -563,19 +564,19 @@ async def extract_entities(
                     "source_id": chunk_key
                 }
                 maybe_edges[(main_activity, other_entity)].append(default_relation)
-                logger.info(f"Generated Activity Context Relation: {default_relation}")
+                logger.debug(f"Generated Activity Context Relation: {default_relation}")
 
-        logger.info(f"DEBUG: Extracted Entities for Chunk {chunk_key}:")
+        logger.debug(f"DEBUG: Extracted Entities for Chunk {chunk_key}:")
         for entity_type, entities in maybe_nodes.items():
-            logger.info(f"  Entity Type {entity_type}: {len(entities)} entities")
+            logger.debug(f"  Entity Type {entity_type}: {len(entities)} entities")
             for entity in entities:
-                logger.info(f"    - {entity}")
+                logger.debug(f"    - {entity}")
         
-        logger.info(f"DEBUG: Extracted Relationships for Chunk {chunk_key}:")
+        logger.debug(f"DEBUG: Extracted Relationships for Chunk {chunk_key}:")
         for relationship_key, relationships in maybe_edges.items():
-            logger.info(f"  Relationship Key {relationship_key}: {len(relationships)} relationships")
+            logger.debug(f"  Relationship Key {relationship_key}: {len(relationships)} relationships")
             for relationship in relationships:
-                logger.info(f"    - {relationship}")
+                logger.debug(f"    - {relationship}")
 
         already_processed += 1
         already_entities += len(maybe_nodes)
@@ -613,9 +614,9 @@ async def extract_entities(
         for k, v in m_edges.items():
             maybe_edges[tuple(sorted(k))].extend(v)
 
-    logger.info("Inserting entities into storage...")
-    logger.info(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
-    logger.info(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
+    logger.debug("Inserting entities into storage...")
+    logger.debug(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
+    logger.debug(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
     all_entities_data = []
     for result in tqdm_async(
         asyncio.as_completed(
@@ -629,12 +630,12 @@ async def extract_entities(
         unit="entity",
     ):
         entity_result = await result
-        logger.info(f"Entity merge result: {entity_result}")
+        logger.debug(f"Entity merge result: {entity_result}")
         all_entities_data.append(entity_result)
 
-    logger.info(f"Total entities processed: {len(all_entities_data)}")
-    logger.info(f"All entities data: {all_entities_data}")
-    logger.info("Inserting relationships into storage...")
+    logger.debug(f"Total entities processed: {len(all_entities_data)}")
+    logger.debug(f"All entities data: {all_entities_data}")
+    logger.debug("Inserting relationships into storage...")
     all_relationships_data = []
     for result in tqdm_async(
         asyncio.as_completed(
@@ -673,13 +674,13 @@ async def extract_entities(
         }
         
         # Log détaillé avant l'insertion dans Milvus
-        logger.info(" Préparation de l'insertion dans Milvus (Entités)")
-        logger.info(f" Nombre d'entités à insérer : {len(data_for_vdb)}")
+        logger.debug(" Préparation de l'insertion dans Milvus (Entités)")
+        logger.debug(f" Nombre d'entités à insérer : {len(data_for_vdb)}")
         
         # Mise à jour de Neo4j avec l'entity_id
         for entity_id, entity_data in data_for_vdb.items():
-            logger.info(f" ID Entité : {entity_id}")
-            logger.info(f" Données Entité : {entity_data}")
+            logger.debug(f" ID Entité : {entity_id}")
+            logger.debug(f" Données Entité : {entity_data}")
             
             # Récupérer le nœud existant
             existing_node = await knowledge_graph_inst.get_node(entity_data["entity_name"])
@@ -697,7 +698,7 @@ async def extract_entities(
                 node_data["entity_type"] = existing_node.get("entity_type", entity_data.get("entity_type", "Unknown"))
             
             # Log pour vérification
-            logger.info(f"Données du nœud apres mise à jour : {node_data}")
+            logger.debug(f"Données du nœud apres mise à jour : {node_data}")
             
             # Mettre à jour le nœud Neo4j
             await knowledge_graph_inst.upsert_node(
@@ -712,6 +713,24 @@ async def extract_entities(
         
         await entity_vdb.upsert(data_for_vdb)
 
+    if text_chunks is not None and all_entities_data:
+        entity_chunks_for_mongodb = {
+            entity_id: {
+                "_id": entity_id,
+                "content": data_for_vdb[entity_id]["entity_name"] + " " + data_for_vdb[entity_id].get("description", ""),
+                "entity_name": data_for_vdb[entity_id]["entity_name"],
+                "entity_type": data_for_vdb[entity_id].get("entity_type", "Unknown"),
+                "source": "entity_extraction"
+            }
+            for entity_id in data_for_vdb.keys()
+        }
+        
+        # Log détaillé avant l'insertion dans MongoDB
+        logger.debug(" Préparation de l'insertion des entités dans MongoDB")
+        logger.debug(f" Nombre d'entités à insérer : {len(entity_chunks_for_mongodb)}")
+        
+        await text_chunks.upsert(entity_chunks_for_mongodb)
+
     if relationships_vdb is not None:
         data_for_vdb = {
             compute_mdhash_id(dp["src_id"] + dp["tgt_id"], prefix="rel-"): {
@@ -725,14 +744,10 @@ async def extract_entities(
             for dp in all_relationships_data
         }
         
-        # Log détaillé avant l'insertion dans Milvus
-        logger.info(" Préparation de l'insertion dans Milvus (Relations)")
-        logger.info(f" Nombre de relations à insérer : {len(data_for_vdb)}")
-        
         # Mise à jour de Neo4j avec relation_id
         for relation_id, relation_data in data_for_vdb.items():
-            logger.info(f" ID Relation : {relation_id}")
-            logger.info(f" Données Relation : {relation_data}")
+            logger.debug(f" ID Relation : {relation_id}")
+            logger.debug(f" Données Relation : {relation_data}")
             
             # Récupérer l'arête existante
             existing_edge = await knowledge_graph_inst.get_edge(
@@ -749,7 +764,7 @@ async def extract_entities(
                 edge_data["relation_id"] = relation_id
             
             # Log pour vérification
-            logger.info(f"Données de la relation avant mise à jour : {edge_data}")
+            logger.debug(f"Données de la relation avant mise à jour : {edge_data}")
             
             # Mettre à jour la relation Neo4j
             await knowledge_graph_inst.upsert_edge(
@@ -802,7 +817,7 @@ async def kg_query(
     kw_prompt_temp = PROMPTS["keywords_extraction"]
     kw_prompt = kw_prompt_temp.format(query=query, examples=examples, language=language)
     result = await use_model_func(kw_prompt, keyword_extraction=True)
-    logger.info("kw_prompt result:")
+    logger.debug("kw_prompt result:")
     print(result)
     try:
         # json_text = locate_json_string_body_from_string(result) # handled in use_model_func
@@ -1021,7 +1036,7 @@ async def _get_node_data(
     use_relations = await _find_most_related_edges_from_entities(
         node_datas, query_param, knowledge_graph_inst
     )
-    logger.info(
+    logger.debug(
         f"Local query uses {len(node_datas)} entites, {len(use_relations)} relations, {len(use_text_units)} text units"
     )
 
@@ -1217,7 +1232,7 @@ async def _get_edge_data(
     use_text_units = await _find_related_text_unit_from_relationships(
         edge_datas, query_param, text_chunks_db, knowledge_graph_inst
     )
-    logger.info(
+    logger.debug(
         f"Global query uses {len(use_entities)} entites, {len(edge_datas)} relations, {len(use_text_units)} text units"
     )
 
@@ -1407,7 +1422,7 @@ async def naive_query(
         logger.warning("No chunks left after truncation")
         return PROMPTS["fail_response"]
 
-    logger.info(f"Truncate {len(chunks)} to {len(maybe_trun_chunks)} chunks")
+    logger.debug(f"Truncate {len(chunks)} to {len(maybe_trun_chunks)} chunks")
     section = "\n--New Chunk--\n".join([c["content"] for c in maybe_trun_chunks])
 
     if query_param.only_need_context:

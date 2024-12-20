@@ -146,7 +146,7 @@ class RabbitMQConsumer:
                 logger.debug(f"📨 Corps du message décodé: {body}")
                 
                 payload = json.loads(body)
-                logger.info(f"📦 Payload reçu: {payload}")
+                logger.debug(f"📦 Payload reçu: {payload}")
                 
                 # Validation du type de message
                 message_type = payload.get('type')
@@ -154,7 +154,7 @@ class RabbitMQConsumer:
                     logger.warning(f"❗ Message sans type: {payload}")
                     return
                 
-                logger.info(f"🏷️ Type de message détecté: {message_type}")
+                logger.debug(f"🏷️ Type de message détecté: {message_type}")
                 
                 # Dictionnaire de stratégies de traitement
                 message_handlers = {
@@ -165,9 +165,9 @@ class RabbitMQConsumer:
                 # Récupération et exécution du gestionnaire approprié
                 handler = message_handlers.get(message_type)
                 if handler:
-                    logger.info(f"🚀 Démarrage du traitement pour le type {message_type}")
+                    logger.debug(f"🚀 Démarrage du traitement pour le type {message_type}")
                     await handler(payload)
-                    logger.info(f"✅ Traitement terminé pour le type {message_type}")
+                    logger.debug(f"✅ Traitement terminé pour le type {message_type}")
                 else:
                     logger.warning(f"❌ Type de message non géré : {message_type}")
             
@@ -244,7 +244,7 @@ class RabbitMQConsumer:
                 logger.error("LightRAG n'est pas initialisé")
                 return
             
-            logger.info(f"Insertion dans LightRAG avec le domaine: {prompt_domain}")
+            logger.debug(f"Insertion dans LightRAG avec le domaine: {prompt_domain}")
             await self.rag.ainsert(text, prompt_domain=prompt_domain, metadata=metadata)
             
         except Exception as e:
@@ -343,7 +343,7 @@ class RabbitMQConsumer:
                 graph_storage="Neo4JStorage",
                 log_level="INFO",
             )
-            logger.info("LightRAG initialisé avec succès")
+            logger.debug("LightRAG initialisé avec succès")
         except Exception as e:
             logger.error(f"Erreur lors de l'initialisation de LightRAG: {str(e)}")
             logger.error(traceback.format_exc())

@@ -42,14 +42,14 @@ class MilvusVectorDBStorage(BaseVectorStorage):
             "MILVUS_URI",
             os.path.join(self.global_config["working_dir"], "milvus_lite.db"),
         )
-        logger.info(f"Configuration Milvus - URI: {milvus_uri}")
+        logger.debug(f"Configuration Milvus - URI: {milvus_uri}")
         
         temp_client = MilvusClient(
             uri=milvus_uri,
             db_name=""  # Base de données par défaut
         )
         db_name = os.environ.get("MILVUS_DB_NAME", "")
-        logger.info(f"Configuration Milvus - DB Name: {db_name}")
+        logger.debug(f"Configuration Milvus - DB Name: {db_name}")
         
         self.create_database_if_not_exist(temp_client, db_name)
 
@@ -61,7 +61,7 @@ class MilvusVectorDBStorage(BaseVectorStorage):
             token=os.environ.get("MILVUS_TOKEN", ""),
             db_name=db_name,
         )
-        logger.info(f"Configuration Milvus - Collection: {self.namespace}, Dimension: {self.embedding_func.embedding_dim}")
+        logger.debug(f"Configuration Milvus - Collection: {self.namespace}, Dimension: {self.embedding_func.embedding_dim}")
         
         self._max_batch_size = self.global_config["embedding_batch_num"]
         MilvusVectorDBStorage.create_collection_if_not_exist(
@@ -72,10 +72,10 @@ class MilvusVectorDBStorage(BaseVectorStorage):
         
         # Vérifier les collections après création
         collections = self._client.list_collections()
-        logger.info(f"Collections disponibles après initialisation : {collections}")
+        logger.debug(f"Collections disponibles après initialisation : {collections}")
 
     async def upsert(self, data: dict[str, dict]):
-        logger.info(f"Inserting {len(data)} vectors to {self.namespace}")
+        logger.debug(f"Inserting {len(data)} vectors to {self.namespace}")
         if not len(data):
             logger.warning("You insert an empty data to vector DB")
             return []

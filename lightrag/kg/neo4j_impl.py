@@ -248,14 +248,14 @@ class Neo4JStorage(BaseGraphStorage):
             return
 
         # Log TRÈS détaillé
-        logger.info(f"🔍 DEBUG upsert_node - node_id: {node_id}")
-        logger.info(f"🔍 DEBUG upsert_node - node_data BRUT: {node_data}")
-        logger.info(f"🔍 DEBUG upsert_node - node_data keys: {list(node_data.keys())}")
-        logger.info(f"🔍 DEBUG upsert_node - node_data types: {[type(val) for val in node_data.values()]}")
+        logger.debug(f"🔍 DEBUG upsert_node - node_id: {node_id}")
+        logger.debug(f"🔍 DEBUG upsert_node - node_data BRUT: {node_data}")
+        logger.debug(f"🔍 DEBUG upsert_node - node_data keys: {list(node_data.keys())}")
+        logger.debug(f"🔍 DEBUG upsert_node - node_data types: {[type(val) for val in node_data.values()]}")
 
         # Validation des propriétés
         if "custom_id" in node_data:
-            logger.info(f"🏷️ Custom ID trouvé pour le nœud {node_id}: {node_data['custom_id']}")
+            logger.debug(f"🏷️ Custom ID trouvé pour le nœud {node_id}: {node_data['custom_id']}")
 
         # Vérifier que toutes les propriétés sont des types supportés par Neo4j
         for key, value in list(node_data.items()):
@@ -263,14 +263,9 @@ class Neo4JStorage(BaseGraphStorage):
                 logger.warning(f"⚠️ Propriété {key} de type {type(value)} non supportée par Neo4j, conversion en str")
                 node_data[key] = str(value)
 
-        # Ajout explicite du milvus_id s'il existe
-        if 'milvus_id' in node_data:
-            logger.info(f"🌟 Milvus ID trouvé : {node_data['milvus_id']}")
-        else:
-            logger.warning("❌ Aucun Milvus ID trouvé dans node_data")
 
         label = node_id.strip('"')
-        logger.info(f"🏷️ Label du nœud : {label}")
+        logger.debug(f"🏷️ Label du nœud : {label}")
 
         properties = node_data
 
@@ -285,8 +280,8 @@ class Neo4JStorage(BaseGraphStorage):
                         clean_properties[key] = str(value)
 
                 # Log détaillé des propriétés
-                logger.info(f"🧹 clean_properties avant insertion: {clean_properties}")
-                logger.info(f"🧹 clean_properties keys: {list(clean_properties.keys())}")
+                logger.debug(f"🧹 clean_properties avant insertion: {clean_properties}")
+                logger.debug(f"🧹 clean_properties keys: {list(clean_properties.keys())}")
 
                 query = f"""
                 MERGE (n:`{label}`)
@@ -297,10 +292,10 @@ class Neo4JStorage(BaseGraphStorage):
                 record = await result.single()
 
                 if record:
-                    logger.info(f"✅ Nœud créé/mis à jour avec succès : {label}")
+                    logger.debug(f"✅ Nœud créé/mis à jour avec succès : {label}")
                     # Log du nœud inséré
                     node_record = record.data()['n']
-                    logger.info(f"🔬 DEBUG nœud inséré : {node_record}")
+                    logger.debug(f"🔬 DEBUG nœud inséré : {node_record}")
                 else:
                     logger.warning(f"⚠️ Aucun nœud créé pour : {label}")
             except Exception as e:
@@ -479,14 +474,14 @@ class Neo4JStorage(BaseGraphStorage):
                         node_id=node_id, 
                         category_name=category
                     )
-                    logger.info(f"🏷️ Catégorisation de l'activité {node_id} dans la catégorie {category}")
+                    logger.debug(f"🏷️ Catégorisation de l'activité {node_id} dans la catégorie {category}")
                 except Exception as e:
                     logger.error(f"❌ Erreur lors de la catégorisation de l'activité {node_id} : {e}")
             
-            logger.info("📊 Résumé de la catégorisation :")
-            logger.info(f"   - Total d'activités : {categorization_counts['total']}")
-            logger.info(f"   - Activités catégorisées : {categorization_counts['categorized']}")
-            logger.info(f"   - Activités non catégorisées : {categorization_counts['uncategorized']}")
+            logger.debug("📊 Résumé de la catégorisation :")
+            logger.debug(f"   - Total d'activités : {categorization_counts['total']}")
+            logger.debug(f"   - Activités catégorisées : {categorization_counts['categorized']}")
+            logger.debug(f"   - Activités non catégorisées : {categorization_counts['uncategorized']}")
             
             return categorization_counts
 
@@ -515,7 +510,7 @@ class Neo4JStorage(BaseGraphStorage):
             for record in records:
                 custom_id = record["cid"]
                 users = record["users"]
-                logger.info(f"Fusion des utilisateurs avec custom_id: {custom_id}")
+                logger.debug(f"Fusion des utilisateurs avec custom_id: {custom_id}")
                 
                 # Garder le premier nœud et fusionner les autres
                 primary_user = users[0]
@@ -558,13 +553,13 @@ class Neo4JStorage(BaseGraphStorage):
                         await tx.run(merge_in_query, params)
                         await tx.run(merge_out_query, params)
                         await tx.run(delete_query, params)
-                        logger.info(f"✅ Nœud fusionné et supprimé: {duplicate.id}")
+                        logger.debug(f"✅ Nœud fusionné et supprimé: {duplicate.id}")
                     except Exception as e:
                         logger.error(f"❌ Erreur lors de la fusion du nœud {duplicate.id}: {str(e)}")
 
         try:
             async with self._driver.session() as session:
                 await session.execute_write(_do_merge)
-                logger.info("✅ Fusion des utilisateurs terminée")
+                logger.debug("✅ Fusion des utilisateurs terminée")
         except Exception as e:
             logger.error(f"❌ Erreur lors de la fusion des utilisateurs: {str(e)}")

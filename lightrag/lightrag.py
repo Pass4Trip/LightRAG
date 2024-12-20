@@ -263,7 +263,7 @@ class LightRAG:
         metadata = kwargs.get('metadata', {})
         
         # Log du domaine de prompt utilisé
-        logger.info(f"Inserting with prompt domain: {prompt_domain}")
+        logger.debug(f"Inserting with prompt domain: {prompt_domain}")
         
         update_storage = False
         try:
@@ -280,7 +280,7 @@ class LightRAG:
                 logger.warning("All docs are already in the storage")
                 return
             update_storage = True
-            logger.info(f"[New Docs] inserting {len(new_docs)} docs")
+            logger.debug(f"[New Docs] inserting {len(new_docs)} docs")
 
             inserting_chunks = {}
             for doc_key, doc in tqdm_async(
@@ -308,11 +308,11 @@ class LightRAG:
             if not len(inserting_chunks):
                 logger.warning("All chunks are already in the storage")
                 return
-            logger.info(f"[New Chunks] inserting {len(inserting_chunks)} chunks")
+            logger.debug(f"[New Chunks] inserting {len(inserting_chunks)} chunks")
 
             await self.chunks_vdb.upsert(inserting_chunks)
             
-            logger.info("[Entity Extraction]...")
+            logger.debug("[Entity Extraction]...")
             maybe_new_kg = await extract_entities(
                 inserting_chunks,
                 knowledge_graph_inst=self.chunk_entity_relation_graph,
@@ -320,7 +320,8 @@ class LightRAG:
                 relationships_vdb=self.relationships_vdb,
                 global_config=asdict(self),
                 prompt_domain=prompt_domain,
-                metadata=metadata
+                metadata=metadata,
+                text_chunks=self.text_chunks
             )
             if maybe_new_kg is None:
                 logger.warning("No new entities and relationships found")
@@ -341,7 +342,7 @@ class LightRAG:
                     
                     # Vérifier si la méthode existe et est appelable
                     if hasattr(self.chunk_entity_relation_graph, 'categorize_activities') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_activities')):
-                        logger.info("✅ Méthode categorize_activities trouvée")
+                        logger.debug("✅ Méthode categorize_activities trouvée")
                         try:
                             use_model_func = self.global_config.get("llm_model_func") if hasattr(self, 'global_config') else None
                             await self.chunk_entity_relation_graph.categorize_activities(
