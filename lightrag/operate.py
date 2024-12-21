@@ -1211,11 +1211,11 @@ async def _find_most_related_edges_from_entities(
         if v is not None
     ]
     all_edges_data = sorted(
-        all_edges_data, key=lambda x: (x["rank"], x["weight"]), reverse=True
+        all_edges_data, key=lambda x: (x["rank"], x.get("weight", 1.0)), reverse=True # gestion des cas ou la weight est vide
     )
     all_edges_data = truncate_list_by_token_size(
         all_edges_data,
-        key=lambda x: x["description"],
+        key=lambda x: x.get("description", "pas descritpion"), # Gestion des cas ou la description est vide
         max_token_size=query_param.max_token_for_global_context,
     )
     return all_edges_data
@@ -1247,11 +1247,11 @@ async def _get_edge_data(
         if v is not None
     ]
     edge_datas = sorted(
-        edge_datas, key=lambda x: (x["rank"], x["weight"]), reverse=True
+        edge_datas, key=lambda x: (x["rank"], x.get("weight", 1.0)), reverse=True # gestion des cas ou la weight est vide
     )
     edge_datas = truncate_list_by_token_size(
         edge_datas,
-        key=lambda x: x["description"],
+        key=lambda x: x.get("description", "pas descritpion"), # Gestion des cas ou la description est vide
         max_token_size=query_param.max_token_for_global_context,
     )
 
@@ -1332,7 +1332,7 @@ async def _find_most_related_entities_from_relationships(
 
     node_datas = truncate_list_by_token_size(
         node_datas,
-        key=lambda x: x["description"],
+        key=lambda x: x.get("description", "pas descritpion"), # Gestion des cas ou la description est vide
         max_token_size=query_param.max_token_for_local_context,
     )
 
