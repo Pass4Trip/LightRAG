@@ -650,6 +650,10 @@ async def extract_entities(
         desc="Inserting relationships",
         unit="relationship",
     ):
+        # Log détaillé sur les relations avant insertion
+        logger.info(f"Relations à insérer - Source: {k[0]}, Cible: {k[1]}")
+        logger.info(f"Détails des relations : {v}")
+        
         all_relationships_data.append(await result)
 
     if not len(all_entities_data) and not len(all_relationships_data):
@@ -666,7 +670,7 @@ async def extract_entities(
     if entity_vdb is not None:
         data_for_vdb = {
             compute_mdhash_id(dp["entity_name"], prefix="ent-"): {
-                "content": dp["entity_name"] + dp["description"],
+                "content": dp["description"],
                 "entity_name": dp["entity_name"],
                 "entity_type": dp.get("entity_type", "Unknown")
             }
@@ -677,7 +681,9 @@ async def extract_entities(
         logger.debug(" Préparation de l'insertion dans Milvus (Entités)")
         logger.debug(f" Nombre d'entités à insérer : {len(data_for_vdb)}")
         
-        # Mise à jour de Neo4j avec l'entity_id
+        # Créer une nouvelle liste pour stocker les entités
+        entities_with_description = []
+
         for entity_id, entity_data in data_for_vdb.items():
             logger.debug(f" ID Entité : {entity_id}")
             logger.debug(f" Données Entité : {entity_data}")
@@ -696,6 +702,7 @@ async def extract_entities(
                 node_data = dict(existing_node)
                 node_data["entity_id"] = entity_id
                 node_data["entity_type"] = existing_node.get("entity_type", entity_data.get("entity_type", "Unknown"))
+                node_data["description"] = existing_node.get("description", entity_data.get("description", "Unknown"))
             
             # Log pour vérification
             logger.debug(f"Données du nœud apres mise à jour : {node_data}")
@@ -710,24 +717,46 @@ async def extract_entities(
             entity_data_for_vdb = entity_data.copy()
             entity_data_for_vdb["entity_type"] = node_data["entity_type"]
             data_for_vdb[entity_id] = entity_data_for_vdb
-        
+
+            # Ajouter à la liste des entités avec descriptions
+            entity_info = {
+                "entity_id": entity_id,
+                "content": node_data.get("description", "Pas de description"),
+                "entity_name": entity_data["entity_name"],
+                "entity_type": node_data["entity_type"]
+            }
+            entities_with_description.append(entity_info)
+
+        # Logger la liste complète
+        logger.debug(f"Entités avec descriptions : {entities_with_description}")
+
         await entity_vdb.upsert(data_for_vdb)
 
-    if text_chunks is not None and all_entities_data:
+    if text_chunks is not None and entities_with_description:
+        # Prépare un dictionnaire d'entités pour l'insertion dans MongoDB
         entity_chunks_for_mongodb = {
-            entity_id: {
-                "_id": entity_id,
-                "content": data_for_vdb[entity_id]["entity_name"] + " " + data_for_vdb[entity_id].get("description", ""),
-                "entity_name": data_for_vdb[entity_id]["entity_name"],
-                "entity_type": data_for_vdb[entity_id].get("entity_type", "Unknown"),
+            entity_info["entity_id"]: {
+                "_id": entity_info["entity_id"],
+                "content": entity_info["content"],
+                "entity_name": entity_info["entity_name"],
+                "entity_type": entity_info["entity_type"],
                 "source": "entity_extraction"
             }
-            for entity_id in data_for_vdb.keys()
+            for entity_info in entities_with_description
         }
         
         # Log détaillé avant l'insertion dans MongoDB
         logger.debug(" Préparation de l'insertion des entités dans MongoDB")
         logger.debug(f" Nombre d'entités à insérer : {len(entity_chunks_for_mongodb)}")
+
+        # Afficher les détails de chaque entité
+        for entity_id, entity_data in entity_chunks_for_mongodb.items():
+            logger.info(f"🔍 Détails de l'entité : {entity_id}")
+            logger.info(f"   📋 Nom : {entity_data.get('entity_name', 'N/A')}")
+            logger.info(f"   🏷️  Type : {entity_data.get('entity_type', 'N/A')}")
+            logger.info(f"   📝 Contenu : {entity_data.get('content', 'N/A')[:100]}{'...' if len(entity_data.get('content', '')) > 100 else ''}")
+            logger.info(f"   📦 Source : {entity_data.get('source', 'N/A')}")
+            logger.info("   " + "-"*50)  # Séparateur visuel
         
         await text_chunks.upsert(entity_chunks_for_mongodb)
 

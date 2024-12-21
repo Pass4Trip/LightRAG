@@ -137,7 +137,8 @@ class RabbitMQConsumer:
 
     async def process_message(self, message: aio_pika.IncomingMessage):
         """Traite les messages de différents types de manière flexible"""
-        logger.info(f"🔍 Début du traitement du message: {message}")
+        logger.info(f"🔍 Début du traitement du message")
+        logger.debug(f"🔍 Début du traitement du message: {message}")
         
         async with message.process():
             try:
@@ -341,7 +342,7 @@ class RabbitMQConsumer:
                 kv_storage="MongoKVStorage",
                 vector_storage="MilvusVectorDBStorage",
                 graph_storage="Neo4JStorage",
-                log_level="INFO",
+                log_level="DEBUG",
             )
             logger.debug("LightRAG initialisé avec succès")
         except Exception as e:
