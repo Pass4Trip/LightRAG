@@ -1,0 +1,28 @@
+flowchart TD
+    A["lightrag.py : aquery()"] --> |1| B["lightrag_query_openai.py : query_lightrag()"]
+    B --> |2| C["operate.py : kg_query()"]
+    
+    subgraph "Recherche de Contexte"
+    C --> |3| D["operate.py : _build_query_context()"]
+    
+    D --> |4| E["operate.py : _get_node_data()"]
+    D --> |5| F["operate.py : _get_edge_data()"]
+    D --> |6| G["operate.py : naive_query()"]
+    
+    E --> H["Récupération des données de nœuds | neo4j_impl.py : get_node()"]
+    F --> I["Récupération des données de relations | neo4j_impl.py : get_edge()"]
+    G --> J["Recherche vectorielle | milvus_impl.py : query()"]
+    end
+    
+    D --> |7| K["operate.py : combine_contexts()"]
+    K --> L["Assemblage des contextes | Entités, relations et sources"]
+    
+    L --> |8| M["Génération de réponse | OpenAI API"]
+    
+    M --> |9| N["Retour de la réponse finale"]
+    
+    classDef startNode fill:#f9f,stroke:#333,stroke-width:4px
+    classDef endNode fill:#bbf,stroke:#333,stroke-width:4px
+    
+    class A startNode
+    class N endNode

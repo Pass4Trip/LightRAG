@@ -58,7 +58,8 @@ def init_lightrag():
             kv_storage="MongoKVStorage",      # MongoDB pour le stockage clé-valeur
             vector_storage="MilvusVectorDBStorage",  # Milvus pour les vecteurs
             graph_storage="Neo4JStorage",     # Neo4j pour le graphe
-            log_level="INFO"
+            log_level="INFO",
+            enable_llm_cache=False  # Ajout du paramètre ici
         )
         logger.debug("LightRAG initialisé avec succès")
         return rag
@@ -90,11 +91,21 @@ def query_lightrag(question: str, mode: str = "hybrid"):
 if __name__ == "__main__":
     try:
         # Exemple d'utilisation
-        #question = "Quels sont les restaurants avec une bonne accessibilité PMR?"
-        #question = "Sais tu si je dois proposer à Vinh une nouvelle offre de voyager dédié au jeu de moins de 25 ans ?" 
-        question = "Conseil moi un restaurant tendance et avec de des bon burgers" 
-        response = query_lightrag(question)
+        question = "dis moi ce que tu sais sur Zulli"
+        rag = init_lightrag()
+        
+        # Exemple d'utilisation avec filtrage
+        # node_list = [{'custom_id': 'ZUlli'}]
+        
+
+        # Préparation des paramètres de requête
+        mode="hybrid"
+        query_param = QueryParam(mode=mode)
+        
+        # Exécution asynchrone de la requête
+        response = asyncio.run(rag.aquery(question, param=query_param))
+        
         print(f"\nQuestion: {question}")
         print(f"\nRéponse: {response}")
     except Exception as e:
-        logger.error(f"Erreur dans le programme principal: {str(e)}")
+        print(f"An error occurred: {e}")

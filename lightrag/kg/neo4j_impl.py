@@ -39,9 +39,7 @@ class Neo4JStorage(BaseGraphStorage):
         URI = os.environ["NEO4J_URI"]
         USERNAME = os.environ["NEO4J_USERNAME"]
         PASSWORD = os.environ["NEO4J_PASSWORD"]
-        self._driver: AsyncDriver = AsyncGraphDatabase.driver(
-            URI, auth=(USERNAME, PASSWORD)
-        )
+        self._driver: AsyncDriver = AsyncGraphDatabase.driver(URI, auth=(USERNAME, PASSWORD))
         return None
 
     def __post_init__(self):
@@ -563,3 +561,82 @@ class Neo4JStorage(BaseGraphStorage):
                 logger.debug("✅ Fusion des utilisateurs terminée")
         except Exception as e:
             logger.error(f"❌ Erreur lors de la fusion des utilisateurs: {str(e)}")
+
+    async def extract_subgraph(self, custom_ids):
+        """
+        Extrait un sous-graphe pour une liste de custom_ids
+        
+        Returns:
+            dict: Un dictionnaire structuré similaire à chunk_entity_relation_graph
+        """
+        async with self._driver.session() as session:
+            query = """
+            MATCH (n)
+            WHERE n.custom_id IN $custom_ids
+            MATCH (n)-[r]-(connected)
+            RETURN 
+                n AS source_node, 
+                r AS relationship, 
+                connected AS target_node,
+                labels(n) AS source_labels,
+                labels(connected) AS target_labels
+            """
+            
+            result = await session.run(query, {"custom_ids": custom_ids})
+            
+            # Structure pour stocker les entités et relations
+            chunk_entity_relation_graph = {
+                "text_chunks": {},
+                "entities": {},
+                "relations": []
+            }
+            
+            async for record in result:
+                # Traitement du nœud source
+                source_id = record["source_node"].element_id
+                source_properties = dict(record["source_node"])
+                
+                if source_id not in chunk_entity_relation_graph["entities"]:
+                    # Vérifier et extraire l'entity_id spécifique
+                    entity_id = source_properties.get('entity_id')
+                    if not (isinstance(entity_id, str) and entity_id.startswith('ent-')):
+                        entity_id = None
+                    
+                    chunk_entity_relation_graph["entities"][source_id] = {
+                        "id": source_id,
+                        "labels": record["source_labels"],
+                        "properties": source_properties,
+                        "entity_id": entity_id or source_properties.get('custom_id', source_id)
+                    }
+                
+                # Traitement du nœud cible
+                target_id = record["target_node"].element_id
+                target_properties = dict(record["target_node"])
+                
+                if target_id not in chunk_entity_relation_graph["entities"]:
+                    # Vérifier et extraire l'entity_id spécifique
+                    entity_id = target_properties.get('entity_id')
+                    if not (isinstance(entity_id, str) and entity_id.startswith('ent-')):
+                        entity_id = None
+                    
+                    chunk_entity_relation_graph["entities"][target_id] = {
+                        "id": target_id,
+                        "labels": record["target_labels"],
+                        "properties": target_properties,
+                        "entity_id": entity_id or target_properties.get('custom_id', target_id)
+                    }
+                
+                # Ajout de la relation
+                chunk_entity_relation_graph["relations"].append({
+                    "source_id": source_id,
+                    "target_id": target_id,
+                    "type": record["relationship"].type,
+                    "id": record["relationship"].element_id,  # Ajout de l'ID de relation
+                    "properties": dict(record["relationship"])
+                })
+            
+            # Conversion des entités en liste
+            chunk_entity_relation_graph["entities"] = list(chunk_entity_relation_graph["entities"].values())
+            
+            logger.info(f"Sous-graphe extrait pour {len(custom_ids)} nœuds")
+            return chunk_entity_relation_graph

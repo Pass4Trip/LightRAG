@@ -680,7 +680,7 @@ async def extract_entities(
         # Log détaillé avant l'insertion dans Milvus
         logger.debug(" Préparation de l'insertion dans Milvus (Entités)")
         logger.debug(f" Nombre d'entités à insérer : {len(data_for_vdb)}")
-        
+
         # Créer une nouvelle liste pour stocker les entités
         entities_with_description = []
 
@@ -730,6 +730,9 @@ async def extract_entities(
         # Logger la liste complète
         logger.debug(f"Entités avec descriptions : {entities_with_description}")
 
+        # Log des arguments avant la requête
+        logger.info(f"Requête Milvus - Query: {data_for_vdb}, Top-K: {None}")
+        
         await entity_vdb.upsert(data_for_vdb)
 
     if text_chunks is not None and entities_with_description:
@@ -801,6 +804,9 @@ async def extract_entities(
                 relation_data["tgt_id"], 
                 edge_data=edge_data
             )
+        
+        # Log des arguments avant la requête
+        logger.info(f"Requête Milvus - Query: {data_for_vdb}, Top-K: {None}")
         
         await relationships_vdb.upsert(data_for_vdb)
     
@@ -1037,8 +1043,37 @@ async def _get_node_data(
     text_chunks_db: BaseKVStorage[TextChunkSchema],
     query_param: QueryParam,
 ):
-    # get similar entities
-    results = await entities_vdb.query(query, top_k=query_param.top_k)
+    # Hardcoded custom_id for testing
+    custom_ids = ['5390255707819795563']
+    
+    # Extract subgraph to get relevant node IDs
+    if hasattr(knowledge_graph_inst, 'extract_subgraph'):
+        subgraph = await knowledge_graph_inst.extract_subgraph(custom_ids)
+        
+        # Extract node IDs from the subgraph
+        node_ids = [entity.get('entity_id', entity['id']) for entity in subgraph.get('entities', [])]
+        
+        # Override query_param to use only these node IDs
+        query_param.node_ids = node_ids
+        
+        # Log détaillé des entités
+        for entity in subgraph.get('entities', []):
+            logger.info(f"Entité - ID: {entity['id']}, Entity ID: {entity.get('entity_id', 'N/A')}, Labels: {entity.get('labels', [])}")
+    
+    # Log des arguments avant la requête
+    logger.info(f"Requête Milvus - Query: {query}")
+    
+    # Extraire les entity_ids des entités du sous-graphe
+    entity_ids = [
+        entity.get('entity_id') 
+        for entity in subgraph.get('entities', []) 
+        if entity.get('entity_id') and entity.get('entity_id').startswith('ent-')
+    ]
+    
+
+
+    
+    results = await entities_vdb.query(query, top_k=query_param.top_k, filtered_ids=entity_ids)
     if not len(results):
         return None
     # get entity information
@@ -1228,10 +1263,52 @@ async def _get_edge_data(
     text_chunks_db: BaseKVStorage[TextChunkSchema],
     query_param: QueryParam,
 ):
-    results = await relationships_vdb.query(keywords, top_k=query_param.top_k)
+    # Hardcoded custom_id for testing
+    custom_ids = ['5390255707819795563']
+    
+    # Extract subgraph to get relevant node IDs
+    if hasattr(knowledge_graph_inst, 'extract_subgraph'):
+        subgraph = await knowledge_graph_inst.extract_subgraph(custom_ids)
+        
+        # Extract node IDs from the subgraph
+        node_ids = [entity.get('entity_id', entity['id']) for entity in subgraph.get('entities', [])]
+        
+        # Override query_param to use only these node IDs
+        query_param.node_ids = node_ids
+        
+        # Log détaillé des entités
+        # for entity in subgraph.get('entities', []):
+        #     logger.info(f"Entité - ID: {entity['id']}, Entity ID: {entity.get('entity_id', 'N/A')}, Labels: {entity.get('labels', [])}")
+    
+    # Log des arguments avant la requête
+    logger.info(f"Requête Milvus - Query: {keywords}")
+    
+    
+    # Extraire les relation_ids du sous-graphe    
+    relation_ids = [
+        relation.get('relation_id')
+        for relation in subgraph.get('relations', [])
+        if relation.get('relation_id')
+    ]
+
+    logger.info(f"Structure complète du sous-graphe : {subgraph}")
+    logger.info(f"Clés du sous-graphe : {list(subgraph.keys())}")
+    
+    # Examiner les relations
+    relations = subgraph.get('relations', [])
+    logger.info(f"Nombre de relations : {len(relations)}")
+    
+    if relations:
+        logger.info("Structure d'une relation typique :")
+        for key, value in relations[0].items():
+            logger.info(f"  {key}: {value}")
+    
+    logger.info(f"Relation IDs générés : {relation_ids}")
+    
+    results = await relationships_vdb.query(keywords, top_k=query_param.top_k, filtered_ids=relation_ids)
     if not len(results):
         return "", "", ""
-
+    
     edge_datas = await asyncio.gather(
         *[knowledge_graph_inst.get_edge(r["src_id"], r["tgt_id"]) for r in results]
     )
@@ -1425,6 +1502,9 @@ async def naive_query(
     if cached_response is not None:
         return cached_response
 
+    # Log des arguments avant la requête
+    logger.info(f"Requête Milvus - Query: {query}, Top-K: {query_param.top_k}")
+    
     results = await chunks_vdb.query(query, top_k=query_param.top_k)
     if not len(results):
         return PROMPTS["fail_response"]
