@@ -49,6 +49,7 @@ data/
 **/restaurants/
 **/nano-vectorDB/
 **/dickens/
+milvus_docker/milvus_data/
 *.log
 output/
 test_vinh/
