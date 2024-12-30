@@ -50,6 +50,9 @@ data/
 **/nano-vectorDB/
 **/dickens/
 milvus_docker/milvus_data/
+milvus_docker/milvus_data/rdb_data/*.sst
+milvus_docker/milvus_data/rdb_data_meta_kv/*.sst
+*.sst
 *.log
 output/
 test_vinh/
