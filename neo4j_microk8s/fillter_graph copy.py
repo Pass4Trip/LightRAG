@@ -105,67 +105,59 @@ class Neo4jGraphFilter:
                 logger.error(f"Erreur lors du filtrage du graphe Neo4j : {e}")
                 raise
 
-    def extract_filtered_ids(self, filtered_results):
-        """
-        Extrait les entity_ids et relation_ids à partir des résultats filtrés.
-        
-        Args:
-            filtered_results (list): Liste des résultats filtrés
-        
-        Returns:
-            dict: Dictionnaire contenant les node_ids et relation_ids
-        """
-        filtered_ids = {
-            'node_ids': set(),
-            'relation_ids': set()
-        }
-        
-        for result in filtered_results:
-            # Extraire l'entity_id du nœud source
-            source_entity_id = result['source_node']['properties'].get('entity_id')
-            if source_entity_id:
-                filtered_ids['node_ids'].add(source_entity_id)
-            
-            # Extraire l'entity_id du nœud cible
-            target_entity_id = result['target_node']['properties'].get('entity_id')
-            if target_entity_id:
-                filtered_ids['node_ids'].add(target_entity_id)
-            
-            # Extraire le relation_id
-            relation_id = result['relationship']['properties'].get('relation_id')
-            if relation_id:
-                filtered_ids['relation_ids'].add(relation_id)
-        
-        # Convertir les sets en listes
-        filtered_ids['node_ids'] = list(filtered_ids['node_ids'])
-        filtered_ids['relation_ids'] = list(filtered_ids['relation_ids'])
-        
-        return filtered_ids
-
+def save_filtered_results_to_json(filtered_results):
+    """
+    Sauvegarde les résultats filtrés dans un fichier JSON.
+    
+    Args:
+        filtered_results (list): Liste des résultats filtrés
+    
+    Returns:
+        str: Chemin du fichier JSON sauvegardé
+    """
+    # Créer le dossier de sauvegarde s'il n'existe pas
+    save_dir = os.path.join(os.path.dirname(__file__), 'filtered_results')
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Générer un nom de fichier unique basé sur la date et l'heure
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"filtered_results_{timestamp}.json"
+    filepath = os.path.join(save_dir, filename)
+    
+    # Sauvegarder les résultats
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(filtered_results, f, indent=2, ensure_ascii=False)
+    
+    logger.info(f" Résultats sauvegardés dans : {filepath}")
+    return filepath
 
 def main():
     # Exemples d'identifiants à filtrer
-    test_node_ids = ['13294163500777077759', 'lea']
-
+    test_node_ids = [
+        "13294163500777077759",  # Nom de nœud
+        "lea",  # Nom de nœud
+    ]
+    
     try:
-        # Initialiser le filtre de graphe
+        # Initialiser le filtre
         graph_filter = Neo4jGraphFilter()
         
         # Filtrer les nœuds
         filtered_results = graph_filter.filter_nodes(test_node_ids)
         
-        # Extraire les IDs
-        filtered_ids = graph_filter.extract_filtered_ids(filtered_results)
-        
         # Afficher les informations de base
         logger.info(f"Type du Resultat du filtrage: {type(filtered_results)}")
         logger.debug(f"Resultats du filtrage: {filtered_results}")
-        logger.info(f"IDs collectés : {filtered_ids}")
+        
+        # Sauvegarder dans un fichier JSON
+        json_filepath = save_filtered_results_to_json(filtered_results)
         
     except Exception as e:
         logger.error(f"Erreur lors du filtrage : {e}")
     finally:
-        pass
+        # Fermer le driver Neo4j
+        graph_filter.driver.close()
 
 if __name__ == "__main__":
     main()

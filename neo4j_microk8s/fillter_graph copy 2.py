@@ -1,8 +1,11 @@
 import logging
 from neo4j import GraphDatabase
 import os
+import pandas as pd
+from pathlib import Path
 from dotenv import load_dotenv
-import json
+from pymilvus import connections, Collection
+
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, 
@@ -143,6 +146,103 @@ class Neo4jGraphFilter:
         return filtered_ids
 
 
+
+
+def export_milvus_to_dataframe(collection_name="entities", filtered_ids=None):
+    """
+    Exporter une collection Milvus vers un DataFrame pandas selon un filtre d'IDs.
+    
+    :param collection_name: Nom de la collection Milvus
+    :param filtered_ids: Liste des IDs à filtrer (optionnel)
+    :return: DataFrame pandas contenant les données de la collection
+    """
+
+    try:
+        # Charger les variables d'environnement
+        env_path = Path(__file__).parent / '.env'
+        load_dotenv(dotenv_path=env_path)
+
+        # Récupérer les paramètres de connexion
+        milvus_uri = os.environ.get("MILVUS_URI", "tcp://localhost:19530")
+        db_name = os.environ.get("MILVUS_DB_NAME", "lightrag")
+
+        # Connexion à Milvus
+        connections.connect(
+            alias="default",
+            uri=milvus_uri,
+            db_name=db_name
+        )
+        print(f"✅ Connecté au serveur Milvus")
+
+        # Charger la collection
+        collection = Collection(collection_name)
+        collection.load()
+        print(f"📚 Collection '{collection_name}' chargée")
+
+        # Construire l'expression de filtrage si des IDs sont fournis
+        if filtered_ids:
+            filter_expr = 'id in [' + ', '.join(f'"{id}"' for id in filtered_ids) + ']'
+            print(f"🔍 Expression de filtrage : {filter_expr}")
+        else:
+            filter_expr = ""
+            print("🌐 Aucun filtre d'ID spécifié, exportation de toute la collection")
+
+        # Paramètres de recherche constants
+        # search_params = {
+        #     "metric_type": "COSINE",  # Utiliser COSINE au lieu de L2
+        #     "params": {"nprobe": 10}
+        # }
+
+        search_params = {"metric_type": "COSINE"}
+
+        # Récupérer les données avec l'expression de filtrage
+        results = collection.search(
+            data=vec,
+            #expr='entity_type == "positive_point"',
+            expr=filter_expr,
+            param=search_params,
+            anns_field="vector",
+            output_fields=["id", "entity_name", "entity_type"],
+            limit=8  # Ajustez selon la taille de votre collection
+        )
+
+        print(f"\n🔍 Nombre de résultats trouvés : {len(results)}")
+
+        # Si aucun résultat, retourner un DataFrame vide
+        if not results:
+            return pd.DataFrame()
+
+
+
+        for hits in results:
+            print("TopK results:")
+            for hit in hits:
+                print(hit)
+
+        # Convertir les résultats en DataFrame
+        df = pd.DataFrame(results)
+
+        # Afficher tous les champs disponibles
+        # print("\n📋 Champs disponibles :")
+        # for column in df.columns:
+        #     print(f"  - {column}")
+
+        return df
+
+    except Exception as e:
+        print(f"❌ Une erreur s'est produite : {e}")
+        return None
+
+    finally:
+        # Décharger la collection et se déconnecter
+        #collection.release()
+        #connections.disconnect("default")
+        print("🔌 Déconnecté du serveur Milvus")
+
+
+
+
+
 def main():
     # Exemples d'identifiants à filtrer
     test_node_ids = ['13294163500777077759', 'lea']
@@ -162,6 +262,18 @@ def main():
         logger.debug(f"Resultats du filtrage: {filtered_results}")
         logger.info(f"IDs collectés : {filtered_ids}")
         
+
+        # Exemple d'utilisation
+        filtered_ids = [
+            "ent-0083fd68b176b558d7f14787622dc9fe"
+        ]
+        
+        # Exporter avec filtrage
+        df = export_milvus_to_dataframe(
+            collection_name="entities", 
+            filtered_ids=filtered_ids
+        )
+
     except Exception as e:
         logger.error(f"Erreur lors du filtrage : {e}")
     finally:

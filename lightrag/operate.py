@@ -1,6 +1,7 @@
 import asyncio
 import json
 import re
+from typing import Optional, Dict, Any
 from tqdm.asyncio import tqdm as tqdm_async
 from typing import Union
 from collections import Counter, defaultdict
@@ -680,7 +681,7 @@ async def extract_entities(
         # Log détaillé avant l'insertion dans Milvus
         logger.debug(" Préparation de l'insertion dans Milvus (Entités)")
         logger.debug(f" Nombre d'entités à insérer : {len(data_for_vdb)}")
-
+        
         # Créer une nouvelle liste pour stocker les entités
         entities_with_description = []
 
@@ -730,9 +731,6 @@ async def extract_entities(
         # Logger la liste complète
         logger.debug(f"Entités avec descriptions : {entities_with_description}")
 
-        # Log des arguments avant la requête
-        logger.info(f"Requête Milvus - Query: {data_for_vdb}, Top-K: {None}")
-        
         await entity_vdb.upsert(data_for_vdb)
 
     if text_chunks is not None and entities_with_description:
@@ -753,13 +751,13 @@ async def extract_entities(
         logger.debug(f" Nombre d'entités à insérer : {len(entity_chunks_for_mongodb)}")
 
         # Afficher les détails de chaque entité
-        for entity_id, entity_data in entity_chunks_for_mongodb.items():
-            logger.info(f"🔍 Détails de l'entité : {entity_id}")
-            logger.info(f"   📋 Nom : {entity_data.get('entity_name', 'N/A')}")
-            logger.info(f"   🏷️  Type : {entity_data.get('entity_type', 'N/A')}")
-            logger.info(f"   📝 Contenu : {entity_data.get('content', 'N/A')[:100]}{'...' if len(entity_data.get('content', '')) > 100 else ''}")
-            logger.info(f"   📦 Source : {entity_data.get('source', 'N/A')}")
-            logger.info("   " + "-"*50)  # Séparateur visuel
+        # for entity_id, entity_data in entity_chunks_for_mongodb.items():
+        #     logger.info(f"🔍 Détails de l'entité : {entity_id}")
+        #     logger.info(f"   📋 Nom : {entity_data.get('entity_name', 'N/A')}")
+        #     logger.info(f"   🏷️  Type : {entity_data.get('entity_type', 'N/A')}")
+        #     logger.info(f"   📝 Contenu : {entity_data.get('content', 'N/A')[:100]}{'...' if len(entity_data.get('content', '')) > 100 else ''}")
+        #     logger.info(f"   📦 Source : {entity_data.get('source', 'N/A')}")
+        #     logger.info("   " + "-"*50)  # Séparateur visuel
         
         await text_chunks.upsert(entity_chunks_for_mongodb)
 
@@ -805,9 +803,6 @@ async def extract_entities(
                 edge_data=edge_data
             )
         
-        # Log des arguments avant la requête
-        logger.info(f"Requête Milvus - Query: {data_for_vdb}, Top-K: {None}")
-        
         await relationships_vdb.upsert(data_for_vdb)
     
     return knowledge_graph_inst
@@ -822,6 +817,7 @@ async def kg_query(
     query_param: QueryParam,
     global_config: dict,
     hashing_kv: BaseKVStorage = None,
+    vdb_filter: Optional[Dict[str, Any]] = None,
 ) -> str:
     # Handle cache
     use_model_func = global_config["llm_model_func"]
@@ -896,6 +892,7 @@ async def kg_query(
         relationships_vdb,
         text_chunks_db,
         query_param,
+        vdb_filter,
     )
 
     if query_param.only_need_context:
@@ -947,6 +944,7 @@ async def _build_query_context(
     relationships_vdb: BaseVectorStorage,
     text_chunks_db: BaseKVStorage[TextChunkSchema],
     query_param: QueryParam,
+    vdb_filter: Optional[Dict[str, Any]] = None,
 ):
     ll_kewwords, hl_keywrds = query[0], query[1]
     if query_param.mode in ["local", "hybrid"]:
@@ -971,6 +969,7 @@ async def _build_query_context(
                 entities_vdb,
                 text_chunks_db,
                 query_param,
+                vdb_filter,
             )
     if query_param.mode in ["global", "hybrid"]:
         if hl_keywrds == "":
@@ -994,6 +993,7 @@ async def _build_query_context(
                 relationships_vdb,
                 text_chunks_db,
                 query_param,
+                vdb_filter,    
             )
             if (
                 hl_entities_context == ""
@@ -1042,48 +1042,53 @@ async def _get_node_data(
     entities_vdb: BaseVectorStorage,
     text_chunks_db: BaseKVStorage[TextChunkSchema],
     query_param: QueryParam,
+    vdb_filter: Optional[Dict[str, Any]] = None,
 ):
-    # Hardcoded custom_id for testing
-    custom_ids = ['5390255707819795563']
     
-    # Extract subgraph to get relevant node IDs
-    if hasattr(knowledge_graph_inst, 'extract_subgraph'):
-        subgraph = await knowledge_graph_inst.extract_subgraph(custom_ids)
-        
-        # Extract node IDs from the subgraph
-        node_ids = [entity.get('entity_id', entity['id']) for entity in subgraph.get('entities', [])]
-        
-        # Override query_param to use only these node IDs
-        query_param.node_ids = node_ids
-        
-        # Log détaillé des entités
-        for entity in subgraph.get('entities', []):
-            logger.info(f"Entité - ID: {entity['id']}, Entity ID: {entity.get('entity_id', 'N/A')}, Labels: {entity.get('labels', [])}")
+    # get similar entities
+    filtered_node_ids = await knowledge_graph_inst.get_filtered_ids(vdb_filter)
     
-    # Log des arguments avant la requête
-    logger.info(f"Requête Milvus - Query: {query}")
-    
-    # Extraire les entity_ids des entités du sous-graphe
-    entity_ids = [
-        entity.get('entity_id') 
-        for entity in subgraph.get('entities', []) 
-        if entity.get('entity_id') and entity.get('entity_id').startswith('ent-')
-    ]
-    
+    # Extraction des node_ids
+    filtered_node_ids = filtered_node_ids.get('node_ids', [])
+
+    # Logs pour visualiser filtered_node_ids
+    #logger.info(f"Type de filtered_node_ids : {type(filtered_node_ids)}")
+    #logger.info(f"Contenu de filtered_node_ids : {filtered_node_ids}")
 
 
-    
-    results = await entities_vdb.query(query, top_k=query_param.top_k, filtered_ids=entity_ids)
+    if vdb_filter is not None:
+        results = await entities_vdb.query(query, top_k=query_param.top_k, vdb_filter=filtered_node_ids)
+    else:
+        results = await entities_vdb.query(query, top_k=query_param.top_k)
+   
+
+    # # Log structuré pour analyser results
+    # logger.info("Analyse détaillée des résultats de recherche :")
+    # logger.info(f"Nombre total de résultats : {len(results)}")
+
+    # # Afficher les clés présentes dans les résultats
+    # if results:
+    #     logger.info("Clés disponibles dans les résultats :")
+    #     for i, result in enumerate(results, 1):
+    #         logger.info(f"Résultat {i} :")
+    #         for key, value in result.items():
+    #             logger.info(f"  - {key}: {value}")
+    #         logger.info("  " + "-"*40)  # Séparateur visuel
+
     if not len(results):
         return None
     # get entity information
+    logger.info(">>>>>>>>>>1")
     node_datas = await asyncio.gather(
         *[knowledge_graph_inst.get_node(r["entity_name"]) for r in results]
     )
+
+    logger.info(">>>>>>>>>>2")
     if not all([n is not None for n in node_datas]):
         logger.warning("Some nodes are missing, maybe the storage is damaged")
 
     # get entity degree
+    logger.info(">>>>>>>>>>3")
     node_degrees = await asyncio.gather(
         *[knowledge_graph_inst.node_degree(r["entity_name"]) for r in results]
     )
@@ -1092,17 +1097,34 @@ async def _get_node_data(
         for k, n, d in zip(results, node_datas, node_degrees)
         if n is not None
     ]  # what is this text_chunks_db doing.  dont remember it in airvx.  check the diagram.
+    
+    logger.info(">>>>>>>>>>4")
     # get entitytext chunk
     use_text_units = await _find_most_related_text_unit_from_entities(
         node_datas, query_param, text_chunks_db, knowledge_graph_inst
     )
     # get relate edges
+    logger.info(">>>>>>>>>>5")
     use_relations = await _find_most_related_edges_from_entities(
         node_datas, query_param, knowledge_graph_inst
     )
-    logger.debug(
-        f"Local query uses {len(node_datas)} entites, {len(use_relations)} relations, {len(use_text_units)} text units"
-    )
+
+    logger.info(">>>>>>>>>>6")
+    # Logs pour tracer l'origine de l'erreur
+    logger.info(f"Nombre de node_datas : {len(node_datas)}")
+    for i, node in enumerate(node_datas):
+        logger.info(f"Node {i} - Clés disponibles : {list(node.keys())}")
+
+    # Log avant la construction des relations
+    logger.info(f"Nombre de relations : {len(use_relations)}")
+    for i, relation in enumerate(use_relations):
+        logger.info(f"Relation {i} - Clés disponibles : {list(relation.keys())}")
+        # Vérifier spécifiquement l'accès à 'weight'
+        try:
+            weight = relation['weight']
+            logger.info(f"Relation {i} - weight: {weight}")
+        except KeyError:
+            logger.warning(f"Relation {i} - 'weight' key is missing")
 
     # build prompt
     entites_section_list = [["id", "entity", "type", "description", "rank"]]
@@ -1246,11 +1268,11 @@ async def _find_most_related_edges_from_entities(
         if v is not None
     ]
     all_edges_data = sorted(
-        all_edges_data, key=lambda x: (x["rank"], x.get("weight", 1.0)), reverse=True # gestion des cas ou la weight est vide
+        all_edges_data, key=lambda x: (x["rank"], x["weight"]), reverse=True
     )
     all_edges_data = truncate_list_by_token_size(
         all_edges_data,
-        key=lambda x: x.get("description", "pas descritpion"), # Gestion des cas ou la description est vide
+        key=lambda x: x["description"],
         max_token_size=query_param.max_token_for_global_context,
     )
     return all_edges_data
@@ -1262,53 +1284,30 @@ async def _get_edge_data(
     relationships_vdb: BaseVectorStorage,
     text_chunks_db: BaseKVStorage[TextChunkSchema],
     query_param: QueryParam,
+    vdb_filter: Optional[Dict[str, Any]] = None,
 ):
-    # Hardcoded custom_id for testing
-    custom_ids = ['5390255707819795563']
-    
-    # Extract subgraph to get relevant node IDs
-    if hasattr(knowledge_graph_inst, 'extract_subgraph'):
-        subgraph = await knowledge_graph_inst.extract_subgraph(custom_ids)
-        
-        # Extract node IDs from the subgraph
-        node_ids = [entity.get('entity_id', entity['id']) for entity in subgraph.get('entities', [])]
-        
-        # Override query_param to use only these node IDs
-        query_param.node_ids = node_ids
-        
-        # Log détaillé des entités
-        # for entity in subgraph.get('entities', []):
-        #     logger.info(f"Entité - ID: {entity['id']}, Entity ID: {entity.get('entity_id', 'N/A')}, Labels: {entity.get('labels', [])}")
-    
-    # Log des arguments avant la requête
-    logger.info(f"Requête Milvus - Query: {keywords}")
-    
-    
-    # Extraire les relation_ids du sous-graphe    
-    relation_ids = [
-        relation.get('relation_id')
-        for relation in subgraph.get('relations', [])
-        if relation.get('relation_id')
-    ]
 
-    logger.info(f"Structure complète du sous-graphe : {subgraph}")
-    logger.info(f"Clés du sous-graphe : {list(subgraph.keys())}")
+
+
+    # get similar entities
+    filtered_edge_ids = await knowledge_graph_inst.get_filtered_ids(vdb_filter)
     
-    # Examiner les relations
-    relations = subgraph.get('relations', [])
-    logger.info(f"Nombre de relations : {len(relations)}")
+    # Extraction des node_ids
+    filtered_edge_ids = filtered_edge_ids.get('relation_ids', [])
+
+    # Logs pour visualiser filtered_node_ids
+    #logger.info(f"Type de filtered_node_ids : {type(filtered_node_ids)}")
+    #logger.info(f"Contenu de filtered_edge_ids : {filtered_edge_ids}")
+
+
+    if vdb_filter is not None:
+        results = await relationships_vdb.query(keywords, top_k=query_param.top_k, vdb_filter=filtered_edge_ids)
+    else:
+        results = await relationships_vdb.query(keywords, top_k=query_param.top_k)
     
-    if relations:
-        logger.info("Structure d'une relation typique :")
-        for key, value in relations[0].items():
-            logger.info(f"  {key}: {value}")
-    
-    logger.info(f"Relation IDs générés : {relation_ids}")
-    
-    results = await relationships_vdb.query(keywords, top_k=query_param.top_k, filtered_ids=relation_ids)
     if not len(results):
         return "", "", ""
-    
+
     edge_datas = await asyncio.gather(
         *[knowledge_graph_inst.get_edge(r["src_id"], r["tgt_id"]) for r in results]
     )
@@ -1324,11 +1323,11 @@ async def _get_edge_data(
         if v is not None
     ]
     edge_datas = sorted(
-        edge_datas, key=lambda x: (x["rank"], x.get("weight", 1.0)), reverse=True # gestion des cas ou la weight est vide
+        edge_datas, key=lambda x: (x["rank"], x["weight"]), reverse=True
     )
     edge_datas = truncate_list_by_token_size(
         edge_datas,
-        key=lambda x: x.get("description", "pas descritpion"), # Gestion des cas ou la description est vide
+        key=lambda x: x["description"],
         max_token_size=query_param.max_token_for_global_context,
     )
 
@@ -1409,7 +1408,7 @@ async def _find_most_related_entities_from_relationships(
 
     node_datas = truncate_list_by_token_size(
         node_datas,
-        key=lambda x: x.get("description", "pas descritpion"), # Gestion des cas ou la description est vide
+        key=lambda x: x["description"],
         max_token_size=query_param.max_token_for_local_context,
     )
 
@@ -1502,9 +1501,6 @@ async def naive_query(
     if cached_response is not None:
         return cached_response
 
-    # Log des arguments avant la requête
-    logger.info(f"Requête Milvus - Query: {query}, Top-K: {query_param.top_k}")
-    
     results = await chunks_vdb.query(query, top_k=query_param.top_k)
     if not len(results):
         return PROMPTS["fail_response"]

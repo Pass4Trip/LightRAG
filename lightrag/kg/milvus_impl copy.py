@@ -107,45 +107,70 @@ class MilvusVectorDBStorage(BaseVectorStorage):
         results = self._client.upsert(collection_name=self.namespace, data=list_data)
         return results
 
-    async def query(self, query, top_k=5, vdb_filter=None):
+
+
+    async def query(self, query, top_k=5, filtered_ids=None):
         embedding = await self.embedding_func([query])
         
+        # Préparation des paramètres de recherche
+        if filtered_ids:
+            # Log détaillé des types d'IDs
+            #logger.info(f"Préfixes d'IDs : {[eid[:5] for eid in filtered_ids]}")
+            logger.info(f"IDs filtrés : {filtered_ids}")
+            # Créer une expression de filtrage avec l'opérateur IN
+            filter_expr = f'id in {filtered_ids}'
 
-        # Construire l'expression de filtrage si des IDs de vdb_filter fournis
-        if vdb_filter:
-            filter_expr = 'id in [' + ', '.join(f'"{id}"' for id in vdb_filter) + ']'
-            logger.info(f"🔍 Expression de filtrage : {filter_expr}")
-        else:
-            filter_expr = ""
-            logger.error("🌐 Aucun filtre d'ID spécifié, exportation de toute la collection")
+        search_params = {
+            "metric_type": "COSINE",
+            "params": {"nprobe": 10}
+        }
 
-        #logger.info(f"Début de la recherche - vdb_filter: {vdb_filter}")
+        results = self._client.search(
+            collection_name=self.namespace,
+            data=embedding,
+            anns_field="vector",
+            limit=top_k,
+            output_fields=list(self.meta_fields),
+            search_params=search_params,  # Assurez-vous que 'param' est fourni correctement
+        )
+
+
+
+        logger.info(f"Paramètres de recherche Milvus:")
+        logger.info(f"Collection: {self.namespace}")
+        logger.info(f"Embedding: {embedding}")
+        logger.info(f"Limite: {top_k}")
+        logger.info(f"Champs de sortie: {list(self.meta_fields)}")
+        logger.info(f"Paramètres de recherche: {search_params}")
+        logger.info(f"Expression de filtrage: {filter_expr}")
+    
+        # Log détaillé des résultats
+        logger.info(f"Résultats Milvus - Nombre total de résultats: {len(results[0])}")
         
-        if vdb_filter==None:
-            logger.info("Aucun filtre de nœud spécifié, recherche sans filtrage")
-            results = self._client.search(
-                collection_name=self.namespace,
-                data=embedding,
-                limit=top_k,
-                output_fields=list(self.meta_fields),
-                search_params={"metric_type": "COSINE", "params": {"radius": 0.2}},
-            )
-        else:
-            #logger.info(f"Filtrage de nœuds actif - Expression de filtre: {filter_expr}")
-            #logger.info(f"collecion name: {self.namespace}")
-            # Récupérer les données avec l'expression de filtrage
-            
-            results = self._client.search(
-                collection_name=self.namespace,
-                data=embedding,
-                filter=filter_expr,  # Changement de 'expr' à 'filter'
-                anns_field="vector",
-                output_fields=list(self.meta_fields),
-                #output_fields=["id", "entity_name", "entity_type"],
-                limit=top_k  # Ajustez selon la taille de votre collection
-            )
+        # Log des entity_ids des résultats
+        result_ids = [dp["id"] for dp in results[0]]
+        logger.info(f"IDs trouvés dans Milvus: {result_ids}")
         
-        logger.info(f"Résultats de recherche - Nombre de résultats: {len(results[0])}")
+        # Log détaillé des types de résultats
+        # logger.info(f"Types de résultats : {[type(dp['id']) for dp in results[0]]}")
+        # logger.info(f"Préfixes des IDs trouvés : {[dp['id'][:5] for dp in results[0]]}")
+        
+        # Filtrage manuel pour vérification
+        filtered_results = [
+            {
+                "id": dp["id"],
+                "distance": dp["distance"],
+            }
+            for dp in results[0]
+            if dp["id"] in filtered_ids
+        ]
+        logger.info(f"Résultats après filtrage manuel: {len(filtered_results)}")
+        
+        # Log des IDs non trouvés
+        not_found_ids = [eid for eid in filtered_ids if eid not in result_ids]
+        if not_found_ids:
+            logger.warning(f"IDs non trouvés : {not_found_ids}")
+        
         return [
             {**dp["entity"], "id": dp["id"], "distance": dp["distance"]}
             for dp in results[0]

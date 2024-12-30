@@ -541,7 +541,7 @@ class LightRAG:
         loop = always_get_an_event_loop()
         return loop.run_until_complete(self.aquery(query, param))
 
-    async def aquery(self, query: str, param: QueryParam = QueryParam()):
+    async def aquery(self, query: str, param: QueryParam = QueryParam(), vdb_filter: Optional[Dict[str, Any]] = None):
         if param.mode in ["local", "global", "hybrid"]:
             response = await kg_query(
                 query,
@@ -552,6 +552,7 @@ class LightRAG:
                 param,
                 asdict(self),
                 hashing_kv=self.llm_response_cache,
+                vdb_filter=vdb_filter,
             )
         elif param.mode == "naive":
             response = await naive_query(
@@ -605,28 +606,3 @@ class LightRAG:
                 continue
             tasks.append(cast(StorageNameSpace, storage_inst).index_done_callback())
         await asyncio.gather(*tasks)
-
-    def extract_subgraph(self, custom_ids: List[str]):
-        """
-        Extrait un sous-graphe à partir d'une liste de custom_ids
-
-        Args:
-            custom_ids (List[str]): Liste des identifiants personnalisés à extraire
-
-        Returns:
-            dict: Un sous-graphe structuré avec des entités et des relations
-        """
-        loop = always_get_an_event_loop()
-        return loop.run_until_complete(self.aextract_subgraph(custom_ids))
-
-    async def aextract_subgraph(self, custom_ids: List[str]):
-        """
-        Extrait de manière asynchrone un sous-graphe à partir d'une liste de custom_ids
-
-        Args:
-            custom_ids (List[str]): Liste des identifiants personnalisés à extraire
-
-        Returns:
-            dict: Un sous-graphe structuré avec des entités et des relations
-        """
-        return await self.kg.extract_subgraph(custom_ids)

@@ -36,7 +36,22 @@ def test_milvus_connection():
                     num_entities = collection.num_entities
                     print(f"\n   Collection: {coll_name}")
                     print(f"   - Nombre d'entités: {num_entities}")
-                    print(f"   - Dimension: {collection.schema.fields[1].params['dim']}")
+                    
+                    # Print schema details
+                    print("   - Schema:")
+                    for field in collection.schema.fields:
+                        print(f"     * {field.name}:")
+                        print(f"       - Type: {field.dtype}")
+                        if field.params:
+                            print(f"       - Params: {field.params}")
+                        if field.is_primary:
+                            print("       - Primary Key: True")
+                        if field.auto_id:
+                            print("       - Auto ID: True")
+                        if field.description:
+                            print(f"       - Description: {field.description}")
+                            
+                    # Print index details
                     print(f"   - Index: {collection.indexes[0].params if collection.indexes else 'Aucun index'}")
                     collection.release()
                 except Exception as e:

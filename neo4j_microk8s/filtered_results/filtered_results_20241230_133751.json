@@ -1,0 +1,934 @@
+[
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {},
+      "properties": {}
+    },
+    "target_node": {
+      "node": {
+        "name": "Restauration"
+      },
+      "labels": [
+        "ActivityCategory"
+      ],
+      "properties": {
+        "name": "Restauration"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>élément décoratif",
+        "weight": 1.8,
+        "description": "Contexte lié à Les Adrets<SEP>Les poutres en bois ajoutent au charme rustique qui définit l'ambiance du restaurant Les Adrets.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-ed2523e9f17123108b86dc68244415d3"
+      },
+      "properties": {
+        "relation_id": "rel-ed2523e9f17123108b86dc68244415d3",
+        "keywords": "contexte<SEP>élément décoratif",
+        "weight": 1.8,
+        "description": "Contexte lié à Les Adrets<SEP>Les poutres en bois ajoutent au charme rustique qui définit l'ambiance du restaurant Les Adrets.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "Les poutres en bois dans la salle du restaurant renforcent le charme rustique de l'établissement.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-3b0dd5a7de6d684b1958bfe913c70215"
+      },
+      "labels": [
+        "Poutres en bois"
+      ],
+      "properties": {
+        "description": "Les poutres en bois dans la salle du restaurant renforcent le charme rustique de l'établissement.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "positive_point",
+        "entity_id": "ent-3b0dd5a7de6d684b1958bfe913c70215"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>offre culinaire",
+        "weight": 1.9,
+        "description": "Contexte lié à Les Adrets<SEP>Le restaurant Les Adrets est reconnu pour sa cuisine lyonnaise typique, attirant les amateurs de cette gastronomie.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-bc741c9c7861644c6dde09f02f161cf9"
+      },
+      "properties": {
+        "relation_id": "rel-bc741c9c7861644c6dde09f02f161cf9",
+        "keywords": "contexte<SEP>offre culinaire",
+        "weight": 1.9,
+        "description": "Contexte lié à Les Adrets<SEP>Le restaurant Les Adrets est reconnu pour sa cuisine lyonnaise typique, attirant les amateurs de cette gastronomie.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "Les Adrets propose des plats typiquement lyonnais préparés avec soin et fraîcheur.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-cdb8c62fc60e129a11ad4f9bc03adcfe"
+      },
+      "labels": [
+        "Cuisine lyonnaise typique"
+      ],
+      "properties": {
+        "description": "Les Adrets propose des plats typiquement lyonnais préparés avec soin et fraîcheur.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "positive_point",
+        "entity_id": "ent-cdb8c62fc60e129a11ad4f9bc03adcfe"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>spécialité culinaire",
+        "weight": 1.85,
+        "description": "Contexte lié à Les Adrets<SEP>La salade de hareng est une spécialité appréciée au restaurant Les Adrets, mise en avant dans leur offre culinaire.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-64db4263e688ef819f3cd019d03e6521"
+      },
+      "properties": {
+        "relation_id": "rel-64db4263e688ef819f3cd019d03e6521",
+        "keywords": "contexte<SEP>spécialité culinaire",
+        "weight": 1.85,
+        "description": "Contexte lié à Les Adrets<SEP>La salade de hareng est une spécialité appréciée au restaurant Les Adrets, mise en avant dans leur offre culinaire.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "La salade de hareng est mentionnée comme l'une des spécialités savoureuses du restaurant.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-6f0bcf39f76db4b2c108ff392dc481c2"
+      },
+      "labels": [
+        "Salade de hareng"
+      ],
+      "properties": {
+        "description": "La salade de hareng est mentionnée comme l'une des spécialités savoureuses du restaurant.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "positive_point",
+        "entity_id": "ent-6f0bcf39f76db4b2c108ff392dc481c2"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>élément architectural",
+        "weight": 1.8,
+        "description": "Contexte lié à Les Adrets<SEP>Les colonnes en pierre participent à l'ambiance chaleureuse et authentique de la salle du restaurant Les Adrets.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-b52d3efa78b4a6574d3401a7a53cf590"
+      },
+      "properties": {
+        "relation_id": "rel-b52d3efa78b4a6574d3401a7a53cf590",
+        "keywords": "contexte<SEP>élément architectural",
+        "weight": 1.8,
+        "description": "Contexte lié à Les Adrets<SEP>Les colonnes en pierre participent à l'ambiance chaleureuse et authentique de la salle du restaurant Les Adrets.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "Les colonnes en pierre contribuent à l'atmosphère authentique et chaleureuse de l'intérieur du restaurant.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-5efa2100ebf3545c1fd26ba85d6bce6c"
+      },
+      "labels": [
+        "Colonnes en pierre"
+      ],
+      "properties": {
+        "description": "Les colonnes en pierre contribuent à l'atmosphère authentique et chaleureuse de l'intérieur du restaurant.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "positive_point",
+        "entity_id": "ent-5efa2100ebf3545c1fd26ba85d6bce6c"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "accompagnement des mets<SEP>contexte",
+        "weight": 1.8,
+        "description": "Contexte lié à Les Adrets<SEP>La présentation de vins variés au restaurant Les Adrets enrichit l'expérience culinaire des invités.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-84407e765499cda8236ab94798df4cfc"
+      },
+      "properties": {
+        "relation_id": "rel-84407e765499cda8236ab94798df4cfc",
+        "keywords": "accompagnement des mets<SEP>contexte",
+        "weight": 1.8,
+        "description": "Contexte lié à Les Adrets<SEP>La présentation de vins variés au restaurant Les Adrets enrichit l'expérience culinaire des invités.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "Le restaurant offre une variété de vins appréciés pour accompagner les plats.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-ec791b06459f47ef56d19e84c65f6489"
+      },
+      "labels": [
+        "Vins variés"
+      ],
+      "properties": {
+        "description": "Le restaurant offre une variété de vins appréciés pour accompagner les plats.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "positive_point",
+        "entity_id": "ent-ec791b06459f47ef56d19e84c65f6489"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>excellence culinaire",
+        "weight": 1.9,
+        "description": "Contexte lié à Les Adrets<SEP>La qualité des plats proposés par Les Adrets est un point fort, faisant l’objet de nombreux éloges.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-c06f8e8035ba4ae518c9e58528f63313"
+      },
+      "properties": {
+        "relation_id": "rel-c06f8e8035ba4ae518c9e58528f63313",
+        "keywords": "contexte<SEP>excellence culinaire",
+        "weight": 1.9,
+        "description": "Contexte lié à Les Adrets<SEP>La qualité des plats proposés par Les Adrets est un point fort, faisant l’objet de nombreux éloges.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "La qualité des plats est souvent louée, avec des mets frais et authentiques.<SEP>La qualité des plats est souvent louée, avec des spécialités comme le saumon fumé et le magret de canard qualifiés de délicieux.<SEP>La qualité des plats offerts est largement reconnue et appréciée par les clients, notamment pour leur créativité, leur fraîcheur et leur préparation soignée. Les mets traditionnels lyonnais, ainsi que d'autres spécialités, sont souvent loués, avec des plats comme le porc caramélisé, les gratins de ravioles, les quenelles, l'andouillette et le poulet tikka massala qui illustrent cette excellence culinaire. La diversité des saveurs et l'utilisation d'ingrédients saisonniers renforcent également l'attrait des plats, permettant une expérience culinaire riche et variée. \n\nLes clients soulignent l'attention particulière portée à la présentation et au goût des plats, qui sont souvent qualifiés de \"divins\" pour leur qualité et leur originalité. Bien que le menu puisse être limité, la qualité demeure une priorité, garantissant une satisfaction gustative à travers une offre soigneusement élaborée. \n\nLes plats de La Sommelière, en particulier, bénéficient d'une reconnaissance unanime pour leur maîtrise et leur sophistication, créant ainsi une expérience culinaire impressionnante qui justifie les prix bas tout en offrant des expériences mémorables. En somme, la qualité des plats est souvent mise en avant pour ses spécialités savoureuses et son souci du détail, contribuant à une réputation bien établie dans le domaine de la gastronomie.<SEP>Les plats, en particulier les bouchées vapeur, sont souvent loués pour leur saveur et leur qualité.<SEP>Les plats sont souvent réputés pour leur qualité, associant des ingrédients locaux et de saison.<SEP>Les plats sont souvent qualifiés de délicieux, avec des éloges pour des spécialités comme les coquillettes à la truffe et l'andouillette.<SEP>Les plats sont souvent loués pour leur présentation et leur goût, en particulier ceux à base de truffe.<SEP>Les plats sont souvent décrits comme délicieux, avec des goûts originaux et une présentation soignée.<SEP>Les plats sont décrits comme 'divins', préparés avec des ingrédients locaux de haute qualité.",
+        "source_id": "chunk-12d38e14d0f55dffdd4fa23645cab10d<SEP>chunk-dedaeeb249c5d1c35737f629567b7fcc<SEP>chunk-b678955af860edfc3362506a29640be3<SEP>chunk-e0b4ec05ded5fc72c56d029a38a4bb59<SEP>chunk-3233edb59219e916dc1a17337a66bb9d<SEP>chunk-589ad74e502e902bfb076ed32c9191d8<SEP>chunk-fce6fb0ecabce214a983c5199fc03d26<SEP>chunk-8b0bf3ae128ffd2f5eb28b5300bb1f3d<SEP>chunk-288ee4e680b6d75a00268fe46fe5128e<SEP>chunk-bb9665fa4269480bc0125a0765bf267a<SEP>chunk-20e89fb0a49f2e1164b5bd2815902587<SEP>chunk-acab1bdcacf49f47cd25558c8c64d10c<SEP>chunk-50d1df827ad74da563581614cda1a639<SEP>chunk-1781aea74bc4af8c1a914dbf117173e0<SEP>chunk-0ff2c2c7d155b188af901ad9132f088b<SEP>chunk-88272c55705c0130d35483f4387836a1<SEP>chunk-7b16bc2c3a014aaf8a34c2c7776ae056<SEP>chunk-1fb6350449f23f1268390599abf64c99<SEP>chunk-e9cd9cc086e44fc9569a5a517db5ea9b<SEP>chunk-1d4dff23073584b98cf16f86e84edafc<SEP>chunk-e20dcdd2a692259ca2524d0ca49595ac<SEP>chunk-636bc33d3eb57b56853b3387304eae84<SEP>chunk-9c59b78e7c1cf41a9eb647f5f1df0444<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03<SEP>chunk-ea7d9de1740ec8d4616a1543e61bf009<SEP>chunk-2b8427e774d69558903dd11356246fa8<SEP>chunk-e8984a20403efca8cbc3815a5809003f<SEP>chunk-2b8bfa4f145c43b2a5d068395a5c2b37<SEP>chunk-0c0956804bbad2122bee4fac53bc94db",
+        "entity_id": "ent-e560b54f2ea2d51d979162b1bde9e89a"
+      },
+      "labels": [
+        "Qualité des plats"
+      ],
+      "properties": {
+        "description": "La qualité des plats est souvent louée, avec des mets frais et authentiques.<SEP>La qualité des plats est souvent louée, avec des spécialités comme le saumon fumé et le magret de canard qualifiés de délicieux.<SEP>La qualité des plats offerts est largement reconnue et appréciée par les clients, notamment pour leur créativité, leur fraîcheur et leur préparation soignée. Les mets traditionnels lyonnais, ainsi que d'autres spécialités, sont souvent loués, avec des plats comme le porc caramélisé, les gratins de ravioles, les quenelles, l'andouillette et le poulet tikka massala qui illustrent cette excellence culinaire. La diversité des saveurs et l'utilisation d'ingrédients saisonniers renforcent également l'attrait des plats, permettant une expérience culinaire riche et variée. \n\nLes clients soulignent l'attention particulière portée à la présentation et au goût des plats, qui sont souvent qualifiés de \"divins\" pour leur qualité et leur originalité. Bien que le menu puisse être limité, la qualité demeure une priorité, garantissant une satisfaction gustative à travers une offre soigneusement élaborée. \n\nLes plats de La Sommelière, en particulier, bénéficient d'une reconnaissance unanime pour leur maîtrise et leur sophistication, créant ainsi une expérience culinaire impressionnante qui justifie les prix bas tout en offrant des expériences mémorables. En somme, la qualité des plats est souvent mise en avant pour ses spécialités savoureuses et son souci du détail, contribuant à une réputation bien établie dans le domaine de la gastronomie.<SEP>Les plats, en particulier les bouchées vapeur, sont souvent loués pour leur saveur et leur qualité.<SEP>Les plats sont souvent réputés pour leur qualité, associant des ingrédients locaux et de saison.<SEP>Les plats sont souvent qualifiés de délicieux, avec des éloges pour des spécialités comme les coquillettes à la truffe et l'andouillette.<SEP>Les plats sont souvent loués pour leur présentation et leur goût, en particulier ceux à base de truffe.<SEP>Les plats sont souvent décrits comme délicieux, avec des goûts originaux et une présentation soignée.<SEP>Les plats sont décrits comme 'divins', préparés avec des ingrédients locaux de haute qualité.",
+        "source_id": "chunk-12d38e14d0f55dffdd4fa23645cab10d<SEP>chunk-dedaeeb249c5d1c35737f629567b7fcc<SEP>chunk-b678955af860edfc3362506a29640be3<SEP>chunk-e0b4ec05ded5fc72c56d029a38a4bb59<SEP>chunk-3233edb59219e916dc1a17337a66bb9d<SEP>chunk-589ad74e502e902bfb076ed32c9191d8<SEP>chunk-fce6fb0ecabce214a983c5199fc03d26<SEP>chunk-8b0bf3ae128ffd2f5eb28b5300bb1f3d<SEP>chunk-288ee4e680b6d75a00268fe46fe5128e<SEP>chunk-bb9665fa4269480bc0125a0765bf267a<SEP>chunk-20e89fb0a49f2e1164b5bd2815902587<SEP>chunk-acab1bdcacf49f47cd25558c8c64d10c<SEP>chunk-50d1df827ad74da563581614cda1a639<SEP>chunk-1781aea74bc4af8c1a914dbf117173e0<SEP>chunk-0ff2c2c7d155b188af901ad9132f088b<SEP>chunk-88272c55705c0130d35483f4387836a1<SEP>chunk-7b16bc2c3a014aaf8a34c2c7776ae056<SEP>chunk-1fb6350449f23f1268390599abf64c99<SEP>chunk-e9cd9cc086e44fc9569a5a517db5ea9b<SEP>chunk-1d4dff23073584b98cf16f86e84edafc<SEP>chunk-e20dcdd2a692259ca2524d0ca49595ac<SEP>chunk-636bc33d3eb57b56853b3387304eae84<SEP>chunk-9c59b78e7c1cf41a9eb647f5f1df0444<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03<SEP>chunk-ea7d9de1740ec8d4616a1543e61bf009<SEP>chunk-2b8427e774d69558903dd11356246fa8<SEP>chunk-e8984a20403efca8cbc3815a5809003f<SEP>chunk-2b8bfa4f145c43b2a5d068395a5c2b37<SEP>chunk-0c0956804bbad2122bee4fac53bc94db",
+        "entity_type": "positive_point",
+        "entity_id": "ent-e560b54f2ea2d51d979162b1bde9e89a"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "conseil pratique<SEP>contexte",
+        "weight": 1.75,
+        "description": "Contexte lié à Les Adrets<SEP>Pour garantir une table dans le restaurant Les Adrets, il est conseillé de faire des réservations à l'avance.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "RECOMMENDS",
+        "relation_id": "rel-3d5749bf506193d77f8f2a5942c01691"
+      },
+      "properties": {
+        "relation_id": "rel-3d5749bf506193d77f8f2a5942c01691",
+        "keywords": "conseil pratique<SEP>contexte",
+        "weight": 1.75,
+        "description": "Contexte lié à Les Adrets<SEP>Pour garantir une table dans le restaurant Les Adrets, il est conseillé de faire des réservations à l'avance.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "RECOMMENDS"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "recommandation",
+        "description": "Il est conseillé de faire des réservations pour garantir une table au restaurant.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-153f369df84604107fad189b81999c81"
+      },
+      "labels": [
+        "Réservations conseillées"
+      ],
+      "properties": {
+        "description": "Il est conseillé de faire des réservations pour garantir une table au restaurant.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "recommandation",
+        "entity_id": "ent-153f369df84604107fad189b81999c81"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>inclusivité",
+        "weight": 1.75,
+        "description": "Contexte lié à Les Adrets<SEP>L'accessibilité du restaurant Les Adrets pour les personnes à mobilité réduite témoigne de son engagement envers une clientèle variée.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-8525af921e7f8c6e0e6967cd5b04fcff"
+      },
+      "properties": {
+        "relation_id": "rel-8525af921e7f8c6e0e6967cd5b04fcff",
+        "keywords": "contexte<SEP>inclusivité",
+        "weight": 1.75,
+        "description": "Contexte lié à Les Adrets<SEP>L'accessibilité du restaurant Les Adrets pour les personnes à mobilité réduite témoigne de son engagement envers une clientèle variée.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "Le restaurant est accessible aux personnes à mobilité réduite, ce qui le rend inclusif pour tous.<SEP>Le restaurant est accessible aux personnes à mobilité réduite, ce qui élargit son public.<SEP>Le restaurant est accessible aux personnes à mobilité réduite, rendant l'établissement inclusif.<SEP>Le restaurant est accessible aux personnes à mobilité réduite, élargissant son public et sa convivialité.",
+        "source_id": "chunk-12d38e14d0f55dffdd4fa23645cab10d<SEP>chunk-69428424d2ba3fa4a467ddc4c0da4fde<SEP>chunk-bb9665fa4269480bc0125a0765bf267a<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f40fb19f6400d2f61508c4836a802b50"
+      },
+      "labels": [
+        "Accessibilité pour les personnes à mobilité réduite"
+      ],
+      "properties": {
+        "description": "Le restaurant est accessible aux personnes à mobilité réduite, ce qui le rend inclusif pour tous.<SEP>Le restaurant est accessible aux personnes à mobilité réduite, ce qui élargit son public.<SEP>Le restaurant est accessible aux personnes à mobilité réduite, rendant l'établissement inclusif.<SEP>Le restaurant est accessible aux personnes à mobilité réduite, élargissant son public et sa convivialité.",
+        "source_id": "chunk-12d38e14d0f55dffdd4fa23645cab10d<SEP>chunk-69428424d2ba3fa4a467ddc4c0da4fde<SEP>chunk-bb9665fa4269480bc0125a0765bf267a<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "positive_point",
+        "entity_id": "ent-f40fb19f6400d2f61508c4836a802b50"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>qualité des desserts",
+        "weight": 1.85,
+        "description": "Contexte lié à Les Adrets<SEP>Les desserts faits maison au restaurant Les Adrets sont préparés quotidiennement, ajoutant à la qualité de l'expérience culinaire.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-c1f3fdd75459ff268a39efdef0beeb66"
+      },
+      "properties": {
+        "relation_id": "rel-c1f3fdd75459ff268a39efdef0beeb66",
+        "keywords": "contexte<SEP>qualité des desserts",
+        "weight": 1.85,
+        "description": "Contexte lié à Les Adrets<SEP>Les desserts faits maison au restaurant Les Adrets sont préparés quotidiennement, ajoutant à la qualité de l'expérience culinaire.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "Les desserts, préparés quotidiennement par le chef, reçoivent également des éloges et ajoutent à l'attrait du restaurant.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-ade37c1117315e68e5535531acd73622"
+      },
+      "labels": [
+        "Desserts préparés quotidiennement"
+      ],
+      "properties": {
+        "description": "Les desserts, préparés quotidiennement par le chef, reçoivent également des éloges et ajoutent à l'attrait du restaurant.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "positive_point",
+        "entity_id": "ent-ade37c1117315e68e5535531acd73622"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>satisfaction client",
+        "weight": 1.8,
+        "description": "Contexte lié à Les Adrets<SEP>Le bon rapport qualité-prix du restaurant Les Adrets est un point souvent souligné par les clients satisfaits.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-4f604417360aea65c82600680563c32a"
+      },
+      "properties": {
+        "relation_id": "rel-4f604417360aea65c82600680563c32a",
+        "keywords": "contexte<SEP>satisfaction client",
+        "weight": 1.8,
+        "description": "Contexte lié à Les Adrets<SEP>Le bon rapport qualité-prix du restaurant Les Adrets est un point souvent souligné par les clients satisfaits.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "Bien que jugés raisonnables par beaucoup, certains avis signalent que le rapport qualité-prix pourrait être amélioré.<SEP>Il existe une tension d'opinion sur le rapport qualité-prix, certains clients le jugeant élevé.<SEP>Les prix sont considérés comme raisonnables pour la qualité des plats servis, ce qui donne un bon rapport qualité-prix.<SEP>Les avis majoritaires indiquent que les prix sont raisonnables pour la qualité des plats proposés.<SEP>De nombreux clients jugent les prix raisonnables et apprécient le bon rapport qualité-prix du restaurant.<SEP>Le rapport qualité-prix est souvent mentionné comme un grand point fort du restaurant, avec des plats bien exécutés et des prix justifiés.<SEP>Le rapport qualité-prix est souvent souligné comme un atout majeur par rapport à la qualité des plats et aux portions copieuses.<SEP>Le rapport qualité-prix est généralement évalué positivement par la plupart des clients.<SEP>Les clients considèrent le rapport qualité-prix comme très raisonnable, compte tenu de la qualité des plats et des portions généreuses.<SEP>Les prix sont jugés raisonnables et le rapport qualité-prix est considéré comme bon par la majorité des clients.<SEP>La majorité des avis s’accordent sur un bon rapport qualité-prix pour les plats et le service.<SEP>Généralement, les clients estiment qu'il y a un bon rapport qualité-prix pour la qualité des plats et le service.",
+        "source_id": "chunk-3fc61d8a1c16e6c013da2dad98f90800<SEP>chunk-bb9665fa4269480bc0125a0765bf267a<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03<SEP>chunk-26c3e999997cc5439aebf14534d8282b<SEP>chunk-f6cfd7f02bd0fd31713b2d0a856819fb<SEP>chunk-50d1df827ad74da563581614cda1a639<SEP>chunk-e6a9e751478e4f7673dc8023ce648ad7<SEP>chunk-8b0bf3ae128ffd2f5eb28b5300bb1f3d<SEP>chunk-88272c55705c0130d35483f4387836a1<SEP>chunk-33ac5e14199bd2acbe7091e50fe4a779<SEP>chunk-288ee4e680b6d75a00268fe46fe5128e<SEP>chunk-eba1a40306ab2d841d931908520a9af0",
+        "entity_id": "ent-af9b86986d89265528a726484f16fa18"
+      },
+      "labels": [
+        "Rapport qualité-prix"
+      ],
+      "properties": {
+        "description": "Bien que jugés raisonnables par beaucoup, certains avis signalent que le rapport qualité-prix pourrait être amélioré.<SEP>Il existe une tension d'opinion sur le rapport qualité-prix, certains clients le jugeant élevé.<SEP>Les prix sont considérés comme raisonnables pour la qualité des plats servis, ce qui donne un bon rapport qualité-prix.<SEP>Les avis majoritaires indiquent que les prix sont raisonnables pour la qualité des plats proposés.<SEP>De nombreux clients jugent les prix raisonnables et apprécient le bon rapport qualité-prix du restaurant.<SEP>Le rapport qualité-prix est souvent mentionné comme un grand point fort du restaurant, avec des plats bien exécutés et des prix justifiés.<SEP>Le rapport qualité-prix est souvent souligné comme un atout majeur par rapport à la qualité des plats et aux portions copieuses.<SEP>Le rapport qualité-prix est généralement évalué positivement par la plupart des clients.<SEP>Les clients considèrent le rapport qualité-prix comme très raisonnable, compte tenu de la qualité des plats et des portions généreuses.<SEP>Les prix sont jugés raisonnables et le rapport qualité-prix est considéré comme bon par la majorité des clients.<SEP>La majorité des avis s’accordent sur un bon rapport qualité-prix pour les plats et le service.<SEP>Généralement, les clients estiment qu'il y a un bon rapport qualité-prix pour la qualité des plats et le service.",
+        "source_id": "chunk-3fc61d8a1c16e6c013da2dad98f90800<SEP>chunk-bb9665fa4269480bc0125a0765bf267a<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03<SEP>chunk-26c3e999997cc5439aebf14534d8282b<SEP>chunk-f6cfd7f02bd0fd31713b2d0a856819fb<SEP>chunk-50d1df827ad74da563581614cda1a639<SEP>chunk-e6a9e751478e4f7673dc8023ce648ad7<SEP>chunk-8b0bf3ae128ffd2f5eb28b5300bb1f3d<SEP>chunk-88272c55705c0130d35483f4387836a1<SEP>chunk-33ac5e14199bd2acbe7091e50fe4a779<SEP>chunk-288ee4e680b6d75a00268fe46fe5128e<SEP>chunk-eba1a40306ab2d841d931908520a9af0",
+        "entity_type": "positive_point",
+        "entity_id": "ent-af9b86986d89265528a726484f16fa18"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "authenticité culinaire<SEP>contexte",
+        "weight": 1.9,
+        "description": "Contexte lié à Les Adrets<SEP>La mise en avant de la cuisine maison contribue à l'authenticité des plats proposés au restaurant Les Adrets.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-89d4f2da1a64515c8d67853f0ca996cb"
+      },
+      "properties": {
+        "relation_id": "rel-89d4f2da1a64515c8d67853f0ca996cb",
+        "keywords": "authenticité culinaire<SEP>contexte",
+        "weight": 1.9,
+        "description": "Contexte lié à Les Adrets<SEP>La mise en avant de la cuisine maison contribue à l'authenticité des plats proposés au restaurant Les Adrets.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "La mise en avant de la cuisine maison est un aspect apprécié qui souligne la qualité des plats.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-44e8294f09b4b578d9ac505a22c236e3"
+      },
+      "labels": [
+        "Cuisine maison"
+      ],
+      "properties": {
+        "description": "La mise en avant de la cuisine maison est un aspect apprécié qui souligne la qualité des plats.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "positive_point",
+        "entity_id": "ent-44e8294f09b4b578d9ac505a22c236e3"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>plat recommandé",
+        "weight": 1.9,
+        "description": "Contexte lié à Les Adrets<SEP>Le magret de canard servi au restaurant Les Adrets est souvent salué pour sa préparation et son goût.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-7ae2020e90303fbd9b335d5583545356"
+      },
+      "properties": {
+        "relation_id": "rel-7ae2020e90303fbd9b335d5583545356",
+        "keywords": "contexte<SEP>plat recommandé",
+        "weight": 1.9,
+        "description": "Contexte lié à Les Adrets<SEP>Le magret de canard servi au restaurant Les Adrets est souvent salué pour sa préparation et son goût.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "Le magret de canard est décrit comme un plat emblématique de La Nef Des Fous.<SEP>Le magret de canard est souvent qualifié de 'délicieux' et fait partie des plats recommandés.",
+        "source_id": "chunk-e9cd9cc086e44fc9569a5a517db5ea9b<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-dddc6b1c1596fca0eb26059684fcf5b4"
+      },
+      "labels": [
+        "Magret de canard"
+      ],
+      "properties": {
+        "description": "Le magret de canard est décrit comme un plat emblématique de La Nef Des Fous.<SEP>Le magret de canard est souvent qualifié de 'délicieux' et fait partie des plats recommandés.",
+        "source_id": "chunk-e9cd9cc086e44fc9569a5a517db5ea9b<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "positive_point",
+        "entity_id": "ent-dddc6b1c1596fca0eb26059684fcf5b4"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "activity",
+        "custom_id": "13294163500777077759",
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900"
+      },
+      "labels": [
+        "Les Adrets"
+      ],
+      "properties": {
+        "description": "Restaurant français situé à Lyon, offrant une cuisine lyonnaise typique de saison avec des menus fixes composés de trois plats. Le restaurant se distingue par une ambiance chaleureuse et conviviale, avec une salle au charme rustique.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "entity_type": "activity",
+        "entity_id": "ent-f025a8b840e82bc0d03e322196d8c900",
+        "custom_id": "13294163500777077759"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "contexte<SEP>expérience client",
+        "weight": 1.85,
+        "description": "Contexte lié à Les Adrets<SEP>L'ambiance chaleureuse et conviviale du restaurant Les Adrets contribue à une expérience agréable pour les clients.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE",
+        "relation_id": "rel-eb6af692791dc70caf9987d5dd1f3932"
+      },
+      "properties": {
+        "relation_id": "rel-eb6af692791dc70caf9987d5dd1f3932",
+        "keywords": "contexte<SEP>expérience client",
+        "weight": 1.85,
+        "description": "Contexte lié à Les Adrets<SEP>L'ambiance chaleureuse et conviviale du restaurant Les Adrets contribue à une expérience agréable pour les clients.",
+        "source_id": "chunk-b4d8eaa035925dd0f9ae3377fac02e03",
+        "type": "HAS_FEATURE"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "positive_point",
+        "description": "L'ESPERANTO est apprécié pour son ambiance chaleureuse et décontractée, idéale pour un repas entre amis.<SEP>L'ambiance chaleureuse et accueillante est propice à des repas en famille ou entre amis.<SEP>L'ambiance est décrite comme conviviale et décontractée, idéale pour les repas en groupe.<SEP>L'atmosphère du restaurant est décrite comme conviviale, ce qui contribue à une meilleure expérience client.<SEP>L'ambiance conviviale et chaleureuse du Café Lisboa invite à passer un bon moment, malgré une certaine densité de clientèle et du bruit.<SEP>Le cadre chaleureux et décontracté est prisé pour les repas en famille ou entre amis.<SEP>L'ambiance est décrite comme décontractée et accueillante, parfaite pour des repas entre amis ou en famille.<SEP>L'ambiance chaleureuse et décontractée du restaurant crée une atmosphère favorable pour les repas familiaux et amicaux.<SEP>L'atmosphère chaleureuse et décontractée est appréciée par les clients qui soulignent l'interaction amicale avec la patronne.<SEP>L'ambiance du restaurant est décrite comme cosy et accueillante, permettant aux clients de se sentir comme à la maison.<SEP>L'identification de l'établissement comme géré par une femme peut ajouter une touche personnelle à l'expérience client.<SEP>L'ambiance est décrite comme chaleureuse et décontractée, idéale pour des repas en famille ou en tête-à-tête.<SEP>L'ambiance est décrite comme chaleureuse et idéale pour des repas entre amis ou en famille.<SEP>L'ambiance chaleureuse et décontractée est parfaite pour les repas en groupe ou en famille.",
+        "source_id": "chunk-77f3a7a1f3c10869781ef0c0e2a27a51<SEP>chunk-3fc61d8a1c16e6c013da2dad98f90800<SEP>chunk-dd7fce2817ec06dc92b50e054911cd0a<SEP>chunk-e20dcdd2a692259ca2524d0ca49595ac<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03<SEP>chunk-b678955af860edfc3362506a29640be3<SEP>chunk-26c3e999997cc5439aebf14534d8282b<SEP>chunk-aaaed5e72ca9d23838f75c9efb462f3f<SEP>chunk-9d70f91d531155d8df44905dabb78119<SEP>chunk-1781aea74bc4af8c1a914dbf117173e0<SEP>chunk-2b8427e774d69558903dd11356246fa8<SEP>chunk-8b0bf3ae128ffd2f5eb28b5300bb1f3d<SEP>chunk-33ac5e14199bd2acbe7091e50fe4a779<SEP>chunk-eba1a40306ab2d841d931908520a9af0",
+        "entity_id": "ent-e3b0d368d60cef48ee700c256c48a4a6"
+      },
+      "labels": [
+        "Ambiance conviviale"
+      ],
+      "properties": {
+        "description": "L'ESPERANTO est apprécié pour son ambiance chaleureuse et décontractée, idéale pour un repas entre amis.<SEP>L'ambiance chaleureuse et accueillante est propice à des repas en famille ou entre amis.<SEP>L'ambiance est décrite comme conviviale et décontractée, idéale pour les repas en groupe.<SEP>L'atmosphère du restaurant est décrite comme conviviale, ce qui contribue à une meilleure expérience client.<SEP>L'ambiance conviviale et chaleureuse du Café Lisboa invite à passer un bon moment, malgré une certaine densité de clientèle et du bruit.<SEP>Le cadre chaleureux et décontracté est prisé pour les repas en famille ou entre amis.<SEP>L'ambiance est décrite comme décontractée et accueillante, parfaite pour des repas entre amis ou en famille.<SEP>L'ambiance chaleureuse et décontractée du restaurant crée une atmosphère favorable pour les repas familiaux et amicaux.<SEP>L'atmosphère chaleureuse et décontractée est appréciée par les clients qui soulignent l'interaction amicale avec la patronne.<SEP>L'ambiance du restaurant est décrite comme cosy et accueillante, permettant aux clients de se sentir comme à la maison.<SEP>L'identification de l'établissement comme géré par une femme peut ajouter une touche personnelle à l'expérience client.<SEP>L'ambiance est décrite comme chaleureuse et décontractée, idéale pour des repas en famille ou en tête-à-tête.<SEP>L'ambiance est décrite comme chaleureuse et idéale pour des repas entre amis ou en famille.<SEP>L'ambiance chaleureuse et décontractée est parfaite pour les repas en groupe ou en famille.",
+        "source_id": "chunk-77f3a7a1f3c10869781ef0c0e2a27a51<SEP>chunk-3fc61d8a1c16e6c013da2dad98f90800<SEP>chunk-dd7fce2817ec06dc92b50e054911cd0a<SEP>chunk-e20dcdd2a692259ca2524d0ca49595ac<SEP>chunk-b4d8eaa035925dd0f9ae3377fac02e03<SEP>chunk-b678955af860edfc3362506a29640be3<SEP>chunk-26c3e999997cc5439aebf14534d8282b<SEP>chunk-aaaed5e72ca9d23838f75c9efb462f3f<SEP>chunk-9d70f91d531155d8df44905dabb78119<SEP>chunk-1781aea74bc4af8c1a914dbf117173e0<SEP>chunk-2b8427e774d69558903dd11356246fa8<SEP>chunk-8b0bf3ae128ffd2f5eb28b5300bb1f3d<SEP>chunk-33ac5e14199bd2acbe7091e50fe4a779<SEP>chunk-eba1a40306ab2d841d931908520a9af0",
+        "entity_type": "positive_point",
+        "entity_id": "ent-e3b0d368d60cef48ee700c256c48a4a6"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "user",
+        "custom_id": "lea",
+        "description": "Utilisateur nommé lea",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_id": "ent-812b94eb454835665e25797809c1d137"
+      },
+      "labels": [
+        "lea"
+      ],
+      "properties": {
+        "description": "Utilisateur nommé lea",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_type": "user",
+        "entity_id": "ent-812b94eb454835665e25797809c1d137",
+        "custom_id": "lea"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "préférence personnelle<SEP>préférence, goût<SEP>préférence, restaurants",
+        "weight": 2.4,
+        "description": "Préférence personnelle de lea<SEP>lea est passionnée par les pizzas napolitaines<SEP>lea montre une connexion forte avec sa passion pour les pizzas napolitaines, mais le lien avec les restaurants n'est pas directement mentionné.",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "type": "LIKES",
+        "relation_id": "rel-afdcfcf494c55b98cf388a691b1e7230"
+      },
+      "properties": {
+        "relation_id": "rel-afdcfcf494c55b98cf388a691b1e7230",
+        "keywords": "préférence personnelle<SEP>préférence, goût<SEP>préférence, restaurants",
+        "weight": 2.4,
+        "description": "Préférence personnelle de lea<SEP>lea est passionnée par les pizzas napolitaines<SEP>lea montre une connexion forte avec sa passion pour les pizzas napolitaines, mais le lien avec les restaurants n'est pas directement mentionné.",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "type": "LIKES"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "user_preference",
+        "description": "lea est passionnée par les pizzas napolitaines",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_id": "ent-cbbc1cd12a3fa7e9ddc0d1c89c179e3c"
+      },
+      "labels": [
+        "Pizzas napolitaines - lea user_preference"
+      ],
+      "properties": {
+        "description": "lea est passionnée par les pizzas napolitaines",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_type": "user_preference",
+        "entity_id": "ent-cbbc1cd12a3fa7e9ddc0d1c89c179e3c"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "user",
+        "custom_id": "lea",
+        "description": "Utilisateur nommé lea",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_id": "ent-812b94eb454835665e25797809c1d137"
+      },
+      "labels": [
+        "lea"
+      ],
+      "properties": {
+        "description": "Utilisateur nommé lea",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_type": "user",
+        "entity_id": "ent-812b94eb454835665e25797809c1d137",
+        "custom_id": "lea"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "attributs, informations manquantes<SEP>information utilisateur",
+        "weight": 1.85,
+        "description": "Attribut de lea<SEP>Il n'y a pas d'attributs personnels notables pour lea dans le texte, ce qui laisse peu d'informations sur elle en dehors de ses préférences culinaires.",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "type": "HAS_INFORMATION",
+        "relation_id": "rel-458e21a169fc1adf105bb28d10fc5cb3"
+      },
+      "properties": {
+        "relation_id": "rel-458e21a169fc1adf105bb28d10fc5cb3",
+        "keywords": "attributs, informations manquantes<SEP>information utilisateur",
+        "weight": 1.85,
+        "description": "Attribut de lea<SEP>Il n'y a pas d'attributs personnels notables pour lea dans le texte, ce qui laisse peu d'informations sur elle en dehors de ses préférences culinaires.",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "type": "HAS_INFORMATION"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "user_attribute",
+        "description": "Il n'y a pas d'informations d'âge, d'adresse ou d'autres attributs personnels pour lea dans le texte.",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_id": "ent-b45384f41c0af74e0b4d4345f515658b"
+      },
+      "labels": [
+        "lea - lea user_attribute"
+      ],
+      "properties": {
+        "description": "Il n'y a pas d'informations d'âge, d'adresse ou d'autres attributs personnels pour lea dans le texte.",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_type": "user_attribute",
+        "entity_id": "ent-b45384f41c0af74e0b4d4345f515658b"
+      }
+    }
+  },
+  {
+    "source_node": {
+      "node": {
+        "entity_type": "user",
+        "custom_id": "lea",
+        "description": "Utilisateur nommé lea",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_id": "ent-812b94eb454835665e25797809c1d137"
+      },
+      "labels": [
+        "lea"
+      ],
+      "properties": {
+        "description": "Utilisateur nommé lea",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_type": "user",
+        "entity_id": "ent-812b94eb454835665e25797809c1d137",
+        "custom_id": "lea"
+      }
+    },
+    "relationship": {
+      "relation": {
+        "keywords": "découverte, cuisine<SEP>préférence personnelle<SEP>préférence, cuisine",
+        "weight": 2.35,
+        "description": "Préférence personnelle de lea<SEP>lea aime découvrir de nouvelles recettes culinaires, ce qui reflète ses intérêts culinaires<SEP>lea démontre un intérêt pour les nouvelles recettes culinaires, mais cela n'implique pas spécifiquement à un restaurant.",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "type": "LIKES",
+        "relation_id": "rel-7d3545affe9ea46cb23a1a83a99827b6"
+      },
+      "properties": {
+        "relation_id": "rel-7d3545affe9ea46cb23a1a83a99827b6",
+        "keywords": "découverte, cuisine<SEP>préférence personnelle<SEP>préférence, cuisine",
+        "weight": 2.35,
+        "description": "Préférence personnelle de lea<SEP>lea aime découvrir de nouvelles recettes culinaires, ce qui reflète ses intérêts culinaires<SEP>lea démontre un intérêt pour les nouvelles recettes culinaires, mais cela n'implique pas spécifiquement à un restaurant.",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "type": "LIKES"
+      }
+    },
+    "target_node": {
+      "node": {
+        "entity_type": "user_preference",
+        "description": "lea adore découvrir de nouvelles recettes culinaires",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_id": "ent-a951f20edbb6074fadafc90190ab0803"
+      },
+      "labels": [
+        "Nouvelles recettes culinaires - lea user_preference"
+      ],
+      "properties": {
+        "description": "lea adore découvrir de nouvelles recettes culinaires",
+        "source_id": "chunk-a2b26c3350f51c77048a326ffe3e8735",
+        "entity_type": "user_preference",
+        "entity_id": "ent-a951f20edbb6074fadafc90190ab0803"
+      }
+    }
+  }
+]

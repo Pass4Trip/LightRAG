@@ -562,6 +562,7 @@ class Neo4JStorage(BaseGraphStorage):
         except Exception as e:
             logger.error(f"❌ Erreur lors de la fusion des utilisateurs: {str(e)}")
 
+
     async def extract_subgraph(self, custom_ids):
         """
         Extrait un sous-graphe pour une liste de custom_ids
@@ -632,6 +633,7 @@ class Neo4JStorage(BaseGraphStorage):
                     "target_id": target_id,
                     "type": record["relationship"].type,
                     "id": record["relationship"].element_id,  # Ajout de l'ID de relation
+                    "relation_id": record["relationship"]["relation_id"],  # Récupération de l'attribut personnalisé relation_id
                     "properties": dict(record["relationship"])
                 })
             
@@ -640,3 +642,125 @@ class Neo4JStorage(BaseGraphStorage):
             
             logger.info(f"Sous-graphe extrait pour {len(custom_ids)} nœuds")
             return chunk_entity_relation_graph
+
+    async def afilter_nodes(self, node_ids):
+        """
+        Filtre les nœuds du graphe Neo4j en utilisant custom_id de manière asynchrone
+        
+        Args:
+            node_ids (List[str]): Liste des custom_id de nœuds à filtrer
+        
+        Returns:
+            list: Liste des nœuds et relations filtrés
+        """
+        async with self._driver.session() as session:
+            query = """
+            // Trouver les nœuds par leur custom_id
+            MATCH (n)
+            WHERE n.custom_id IN $node_ids
+            
+            // Récupérer les nœuds et leurs relations
+            MATCH (n)-[r]-(connected)
+            RETURN 
+                n AS source_node, 
+                r AS relationship, 
+                connected AS target_node,
+                labels(n) AS source_labels,
+                labels(connected) AS target_labels,
+                properties(n) AS source_properties,
+                properties(r) AS relationship_properties,
+                properties(connected) AS target_properties
+            """
+            
+            try:
+                logger.info(f"afilter_nodes - Valeur de node_ids : {node_ids}")
+                
+                result = await session.run(query, {"node_ids": node_ids})
+                
+                # Collecter les résultats
+                filtered_results = []
+                async for record in result:
+                    filtered_results.append({
+                        'source_node': {
+                            'node': dict(record['source_node']),
+                            'labels': record['source_labels'],
+                            'properties': record['source_properties']
+                        },
+                        'relationship': {
+                            'relation': dict(record['relationship']),
+                            'properties': record['relationship_properties']
+                        },
+                        'target_node': {
+                            'node': dict(record['target_node']),
+                            'labels': record['target_labels'],
+                            'properties': record['target_properties']
+                        }
+                    })
+                
+                logger.info(f"Filtrage réussi : {len(filtered_results)} résultats trouvés")
+                
+                return filtered_results
+            
+            except Exception as e:
+                logger.error(f"Erreur lors du filtrage du graphe Neo4j : {e}")
+                raise
+
+    async def aextract_filtered_ids(self, filtered_results):
+        """
+        Extrait les entity_ids et relation_ids à partir des résultats filtrés de manière asynchrone.
+        
+        Args:
+            filtered_results (list): Liste des résultats filtrés
+        
+        Returns:
+            dict: Dictionnaire contenant les node_ids et relation_ids
+        """
+        filtered_ids = {
+            'node_ids': set(),
+            'relation_ids': set()
+        }
+        
+        for result in filtered_results:
+            # Extraire l'entity_id du nœud source
+            source_entity_id = result['source_node']['properties'].get('entity_id')
+            if source_entity_id:
+                filtered_ids['node_ids'].add(source_entity_id)
+            
+            # Extraire l'entity_id du nœud cible
+            target_entity_id = result['target_node']['properties'].get('entity_id')
+            if target_entity_id:
+                filtered_ids['node_ids'].add(target_entity_id)
+            
+            # Extraire le relation_id
+            relation_id = result['relationship']['properties'].get('relation_id')
+            if relation_id:
+                filtered_ids['relation_ids'].add(relation_id)
+        
+        # Convertir les sets en listes
+        filtered_ids['node_ids'] = list(filtered_ids['node_ids'])
+        filtered_ids['relation_ids'] = list(filtered_ids['relation_ids'])
+        
+        return filtered_ids
+
+    async def get_filtered_ids(self, vdb_filter):
+        
+        logger.info(f"get_filtered_ids - Type de vdb_filter : {type(vdb_filter)}")
+        logger.info(f"get_filtered_ids - Contenu de vdb_filter : {vdb_filter}")
+
+        if isinstance(vdb_filter, dict):
+            logger.info(f"get_filtered_ids - Clés de vdb_filter : {vdb_filter.keys()}")
+            for key, value in vdb_filter.items():
+                logger.info(f"get_filtered_ids - Clé {key} : {type(value)}, Valeur : {value}")
+        
+        # Utiliser la méthode filter_nodes de la classe courante
+        filtered_results = await self.afilter_nodes(vdb_filter)
+        
+        # Extraire les IDs en utilisant la méthode extract_filtered_ids de la classe courante
+        filtered_ids = await self.aextract_filtered_ids(filtered_results)
+        
+        # Afficher les informations de base
+        #logger.info(f"Type du Resultat du filtrage: {type(filtered_results)}")
+        #logger.info(f"Resultats du filtrage: {filtered_results}")
+        #logger.info(f"IDs collectés : {filtered_ids}")
+        
+        return filtered_ids

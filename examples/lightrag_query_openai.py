@@ -102,8 +102,11 @@ if __name__ == "__main__":
         mode="hybrid"
         query_param = QueryParam(mode=mode)
         
+        #vdb_filter= [ "Zulli"]
+        vdb_filter= ["lea"]
+
         # Exécution asynchrone de la requête
-        response = asyncio.run(rag.aquery(question, param=query_param))
+        response = asyncio.run(rag.aquery(question, param=query_param, vdb_filter=vdb_filter))
         
         print(f"\nQuestion: {question}")
         print(f"\nRéponse: {response}")
