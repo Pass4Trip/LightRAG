@@ -1078,17 +1078,14 @@ async def _get_node_data(
     if not len(results):
         return None
     # get entity information
-    logger.info(">>>>>>>>>>1")
     node_datas = await asyncio.gather(
         *[knowledge_graph_inst.get_node(r["entity_name"]) for r in results]
     )
 
-    logger.info(">>>>>>>>>>2")
     if not all([n is not None for n in node_datas]):
         logger.warning("Some nodes are missing, maybe the storage is damaged")
 
     # get entity degree
-    logger.info(">>>>>>>>>>3")
     node_degrees = await asyncio.gather(
         *[knowledge_graph_inst.node_degree(r["entity_name"]) for r in results]
     )
@@ -1098,18 +1095,16 @@ async def _get_node_data(
         if n is not None
     ]  # what is this text_chunks_db doing.  dont remember it in airvx.  check the diagram.
     
-    logger.info(">>>>>>>>>>4")
+
     # get entitytext chunk
     use_text_units = await _find_most_related_text_unit_from_entities(
         node_datas, query_param, text_chunks_db, knowledge_graph_inst
     )
     # get relate edges
-    logger.info(">>>>>>>>>>5")
     use_relations = await _find_most_related_edges_from_entities(
         node_datas, query_param, knowledge_graph_inst
     )
 
-    logger.info(">>>>>>>>>>6")
     # Logs pour tracer l'origine de l'erreur
     logger.info(f"Nombre de node_datas : {len(node_datas)}")
     for i, node in enumerate(node_datas):

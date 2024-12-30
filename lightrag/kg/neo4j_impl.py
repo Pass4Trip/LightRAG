@@ -62,7 +62,7 @@ class Neo4JStorage(BaseGraphStorage):
     async def has_node(self, node_id: str) -> bool:
         entity_name_label = node_id.strip('"')
 
-        async with self._driver.session() as session:
+        async with self.driver.session() as session:
             query = (
                 f"MATCH (n:`{entity_name_label}`) RETURN count(n) > 0 AS node_exists"
             )
@@ -77,7 +77,7 @@ class Neo4JStorage(BaseGraphStorage):
         entity_name_label_source = source_node_id.strip('"')
         entity_name_label_target = target_node_id.strip('"')
 
-        async with self._driver.session() as session:
+        async with self.driver.session() as session:
             query = (
                 f"MATCH (a:`{entity_name_label_source}`)-[r]-(b:`{entity_name_label_target}`) "
                 "RETURN COUNT(r) > 0 AS edgeExists"
@@ -90,7 +90,7 @@ class Neo4JStorage(BaseGraphStorage):
             return single_result["edgeExists"]
 
     async def get_node(self, node_id: str) -> Union[dict, None]:
-        async with self._driver.session() as session:
+        async with self.driver.session() as session:
             entity_name_label = node_id.strip('"')
             query = f"MATCH (n:`{entity_name_label}`) RETURN n"
             result = await session.run(query)
@@ -107,7 +107,7 @@ class Neo4JStorage(BaseGraphStorage):
     async def node_degree(self, node_id: str) -> int:
         entity_name_label = node_id.strip('"')
 
-        async with self._driver.session() as session:
+        async with self.driver.session() as session:
             query = f"""
                 MATCH (n:`{entity_name_label}`)
                 RETURN COUNT{{ (n)--() }} AS totalEdgeCount
@@ -154,7 +154,7 @@ class Neo4JStorage(BaseGraphStorage):
         Returns:
             list: List of all relationships/edges found
         """
-        async with self._driver.session() as session:
+        async with self.driver.session() as session:
             query = f"""
             MATCH (start:`{entity_name_label_source}`)-[r]->(end:`{entity_name_label_target}`)
             RETURN properties(r) as edge_properties
@@ -185,7 +185,7 @@ class Neo4JStorage(BaseGraphStorage):
         query = f"""MATCH (n:`{node_label}`)
                 OPTIONAL MATCH (n)-[r]-(connected)
                 RETURN n, r, connected"""
-        async with self._driver.session() as session:
+        async with self.driver.session() as session:
             results = await session.run(query)
             edges = []
             async for record in results:
@@ -219,6 +219,10 @@ class Neo4JStorage(BaseGraphStorage):
         ('user', 'user_attribute'): 'HAS_INFORMATION',
         ('user_attribute', 'user'): 'HAS_INFORMATION',
     }
+
+    @property
+    def driver(self):
+        return self._driver
 
     @retry(
         stop=stop_after_attempt(3),
@@ -301,7 +305,7 @@ class Neo4JStorage(BaseGraphStorage):
                 raise
 
         try:
-            async with self._driver.session() as session:
+            async with self.driver.session() as session:
                 await session.execute_write(_do_upsert)
         except Exception as e:
             logger.error(f"❌ Erreur lors de l'exécution de la transaction : {e}")
@@ -372,7 +376,7 @@ class Neo4JStorage(BaseGraphStorage):
             )
 
         try:
-            async with self._driver.session() as session:
+            async with self.driver.session() as session:
                 await session.execute_write(_do_upsert_edge)
         except Exception as e:
             logger.error(f"Error during edge upsert: {str(e)}")
@@ -405,7 +409,7 @@ class Neo4JStorage(BaseGraphStorage):
         
         # Utiliser la session existante ou en créer une nouvelle
         if session is None:
-            session = self._driver.session()
+            session = self.driver.session()
         
         async with session:
             # Initialiser les catégories prédéfinies
@@ -483,6 +487,81 @@ class Neo4JStorage(BaseGraphStorage):
             
             return categorization_counts
 
+    async def categorize_cities(
+        self,
+        custom_id: str,
+        city_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Associe une activité à une ville.
+        Si le nœud ville n'existe pas, il sera créé.
+
+        Args:
+            custom_id (str): Le custom_id de l'activité
+            city_name (str): Le nom de la ville
+
+        Returns:
+            Dict[str, Any]: Les informations de l'activité et de la ville
+        """
+        query = """
+        MATCH (activity {custom_id: $custom_id})
+        WITH activity
+        
+        // Vérifier s'il existe déjà une relation LOCATED_IN
+        OPTIONAL MATCH (activity)-[existing_relation:LOCATED_IN]->(existing_city:City)
+        
+        // Créer ou récupérer la nouvelle ville
+        MERGE (city:City {name: $city_name})
+        
+        WITH activity, city, existing_relation, existing_city
+        
+        // Gérer la relation
+        FOREACH (_ IN CASE 
+            WHEN existing_relation IS NULL THEN [1]
+            WHEN existing_city.name <> $city_name THEN [1]
+            ELSE []
+        END |
+            MERGE (activity)-[:LOCATED_IN]->(city)
+            SET activity.city_conflict = CASE WHEN existing_city.name <> $city_name THEN true ELSE false END
+        )
+        
+        RETURN activity, city, 
+               CASE 
+                   WHEN activity.city_conflict IS NOT NULL AND activity.city_conflict = true THEN 'conflict' 
+                   WHEN existing_relation IS NULL THEN 'created' 
+                   ELSE 'existing' 
+               END AS city_status
+        """
+        
+        async with self.driver.session() as session:
+            result = await session.run(
+                query,
+                {
+                    "custom_id": custom_id,
+                    "city_name": city_name
+                }
+            )
+            
+            record = await result.single()
+            
+            if record is None:
+                return None
+            
+            activity = record["activity"]
+            city = record["city"]
+            city_status = record["city_status"]
+            
+            if city_status == 'conflict':
+                logger.warning(f"Conflit de ville détecté pour l'activité {custom_id}. Ancienne ville différente de {city_name}")
+            
+            logger.debug(f"City {city_name}: {city_status}")
+            
+            return {
+                "activity": dict(activity),
+                "city": dict(city),
+                "city_status": city_status
+            }
+
     async def merge_duplicate_users(self):
         """
         Fusionne les nœuds utilisateurs qui ont le même custom_id.
@@ -556,7 +635,7 @@ class Neo4JStorage(BaseGraphStorage):
                         logger.error(f"❌ Erreur lors de la fusion du nœud {duplicate.id}: {str(e)}")
 
         try:
-            async with self._driver.session() as session:
+            async with self.driver.session() as session:
                 await session.execute_write(_do_merge)
                 logger.debug("✅ Fusion des utilisateurs terminée")
         except Exception as e:
@@ -570,7 +649,7 @@ class Neo4JStorage(BaseGraphStorage):
         Returns:
             dict: Un dictionnaire structuré similaire à chunk_entity_relation_graph
         """
-        async with self._driver.session() as session:
+        async with self.driver.session() as session:
             query = """
             MATCH (n)
             WHERE n.custom_id IN $custom_ids
@@ -640,7 +719,7 @@ class Neo4JStorage(BaseGraphStorage):
             # Conversion des entités en liste
             chunk_entity_relation_graph["entities"] = list(chunk_entity_relation_graph["entities"].values())
             
-            logger.info(f"Sous-graphe extrait pour {len(custom_ids)} nœuds")
+            logger.debug(f"Sous-graphe extrait pour {len(custom_ids)} nœuds")
             return chunk_entity_relation_graph
 
     async def afilter_nodes(self, node_ids):
@@ -653,7 +732,7 @@ class Neo4JStorage(BaseGraphStorage):
         Returns:
             list: Liste des nœuds et relations filtrés
         """
-        async with self._driver.session() as session:
+        async with self.driver.session() as session:
             query = """
             // Trouver les nœuds par leur custom_id
             MATCH (n)
@@ -673,7 +752,7 @@ class Neo4JStorage(BaseGraphStorage):
             """
             
             try:
-                logger.info(f"afilter_nodes - Valeur de node_ids : {node_ids}")
+                logger.debug(f"afilter_nodes - Valeur de node_ids : {node_ids}")
                 
                 result = await session.run(query, {"node_ids": node_ids})
                 
@@ -697,7 +776,7 @@ class Neo4JStorage(BaseGraphStorage):
                         }
                     })
                 
-                logger.info(f"Filtrage réussi : {len(filtered_results)} résultats trouvés")
+                logger.debug(f"Filtrage réussi : {len(filtered_results)} résultats trouvés")
                 
                 return filtered_results
             
@@ -744,13 +823,13 @@ class Neo4JStorage(BaseGraphStorage):
 
     async def get_filtered_ids(self, vdb_filter):
         
-        logger.info(f"get_filtered_ids - Type de vdb_filter : {type(vdb_filter)}")
-        logger.info(f"get_filtered_ids - Contenu de vdb_filter : {vdb_filter}")
+        logger.debug(f"get_filtered_ids - Type de vdb_filter : {type(vdb_filter)}")
+        logger.debug(f"get_filtered_ids - Contenu de vdb_filter : {vdb_filter}")
 
         if isinstance(vdb_filter, dict):
-            logger.info(f"get_filtered_ids - Clés de vdb_filter : {vdb_filter.keys()}")
+            logger.debug(f"get_filtered_ids - Clés de vdb_filter : {vdb_filter.keys()}")
             for key, value in vdb_filter.items():
-                logger.info(f"get_filtered_ids - Clé {key} : {type(value)}, Valeur : {value}")
+                logger.debug(f"get_filtered_ids - Clé {key} : {type(value)}, Valeur : {value}")
         
         # Utiliser la méthode filter_nodes de la classe courante
         filtered_results = await self.afilter_nodes(vdb_filter)

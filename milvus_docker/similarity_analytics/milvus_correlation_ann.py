@@ -37,7 +37,7 @@ class Neo4jQueryExecutor:
         
         try:
             self.driver = GraphDatabase.driver(self.uri, auth=(self.username, self.password))
-            logger.info(f"Connexion à Neo4j établie : {self.uri}")
+            logger.debug(f"Connexion à Neo4j établie : {self.uri}")
         except Exception as e:
             logger.error(f"Erreur de connexion à Neo4j : {e}")
             raise
@@ -67,7 +67,7 @@ class Neo4jQueryExecutor:
         """
         if self.driver:
             self.driver.close()
-            logger.info("Connexion Neo4j fermée.")
+            logger.debug("Connexion Neo4j fermée.")
 
     def get_node_details(self, node_ids):
         """
@@ -511,10 +511,10 @@ def create_gpt_validated_relationships(neo4j_client, correlations):
                                     delete_relation_query, 
                                     {'relationship_id': existing_relationship_id}
                                 )
-                                logger.info(f"Relation existante supprimée : {source_node_id} -> {corr['correlated_node_id']}")
+                                logger.debug(f"Relation existante supprimée : {source_node_id} -> {corr['correlated_node_id']}")
                             elif existing_status == 'done':
                                 # Ne pas créer de nouvelle relation
-                                logger.info(f"Relation déjà validée, pas de nouvelle création : {source_node_id} -> {corr['correlated_node_id']}")
+                                logger.debug(f"Relation déjà validée, pas de nouvelle création : {source_node_id} -> {corr['correlated_node_id']}")
                                 continue
                         
                         # Créer la nouvelle relation
@@ -522,7 +522,7 @@ def create_gpt_validated_relationships(neo4j_client, correlations):
                         relationship_id = result.single()['relationship_id']
                         relationships_created += 1
                         
-                        logger.info(f"Relation RECO créée : {source_node_id} -> {corr['correlated_node_id']} (ID relation: {relationship_id})")
+                        logger.debug(f"Relation RECO créée : {source_node_id} -> {corr['correlated_node_id']} (ID relation: {relationship_id})")
         
         return relationships_created
     

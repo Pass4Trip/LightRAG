@@ -74,7 +74,7 @@ def always_get_an_event_loop() -> asyncio.AbstractEventLoop:
 
     except RuntimeError:
         # If no event loop exists or it is closed, create a new one
-        logger.info("Creating a new event loop in main thread.")
+        logger.debug("Creating a new event loop in main thread.")
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
         return new_loop
@@ -153,7 +153,7 @@ class LightRAG:
         set_logger(log_file)
         logger.setLevel(self.log_level)
 
-        logger.info(f"Logger initialized for working directory: {self.working_dir}")
+        logger.debug(f"Logger initialized for working directory: {self.working_dir}")
 
         _print_config = ",\n  ".join([f"{k} = {v}" for k, v in asdict(self).items()])
         logger.debug(f"LightRAG init with param:\n  {_print_config}\n")
@@ -171,7 +171,7 @@ class LightRAG:
         ]
 
         if not os.path.exists(self.working_dir):
-            logger.info(f"Creating working directory {self.working_dir}")
+            logger.debug(f"Creating working directory {self.working_dir}")
             os.makedirs(self.working_dir)
 
         self.llm_response_cache = (
@@ -353,6 +353,35 @@ class LightRAG:
                             logger.error(f"❌ Erreur lors de l'appel de categorize_activities : {e}")
                     else:
                         logger.warning("❌ Méthode categorize_activities non trouvée")
+                    
+                    # Catégorisation des villes
+                    logger.info("🌆 Début de la catégorisation des villes")
+                    
+                    if hasattr(self.chunk_entity_relation_graph, 'categorize_cities') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_cities')):
+                        logger.info("✅ Méthode categorize_cities trouvée")
+                        try:
+                            # Extraire la ville des métadonnées
+                            city_name = metadata.get('city')
+                            
+                            if city_name:
+                                # Obtenir l'élément ID du nœud d'activité
+                                custom_id = metadata.get('custom_id')
+                                
+                                if custom_id:
+                                    await self.chunk_entity_relation_graph.categorize_cities(
+                                        custom_id=custom_id, 
+                                        city_name=city_name
+                                    )
+                                    logger.info(f"✅ Ville {city_name} associée à l'activité")
+                                else:
+                                    logger.warning("❌ custom_id manquant pour la catégorisation de la ville")
+                            else:
+                                logger.debug("ℹ️ Pas de ville spécifiée dans les métadonnées")
+                        
+                        except Exception as e:
+                            logger.error(f"❌ Erreur lors de l'appel de categorize_cities : {e}")
+                    else:
+                        logger.warning("❌ Méthode categorize_cities non trouvée")
         finally:
             if update_storage:
                 await self._insert_done()
@@ -388,9 +417,9 @@ class LightRAG:
             bool: Indicates if storage was updated
         """
         # Log d'entrée DÉTAILLÉ
-        logger.info("🚀 DÉBUT de ainsert_custom_kg")
-        logger.info(f"🔍 Docs reçus : {len(custom_kg.get('docs', []))}")
-        logger.info(f"🔍 Entities_data reçus : {len(custom_kg.get('entities', []))}")
+        logger.debug("🚀 DÉBUT de ainsert_custom_kg")
+        logger.debug(f"🔍 Docs reçus : {len(custom_kg.get('docs', []))}")
+        logger.debug(f"🔍 Entities_data reçus : {len(custom_kg.get('entities', []))}")
 
         # Reste du code inchangé
         update_storage = False
@@ -441,12 +470,12 @@ class LightRAG:
                     "milvus_id": milvus_id
                 }
                 # Debug log DÉTAILLÉ
-                logger.info(f"🔍 DEBUG Before upsert_node - entity_name: {entity_name}")
-                logger.info(f"🔍 DEBUG Before upsert_node - entity_data: {entity_data}")
-                logger.info(f"🔍 DEBUG Before upsert_node - node_data: {node_data}")
-                logger.info(f"🔍 DEBUG Before upsert_node - node_data keys: {list(node_data.keys())}")
-                logger.info(f"🔍 DEBUG Before upsert_node - milvus_id: {milvus_id}")
-                logger.info(f"🔍 DEBUG Before upsert_node - milvus_id type: {type(milvus_id)}")
+                logger.debug(f"🔍 DEBUG Before upsert_node - entity_name: {entity_name}")
+                logger.debug(f"🔍 DEBUG Before upsert_node - entity_data: {entity_data}")
+                logger.debug(f"🔍 DEBUG Before upsert_node - node_data: {node_data}")
+                logger.debug(f"🔍 DEBUG Before upsert_node - node_data keys: {list(node_data.keys())}")
+                logger.debug(f"🔍 DEBUG Before upsert_node - milvus_id: {milvus_id}")
+                logger.debug(f"🔍 DEBUG Before upsert_node - milvus_id type: {type(milvus_id)}")
 
                 # Insert node data into the knowledge graph
                 await self.chunk_entity_relation_graph.upsert_node(
@@ -588,7 +617,7 @@ class LightRAG:
             await self.relationships_vdb.delete_relation(entity_name)
             await self.chunk_entity_relation_graph.delete_node(entity_name)
 
-            logger.info(
+            logger.debug(
                 f"Entity '{entity_name}' and its relationships have been deleted."
             )
             await self._delete_by_entity_done()

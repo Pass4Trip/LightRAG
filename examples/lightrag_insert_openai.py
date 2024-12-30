@@ -215,6 +215,7 @@ class RabbitMQConsumer:
         try:
             resume = payload.get('resume')
             cid = payload.get('cid')
+            city = payload.get('city')
             
             if not resume or not cid:
                 logger.warning(f"Message activity incomplet: {payload}")
@@ -224,7 +225,11 @@ class RabbitMQConsumer:
             await self.insert_to_lightrag(
                 resume, 
                 prompt_domain='activity',
-                metadata={'cid': cid}
+                metadata={
+                    'cid': cid,
+                    'city': city,
+                    'custom_id': f"{cid}"  # Utiliser cid comme custom_id
+                }
             )
         
         except Exception as e:
@@ -342,7 +347,7 @@ class RabbitMQConsumer:
                 kv_storage="MongoKVStorage",
                 vector_storage="MilvusVectorDBStorage",
                 graph_storage="Neo4JStorage",
-                log_level="DEBUG",
+                log_level="INFO",
             )
             logger.debug("LightRAG initialisé avec succès")
         except Exception as e:
