@@ -1,2 +1,13 @@
-milvus_docker/milvus_data/rdb_data/*.sst filter=lfs diff=lfs merge=lfs -text
-*.sst filter=lfs diff=lfs merge=lfs -text lockable
+# Limiter Git LFS à des types de fichiers spécifiques
+*.sst filter=lfs diff=lfs merge=lfs -text
+*.log filter=lfs diff=lfs merge=lfs -text
+
+# Exclure certains répertoires de LFS
+milvus_docker/milvus_data/** !filter
+mongodb_docker/data/** !filter
+neo4j_docker/data/** !filter
+
+# Fichiers binaires volumineux
+*.dylib filter=lfs diff=lfs merge=lfs -text
+*.so filter=lfs diff=lfs merge=lfs -text
+*.dll filter=lfs diff=lfs merge=lfs -text

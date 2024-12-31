@@ -1,46 +1,53 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# Logs
+*.log
+lightrag.log
+*.log.*
 
-# Virtual Environment
-.env
-.venv
-env/
+# Database data
+**/mongodb_docker/data/
+**/milvus_docker/milvus_data/
+**/neo4j_docker/data/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Virtual environments
 venv/
-ENV/
+.venv/
 
-# IDE
+# Compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Large binary files
+*.dylib
+*.so
+*.dll
+
+# Development and system files
+.DS_Store
 .idea/
 .vscode/
-*.swp
-*.swo
 
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# Dependency caches
+node_modules/
+.npm/
+
+# Build and distribution
+build/
+dist/
+*.egg-info/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Large map or data files
+*.sst
+*.log
 
 # Project specific
 data/
@@ -49,11 +56,7 @@ data/
 **/restaurants/
 **/nano-vectorDB/
 **/dickens/
-milvus_docker/milvus_data/
-milvus_docker/milvus_data/rdb_data/*.sst
 milvus_docker/milvus_data/rdb_data_meta_kv/*.sst
-*.sst
-*.log
 output/
 test_vinh/
 resto*.txt
