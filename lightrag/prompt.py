@@ -32,6 +32,13 @@ PROMPTS["user_ENTITY_TYPES"] = [
     "user_preference"
 ]
 
+PROMPTS["event_ENTITY_TYPES"] = [
+    "event",
+    "date",
+    "city",
+    "positive_point",
+    "negative_point"
+]
 
 PROMPTS["activity_entity_extraction"] = """-Goal-
 You are given a text describing various activities (such as restaurants, concerts, or events).
@@ -188,6 +195,77 @@ Output:
 
 
 
+PROMPTS["event_entity_extraction"] = """-Goal-
+You are given a text describing various events (such as concerts, exhibitions, festivals, or public gatherings).  
+Your task is to extract structured entities, relationships, and descriptions from the text based on the following requirements.
+
+CRUCIAL INSTRUCTIONS:  
+- ABSOLUTE PROHIBITION of creating, inventing, or extrapolating information not present in the original text.  
+- Use ONLY information explicitly mentioned in the source text.  
+- If information is not clearly indicated, do NOT attempt to guess or complete it.  
+- Your goal is to be a precise and faithful extractor, not an information generator.  
+- In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.  
+
+Key requirements:  
+
+1. **Entity Types and Descriptions:**  
+   - **event :** Represents any described real-world event or occasion, including concerts, exhibitions, festivals, or other organized gatherings. This entity must include details such as name, type, theme, and notable attributes.  
+   - **date :** Represents the date or period of the event.  
+   - **city :** Represents the city where the event takes place.  
+   - **positive_point :** Represents generic positive aspects applicable across multiple events. These points must remain reusable and should not include specific details about individual events.  
+   - **negative_point :** Represents generic negative aspects linked to events. These points must remain reusable and should not include specific details about individual events.  
+
+2. **Extraction Entity Guideline:**  
+   - For each entity, extract:  
+     - entity_name: Name of the entity.  
+     - entity_type: One of the types: [{entity_types}].
+     - entity_description: A detailed description of the entity's attributes, if available.  
+     - Format: (entity{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)  
+
+3. **Extraction Relationships Guideline:**  
+   - For each relationship, extract:  
+     - source_entity: The source entity name, as identified in Extraction Entity Guideline (step 2).  
+     - target_entity: The target entity name, as identified in Extraction Entity Guideline (step 2).  
+     - relationship_description: Explanation of why the entities are related.  
+     - relationship_keywords: One or more high-level keywords that summarize the overarching nature of the relationship.  
+     Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_keywords>)  
+
+4. **Content-level Keywords:**  
+   - Identify high-level keywords that summarize the main concepts, themes, or topics of the entire text. These should capture the overarching ideas present in the document.  
+   - Format the content-level keywords as ("content_keywords"{tuple_delimiter}<high_level_keywords>)  
+
+5. **Formatting:**  
+   - Use {record_delimiter} to separate entries.  
+   - End output with {completion_delimiter}.  
+
+6. **Language:**  
+   - All extracted entities, relationships, and keywords must be in French.  
+
+7. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'event' entity. If an entity cannot be directly or indirectly connected to the 'event' through a relationship, it should not be considered valid or relevant.  
+
+8. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.  
+
+9. It is CRITICAL to extract ONLY ONE node with entity_type="event" per message. The only node that can have entity_type="event" is the one designated in the phrase: Résumé de l'Événement.  
+
+10. It is STRICTLY FORBIDDEN to create a relationship between two entities with entity_type="event".  
+
+11. When finished, output {completion_delimiter}.  
+
+######################  
+-Examples-  
+######################  
+{examples}  
+
+#############################  
+-Real Data-  
+######################  
+Entity_types: ["event", "date", "city", "positive_point", "negative_point"]  
+Text: {input_text}  
+######################  
+Output:  
+"""
+
+
 PROMPTS["activity_extraction_examples"] = [
     """
 
@@ -271,6 +349,50 @@ Output:
 ("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"Restaurants calmes - Vinh user_preference"{tuple_delimiter}"Vinh recherche des restaurants calmes car il apprécie les lieux paisibles."{tuple_delimiter}"calme, ambiance"{tuple_delimiter}0.9){record_delimiter}
 ("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"Bonne viande - Vinh user_preference"{tuple_delimiter}"Vinh préfère les restaurants proposant de la viande de qualité, ce qui reflète ses goût"{tuple_delimiter}"viande, qualité"{tuple_delimiter}0.85){record_delimiter}
 ("content_keywords"{tuple_delimiter}"restaurants calmes, bonne viande, Serris, 48 ans"){completion_delimiter}
+"""
+]
+
+
+
+PROMPTS["event_extraction_examples"] = [
+    """
+
+Entity_types: ["event", "date", "city", "positive_point", "negative_point"]  
+Text:  
+Résumé de l'Événement : FESTIVAL LUMIÈRES DE LYON  
+
+Situé à Lyon, le Festival Lumières est un événement annuel incontournable qui célèbre la lumière et l'art. Organisé chaque décembre, il attire des milliers de visiteurs locaux et internationaux.  
+
+Ambiance et Atmosphère :  
+L'ambiance du festival est décrite comme magique et captivante, avec des installations lumineuses spectaculaires dans toute la ville. L’événement est idéal pour les familles, les couples, et les amateurs d'art.  
+
+Accessibilité et Organisation :  
+La ville met en place des services spéciaux pour l'occasion, tels que des navettes gratuites, une meilleure signalisation, et des zones réservées aux personnes à mobilité réduite. Cependant, certains visiteurs ont mentionné des difficultés liées à la foule dense, rendant certains endroits moins accessibles.  
+
+Retours et Critiques :  
+Les visiteurs louent souvent la créativité et la diversité des œuvres présentées. Cependant, les critiques récurrentes incluent des files d’attente longues et une surpopulation dans certaines zones populaires.  
+
+Informations Pratiques et Tags :  
+Le festival se déroule sur quatre jours, du 8 au 11 décembre, avec des horaires de 18h à minuit. Les tags associés incluent « lumière », « art », « installation », « famille », et « Lyon ».  
+
+En somme, le Festival Lumières de Lyon est une expérience unique pour découvrir l’art sous un nouvel angle, malgré quelques désagréments logistiques.  
+
+################  
+Output:  
+("entity"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"event"{tuple_delimiter}"Événement annuel à Lyon célébrant la lumière et l’art, attirant des visiteurs internationaux. Ambiance magique et captivante, installations lumineuses spectaculaires."){record_delimiter}  
+("entity"{tuple_delimiter}"8-11 décembre"{tuple_delimiter}"date"{tuple_delimiter}"Le festival se tient du 8 au 11 décembre."){record_delimiter}  
+("entity"{tuple_delimiter}"Lyon"{tuple_delimiter}"city"{tuple_delimiter}"Le festival est organisé dans la ville de Lyon."){record_delimiter}  
+("entity"{tuple_delimiter}"Ambiance magique"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les visiteurs décrivent l’atmosphère du festival comme magique et captivante."){record_delimiter}  
+("entity"{tuple_delimiter}"Créativité des œuvres"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les œuvres lumineuses sont louées pour leur créativité et leur diversité."){record_delimiter}  
+("entity"{tuple_delimiter}"Difficultés liées à la foule"{tuple_delimiter}"negative_point"{tuple_delimiter}"Certains visiteurs ont rencontré des problèmes liés à la densité de la foule, rendant l’accès difficile."){record_delimiter}  
+("entity"{tuple_delimiter}"Files d’attente longues"{tuple_delimiter}"negative_point"{tuple_delimiter}"Les files d’attente pour accéder aux zones populaires sont fréquemment mentionnées comme un inconvénient."){record_delimiter}  
+("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"8-11 décembre"{tuple_delimiter}"Le festival se déroule sur ces dates précises."{tuple_delimiter}"date de l’événement"{tuple_delimiter}0.9){record_delimiter}  
+("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Lyon"{tuple_delimiter}"Le festival est situé dans la ville de Lyon."{tuple_delimiter}"lieu de l’événement"{tuple_delimiter}0.95){record_delimiter}  
+("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Ambiance magique"{tuple_delimiter}"L’ambiance générale du festival est décrite comme magique et captivante."{tuple_delimiter}"atmosphère positive"{tuple_delimiter}0.85){record_delimiter}  
+("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Créativité des œuvres"{tuple_delimiter}"Les œuvres exposées sont louées pour leur créativité."{tuple_delimiter}"qualité artistique"{tuple_delimiter}0.9){record_delimiter}  
+("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Difficultés liées à la foule"{tuple_delimiter}"Les foules denses peuvent rendre certains endroits moins accessibles."{tuple_delimiter}"désavantage logistique"{tuple_delimiter}0.7){record_delimiter}  
+("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Files d’attente longues"{tuple_delimiter}"Les files d’attente longues sont un problème récurrent pour accéder aux zones populaires."{tuple_delimiter}"organisation à améliorer"{tuple_delimiter}0.65){record_delimiter}  
+("content_keywords"{tuple_delimiter}"festival, lumière, Lyon, art, foule, ambiance magique, créativité, files d’attente"){completion_delimiter}  
 """
 ]
 

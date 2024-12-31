@@ -218,6 +218,12 @@ class Neo4JStorage(BaseGraphStorage):
         ('user_preference', 'user'): 'LIKES',
         ('user', 'user_attribute'): 'HAS_INFORMATION',
         ('user_attribute', 'user'): 'HAS_INFORMATION',
+        ('event', 'date'): 'OCCURS_ON',
+        ('date', 'event'): 'OCCURS_ON',
+        ('event', 'positive_point'): 'HAS_FEATURE',
+        ('positive_point', 'event'): 'HAS_FEATURE',
+        ('event', 'negative_point'): 'HAS_FEATURE',
+        ('negative_point', 'event'): 'HAS_FEATURE',        
     }
 
     @property
@@ -561,6 +567,83 @@ class Neo4JStorage(BaseGraphStorage):
                 "city": dict(city),
                 "city_status": city_status
             }
+
+    async def categorize_dates(
+        self, 
+        custom_id: str, 
+        date_label: str
+    ):
+        """
+        Associe un événement à un nœud de date dans le graphe de connaissances.
+        
+        Args:
+            custom_id (str): Identifiant personnalisé de l'événement
+            date_label (str): Étiquette de la date (format YYYY-MM-DD)
+        """
+        async with self.driver.session() as session:
+            try:
+                # Requête pour créer ou récupérer le nœud de date et le lier à l'événement
+                query = """
+                MATCH (event {custom_id: $custom_id})
+                WITH event
+                
+                // Vérifier s'il existe déjà une relation OCCURS_ON
+                OPTIONAL MATCH (event)-[existing_relation:OCCURS_ON]->(existing_date:Date)
+                
+                // Créer ou récupérer la nouvelle date
+                MERGE (date:Date {label: $date_label})
+                
+                WITH event, date, existing_relation, existing_date
+                
+                // Gérer la relation
+                FOREACH (_ IN CASE 
+                    WHEN existing_relation IS NULL THEN [1]
+                    WHEN existing_date.label <> $date_label THEN [1]
+                    ELSE []
+                END |
+                    MERGE (event)-[:OCCURS_ON]->(date)
+                    SET event.date_conflict = CASE WHEN existing_date.label <> $date_label THEN true ELSE false END
+                )
+                
+                RETURN event, date, 
+                       CASE 
+                           WHEN event.date_conflict IS NOT NULL AND event.date_conflict = true THEN 'conflict' 
+                           WHEN existing_relation IS NULL THEN 'created' 
+                           ELSE 'existing' 
+                       END AS date_status
+                """
+                
+                result = await session.run(
+                    query,
+                    {
+                        "custom_id": custom_id,
+                        "date_label": date_label
+                    }
+                )
+                
+                record = await result.single()
+                
+                if record is None:
+                    return None
+                
+                event = record["event"]
+                date = record["date"]
+                date_status = record["date_status"]
+                
+                if date_status == 'conflict':
+                    logger.warning(f"Conflit de date détecté pour l'événement {custom_id}. Ancienne date différente de {date_label}")
+                
+                logger.debug(f"Date {date_label}: {date_status}")
+                
+                return {
+                    "event": dict(event),
+                    "date": dict(date),
+                    "date_status": date_status
+                }
+            
+            except Exception as e:
+                logger.error(f"❌ Erreur lors de l'association de la date : {e}")
+                return None
 
     async def merge_duplicate_users(self):
         """

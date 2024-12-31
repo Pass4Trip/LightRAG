@@ -462,6 +462,7 @@ async def extract_entities(
             "user": [],
             "user_preference": [],
             "user_attribute": [],
+            "event": [],
             "other": []
         }
 
@@ -484,7 +485,7 @@ async def extract_entities(
                 record_attributes, chunk_key
             )
             if if_entities is not None:
-                logger.debug(f"Found Entity: {if_entities}")
+                logger.info(f"Found Entity: {if_entities}")
                 
                 # Récupérer les metadata spécifiques au type d'entité
                 entity_metadata = {}
@@ -493,6 +494,8 @@ async def extract_entities(
                         entity_metadata["custom_id"] = metadata["cid"]
                     elif prompt_domain == "user" and "user_id" in metadata:
                         entity_metadata["custom_id"] = metadata["user_id"]
+                    elif prompt_domain == "event" and "event_id" in metadata:
+                        entity_metadata["custom_id"] = metadata["event_id"]
                 
                 # Ajouter les metadata à l'entité si disponibles
                 if entity_metadata and if_entities["entity_type"] == prompt_domain:
@@ -510,6 +513,8 @@ async def extract_entities(
                     entity_types["user_preference"].append(if_entities["entity_name"])
                 elif if_entities["entity_type"] == "user_attribute":
                     entity_types["user_attribute"].append(if_entities["entity_name"])
+                elif if_entities["entity_type"] == "event":
+                    entity_types["event"].append(if_entities["entity_name"])
                 else:
                     entity_types["other"].append(if_entities["entity_name"])                
                 continue
@@ -585,7 +590,7 @@ async def extract_entities(
         now_ticks = PROMPTS["process_tickers"][
             already_processed % len(PROMPTS["process_tickers"])
         ]
-        print(
+        logger.debug(
             f"{now_ticks} Processed {already_processed} chunks, {already_entities} entities(duplicated), {already_relations} relations(duplicated)\r",
             end="",
             flush=True,
@@ -615,9 +620,9 @@ async def extract_entities(
         for k, v in m_edges.items():
             maybe_edges[tuple(sorted(k))].extend(v)
 
-    logger.debug("Inserting entities into storage...")
-    logger.debug(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
-    logger.debug(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
+    logger.info("Inserting entities into storage...")
+    logger.info(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
+    logger.info(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
     all_entities_data = []
     for result in tqdm_async(
         asyncio.as_completed(
@@ -634,9 +639,35 @@ async def extract_entities(
         logger.debug(f"Entity merge result: {entity_result}")
         all_entities_data.append(entity_result)
 
-    logger.debug(f"Total entities processed: {len(all_entities_data)}")
-    logger.debug(f"All entities data: {all_entities_data}")
-    logger.debug("Inserting relationships into storage...")
+    logger.info(f"Total entities processed: {len(all_entities_data)}")
+    #logger.info(f"All entities data: {all_entities_data}")
+    
+    # Structurer le log avec des couleurs pour plus de lisibilité
+    from colorama import Fore, Style
+    
+    for entity_data in all_entities_data:
+        if entity_data:
+            entity_type = entity_data.get('entity_type', 'Unknown')
+            entity_name = entity_data.get('entity_name', 'N/A')
+            
+            # Choisir une couleur en fonction du type d'entité
+            color = Fore.WHITE
+            if entity_type == 'activity':
+                color = Fore.GREEN
+            elif entity_type == 'user':
+                color = Fore.BLUE
+            elif entity_type == 'event':
+                color = Fore.YELLOW
+            elif entity_type == 'user_preference':
+                color = Fore.MAGENTA
+            
+            logger.info(
+                f"{color}📦 Entité traitée: "
+                f"{Style.BRIGHT}{entity_type}{Style.RESET_ALL} "
+                f"{color}→ {Style.BRIGHT}{entity_name}{Style.RESET_ALL}"
+            )
+
+    logger.info("Inserting relationships into storage...")
     all_relationships_data = []
     for result in tqdm_async(
         asyncio.as_completed(
@@ -653,7 +684,7 @@ async def extract_entities(
     ):
         # Log détaillé sur les relations avant insertion
         logger.info(f"Relations à insérer - Source: {k[0]}, Cible: {k[1]}")
-        logger.info(f"Détails des relations : {v}")
+        logger.debug(f"Détails des relations : {v}")
         
         all_relationships_data.append(await result)
 
@@ -681,7 +712,7 @@ async def extract_entities(
         # Log détaillé avant l'insertion dans Milvus
         logger.debug(" Préparation de l'insertion dans Milvus (Entités)")
         logger.debug(f" Nombre d'entités à insérer : {len(data_for_vdb)}")
-        
+
         # Créer une nouvelle liste pour stocker les entités
         entities_with_description = []
 

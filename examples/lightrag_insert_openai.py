@@ -160,7 +160,8 @@ class RabbitMQConsumer:
                 # Dictionnaire de stratégies de traitement
                 message_handlers = {
                     'activity': self.process_activity_message,
-                    'user': self.process_user_message
+                    'user': self.process_user_message,
+                    'event': self.process_event_message
                 }
                 
                 # Récupération et exécution du gestionnaire approprié
@@ -234,6 +235,46 @@ class RabbitMQConsumer:
         
         except Exception as e:
             logger.error(f"Erreur lors du traitement du message d'activité: {e}")
+            logger.error(traceback.format_exc())
+
+    async def process_event_message(self, payload: dict):
+        """
+        Traite les messages de type 'event'
+        
+        Args:
+            payload (dict): Charge utile du message d'événement
+        """
+        try:
+            # Extraction des attributs de l'événement
+            event_id = payload.get('event_id')
+            description = payload.get('description', 'Événement sans description')
+            start_date = payload.get('start_date')
+            end_date = payload.get('end_date')
+            city = payload.get('city')
+            
+            if not event_id or not description:
+                logger.warning(f"Message event incomplet: {payload}")
+                return
+            
+            # Convertir l'ID en chaîne et le normaliser
+            event_id_str = str(event_id)
+            normalized_event_id = self.normalize_label(event_id_str)
+            
+            # Insertion avec le prompt_domain et metadata
+            await self.insert_to_lightrag(
+                description, 
+                prompt_domain='event',
+                metadata={
+                    'event_id': normalized_event_id,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'city': city,
+                    'custom_id': normalized_event_id  # Utiliser event_id normalisé comme custom_id
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"Erreur lors du traitement du message d'événement: {e}")
             logger.error(traceback.format_exc())
 
     async def insert_to_lightrag(self, text: str, prompt_domain: str = 'activity', metadata: dict = None):

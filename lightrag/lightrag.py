@@ -335,7 +335,7 @@ class LightRAG:
             if update_storage and self.chunk_entity_relation_graph is not None:
                 from .config.activity_categories import activity_categories_manager
             
-                
+                # Catégorisation des activités
                 if prompt_domain == 'activity':
                     # Log du début du processus de catégorisation
                     logger.info("🔍 Début de la catégorisation des activités")
@@ -353,8 +353,9 @@ class LightRAG:
                             logger.error(f"❌ Erreur lors de l'appel de categorize_activities : {e}")
                     else:
                         logger.warning("❌ Méthode categorize_activities non trouvée")
-                    
-                    # Catégorisation des villes
+                
+                # Catégorisation des activités par villes
+                if prompt_domain in ['activity', 'event']:
                     logger.info("🌆 Début de la catégorisation des villes")
                     
                     if hasattr(self.chunk_entity_relation_graph, 'categorize_cities') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_cities')):
@@ -364,7 +365,7 @@ class LightRAG:
                             city_name = metadata.get('city')
                             
                             if city_name:
-                                # Obtenir l'élément ID du nœud d'activité
+                                # Obtenir l'élément ID du nœud
                                 custom_id = metadata.get('custom_id')
                                 
                                 if custom_id:
@@ -372,7 +373,7 @@ class LightRAG:
                                         custom_id=custom_id, 
                                         city_name=city_name
                                     )
-                                    logger.info(f"✅ Ville {city_name} associée à l'activité")
+                                    logger.info(f"✅ Ville {city_name} associée")
                                 else:
                                     logger.warning("❌ custom_id manquant pour la catégorisation de la ville")
                             else:
@@ -382,6 +383,45 @@ class LightRAG:
                             logger.error(f"❌ Erreur lors de l'appel de categorize_cities : {e}")
                     else:
                         logger.warning("❌ Méthode categorize_cities non trouvée")
+                
+                # Catégorisation des dates pour les événements
+                if prompt_domain == 'event':
+                    logger.info("📅 Début de la catégorisation des dates d'événements")
+                    
+                    if hasattr(self.chunk_entity_relation_graph, 'categorize_dates') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_dates')):
+                        logger.info("✅ Méthode categorize_dates trouvée")
+                        try:
+                            # Extraire la date de début des métadonnées
+                            start_date = metadata.get('start_date')
+                            
+                            if start_date:
+                                # Formater la date en YYYY-MM-DD
+                                from datetime import datetime
+                                try:
+                                    parsed_date = datetime.fromisoformat(start_date.replace('+00:00', ''))
+                                    formatted_date = parsed_date.strftime('%Y-%m-%d')
+                                    
+                                    # Obtenir l'élément ID de l'événement
+                                    custom_id = metadata.get('custom_id')
+                                    
+                                    if custom_id:
+                                        await self.chunk_entity_relation_graph.categorize_dates(
+                                            custom_id=custom_id, 
+                                            date_label=formatted_date
+                                        )
+                                        logger.info(f"✅ Date {formatted_date} associée à l'événement")
+                                    else:
+                                        logger.warning("❌ custom_id manquant pour la catégorisation de la date")
+                                
+                                except ValueError as ve:
+                                    logger.error(f"❌ Erreur de formatage de date : {ve}")
+                            else:
+                                logger.debug("ℹ️ Pas de date spécifiée dans les métadonnées")
+                        
+                        except Exception as e:
+                            logger.error(f"❌ Erreur lors de l'appel de categorize_dates : {e}")
+                    else:
+                        logger.warning("❌ Méthode categorize_dates non trouvée")
         finally:
             if update_storage:
                 await self._insert_done()
