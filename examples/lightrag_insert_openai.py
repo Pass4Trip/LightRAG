@@ -161,7 +161,8 @@ class RabbitMQConsumer:
                 message_handlers = {
                     'activity': self.process_activity_message,
                     'user': self.process_user_message,
-                    'event': self.process_event_message
+                    'event': self.process_event_message,
+                    'memo': self.process_memo_message
                 }
                 
                 # Récupération et exécution du gestionnaire approprié
@@ -237,6 +238,7 @@ class RabbitMQConsumer:
             logger.error(f"Erreur lors du traitement du message d'activité: {e}")
             logger.error(traceback.format_exc())
 
+
     async def process_event_message(self, payload: dict):
         """
         Traite les messages de type 'event'
@@ -275,6 +277,45 @@ class RabbitMQConsumer:
             
         except Exception as e:
             logger.error(f"Erreur lors du traitement du message d'événement: {e}")
+            logger.error(traceback.format_exc())
+
+    async def process_memo_message(self, payload: dict):
+        """
+        Traite les messages de type 'memo'
+        
+        Args:
+            payload (dict): Charge utile du message de mémo
+        """
+        try:
+            # Extraction des attributs du mémo
+            memo_id = payload.get('memo_id')
+            description = payload.get('description', 'Mémo sans description')
+            user_id = payload.get('user_id')  # Récupérer l'ID de l'utilisateur
+            
+            if not memo_id or not description:
+                logger.warning(f"Message memo incomplet: {payload}")
+                return
+            
+            # Convertir l'ID en chaîne et le normaliser
+            memo_id_str = str(memo_id)
+            normalized_memo_id = self.normalize_label(memo_id_str)
+            
+            # Normaliser l'ID utilisateur si présent
+            normalized_user_id = self.normalize_label(str(user_id)) if user_id else None
+            
+            # Insertion avec le prompt_domain et metadata
+            await self.insert_to_lightrag(
+                description, 
+                prompt_domain='memo',
+                metadata={
+                    'memo_id': normalized_memo_id,
+                    'custom_id': normalized_memo_id,  # Utiliser memo_id normalisé comme custom_id
+                    'user_id': normalized_user_id  # Ajouter l'ID utilisateur normalisé
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"Erreur lors du traitement du message de mémo: {e}")
             logger.error(traceback.format_exc())
 
     async def insert_to_lightrag(self, text: str, prompt_domain: str = 'activity', metadata: dict = None):

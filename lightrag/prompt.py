@@ -40,6 +40,18 @@ PROMPTS["event_ENTITY_TYPES"] = [
     "negative_point"
 ]
 
+PROMPTS["memo_ENTITY_TYPES"] = [
+    "memo", 
+    "date", 
+    "city", 
+    "priority", 
+    "note", 
+    "memo_user"
+]
+
+
+
+
 PROMPTS["activity_entity_extraction"] = """-Goal-
 You are given a text describing various activities (such as restaurants, concerts, or events).
 Your task is to extract structured entities, relationships, and descriptions from the text based on the following requirements.
@@ -259,11 +271,83 @@ Key requirements:
 #############################  
 -Real Data-  
 ######################  
-Entity_types: ["event", "date", "city", "positive_point", "negative_point"]  
+Entity_types: {entity_types}
 Text: {input_text}  
 ######################  
 Output:  
 """
+
+
+
+PROMPTS["memo_entity_extraction"] = """-Goal-  
+You are given a text describing a memo, reminder, or appointment (such as personal tasks, professional meetings, or other notes).  
+Your task is to extract structured entities, relationships, and descriptions from the text based on the following requirements.  
+
+CRUCIAL INSTRUCTIONS:  
+- ABSOLUTE PROHIBITION of creating, inventing, or extrapolating information not present in the original text.  
+- Use ONLY information explicitly mentioned in the source text.  
+- If information is not clearly indicated, do NOT attempt to guess or complete it.  
+- Your goal is to be a precise and faithful extractor, not an information generator.  
+- In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.  
+
+Key requirements:  
+
+1. **Entity Types and Descriptions:**  
+   - **memo :** Represents the main task, appointment, or note described in the memo. This entity must include details such as the task's name, purpose, or key attributes.  
+   - **date :** Represents the date or time of the memo or appointment.  
+   - **city :** Represents the city where the memo task or appointment takes place, if applicable.  
+   - **priority :** Represents the priority level of the memo (e.g., high, medium, low), if explicitly mentioned.  
+   - **note :** Represents any additional notes or information linked to the memo.  
+   - **memo_user :** Represents a person explicitly mentioned in the memo (e.g., attendees, person for whom the task is being performed, or others relevant to the memo).  
+
+2. **Extraction Entity Guideline:**  
+   - For each entity, extract:  
+     - entity_name: Name of the entity.  
+    - entity_type: One of the types: [{entity_types}].
+     - entity_description: A detailed description of the entity's attributes, if available.  
+     - Format: (entity{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)  
+
+3. **Extraction Relationships Guideline:**  
+   - For each relationship, extract:  
+     - source_entity: The source entity name, as identified in Extraction Entity Guideline (step 2).  
+     - target_entity: The target entity name, as identified in Extraction Entity Guideline (step 2).  
+     - relationship_description: Explanation of why the entities are related.  
+     - relationship_keywords: One or more high-level keywords that summarize the overarching nature of the relationship.  
+     Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_keywords>)  
+
+4. **Content-level Keywords:**  
+   - Identify high-level keywords that summarize the main concepts, themes, or topics of the entire text. These should capture the overarching ideas present in the document.  
+   - Format the content-level keywords as ("content_keywords"{tuple_delimiter}<high_level_keywords>)  
+
+5. **Formatting:**  
+   - Use {record_delimiter} to separate entries.  
+   - End output with {completion_delimiter}.  
+
+6. **Language:**  
+   - All extracted entities, relationships, and keywords must be in French.  
+
+7. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'memo' entity. If an entity cannot be directly or indirectly connected to the 'memo' through a relationship, it should not be considered valid or relevant.  
+
+8. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.  
+
+9. It is CRITICAL to extract ONLY ONE node with entity_type="memo" per message. The only node that can have entity_type="memo" is the one designated in the phrase: Résumé du Mémo.  
+
+10. When finished, output {completion_delimiter}.  
+
+######################  
+-Examples-  
+######################  
+{examples}  
+
+#############################  
+-Real Data-  
+######################  
+Entity_types: {entity_types}
+Text: {input_text}  
+######################  
+Output:  
+"""
+
 
 
 PROMPTS["activity_extraction_examples"] = [
@@ -395,6 +479,52 @@ Output:
 ("content_keywords"{tuple_delimiter}"festival, lumière, Lyon, art, foule, ambiance magique, créativité, files d’attente"){completion_delimiter}  
 """
 ]
+
+
+
+
+
+
+PROMPTS["memo_extraction_examples"] = [
+    """
+
+Entity_types: ["memo", "date", "city", "priority", "note", "memo_user"]
+Text:Résumé du Mémo : Organiser l'anniversaire de Tom, mon meilleur ami.
+
+Catégories :
+
+Objectifs :
+Planifier une fête d'anniversaire mémorable pour Tom, avec une décoration sur le thème des super-héros, un gâteau au chocolat, et une playlist personnalisée.
+
+Date :
+15 avril, début de la fête à 18h. Invitations à envoyer avant le 10 avril.
+
+Lieu :
+A Paris, la maison de Tom.
+
+Qui :T
+om, mon meilleur ami, est la personne pour qui la fête est organisée. La liste des invités inclut nos amis proches et sa famille.
+
+Priorité :
+Élevée, car Tom est une personne très importante pour moi.
+
+################
+Output:
+("entity"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"memo"{tuple_delimiter}"Planification d'une fête d'anniversaire pour Tom avec un thème super-héros, incluant gâteau, décoration et playlist."){record_delimiter}  
+("entity"{tuple_delimiter}"15 avril"{tuple_delimiter}"date"{tuple_delimiter}"Date prévue pour l'anniversaire de Tom."){record_delimiter}  
+("entity"{tuple_delimiter}"Paris"{tuple_delimiter}"city"{tuple_delimiter}"Lieu où se tiendra l'anniversaire."){record_delimiter}  
+("entity"{tuple_delimiter}"Priorité élevée"{tuple_delimiter}"priority"{tuple_delimiter}"Tom est mon meilleur ami, donc cette tâche est prioritaire."){record_delimiter}  
+("entity"{tuple_delimiter}"Décoration super-héros"{tuple_delimiter}"note"{tuple_delimiter}"Thème de la décoration pour la fête."){record_delimiter}  
+("entity"{tuple_delimiter}"Tom"{tuple_delimiter}"memo_user"{tuple_delimiter}"La fête est organisée pour Tom, mon meilleur ami."){record_delimiter}  
+("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"15 avril"{tuple_delimiter}"La fête est planifiée pour cette date précise."{tuple_delimiter}"date de l'événement"{tuple_delimiter}0.9){record_delimiter}  
+("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Paris"{tuple_delimiter}"La maison est le lieu choisi pour l'événement."{tuple_delimiter}"lieu de l'événement"{tuple_delimiter}0.95){record_delimiter}  
+("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Priorité élevée"{tuple_delimiter}"Cette tâche est prioritaire car Tom est un proche important."{tuple_delimiter}"importance de la tâche"{tuple_delimiter}0.85){record_delimiter}  
+("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Décoration super-héros"{tuple_delimiter}"Le thème de la décoration reflète les goûts de Tom."{tuple_delimiter}"décoration personnalisée"{tuple_delimiter}0.8){record_delimiter}  
+("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Tom"{tuple_delimiter}"La fête est spécifiquement organisée pour Tom."{tuple_delimiter}"destinataire du mémo"{tuple_delimiter}0.9){record_delimiter}  
+("content_keywords"{tuple_delimiter}"anniversaire, Tom, décoration, gâteau, super-héros, maison, invités"){completion_delimiter}
+#############################"""]
+
+
 
 
 PROMPTS["summarize_entity_descriptions"] = """You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.

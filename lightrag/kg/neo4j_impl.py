@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 from dataclasses import dataclass
-from typing import Any, Union, Tuple, List, Dict
+from typing import Any, Union, Tuple, List, Dict, Optional
 import inspect
 from lightrag.utils import logger
 from ..base import BaseGraphStorage
@@ -223,7 +223,19 @@ class Neo4JStorage(BaseGraphStorage):
         ('event', 'positive_point'): 'HAS_FEATURE',
         ('positive_point', 'event'): 'HAS_FEATURE',
         ('event', 'negative_point'): 'HAS_FEATURE',
-        ('negative_point', 'event'): 'HAS_FEATURE',        
+        ('negative_point', 'event'): 'HAS_FEATURE',
+        ('user', 'memo'): 'HAS_MEMO',
+        ('memo', 'user'): 'HAS_MEMO',
+        ('memo', 'date'): 'OCCURS_ON',
+        ('date', 'memo'): 'OCCURS_ON',
+        ('memo', 'memo_user'): 'IMPACT_USER',
+        ('memo_user', 'memo'): 'IMPACT_USER',     
+        ('memo', 'note'): 'HAS_DETAIL',
+        ('note', 'memo'): 'HAS_DETAIL',      
+        ('memo', 'city'): 'LOCATED_IN',
+        ('city', 'memo'): 'LOCATED_IN',    
+        ('memo', 'priority'): 'HAS_PRIORITY',
+        ('priority', 'memo'): 'HAS_PRIORITY',                         
     }
 
     @property
@@ -548,9 +560,13 @@ class Neo4JStorage(BaseGraphStorage):
                 }
             )
             
-            record = await result.single()
+            records = await result.data()
             
-            if record is None:
+            if records:
+                logger.info(f"Résultats de la requête : {records}")
+                record = records[0]
+            else:
+                logger.warning("Aucun résultat trouvé pour la requête")
                 return None
             
             activity = record["activity"]
@@ -613,6 +629,7 @@ class Neo4JStorage(BaseGraphStorage):
                        END AS date_status
                 """
                 
+                # Exécuter l'initialisation et récupérer les activités
                 result = await session.run(
                     query,
                     {
@@ -621,9 +638,13 @@ class Neo4JStorage(BaseGraphStorage):
                     }
                 )
                 
-                record = await result.single()
+                records = await result.data()
                 
-                if record is None:
+                if records:
+                    logger.info(f"Résultats de la requête : {records}")
+                    record = records[0]
+                else:
+                    logger.warning("Aucun résultat trouvé pour la requête")
                     return None
                 
                 event = record["event"]
@@ -644,6 +665,110 @@ class Neo4JStorage(BaseGraphStorage):
             except Exception as e:
                 logger.error(f"❌ Erreur lors de l'association de la date : {e}")
                 return None
+
+    async def categorize_memos(
+        self, 
+        custom_id: str,  # Représente l'identifiant du mémo
+        user_id: str,  # Représente l'identifiant obligatoire de l'utilisateur
+    ):
+        """
+        Crée une relation entre un mémo et un utilisateur dans le graphe de connaissances.
+        
+        Args:
+            custom_id (str): Identifiant personnalisé du mémo.
+            user_id (str): Identifiant personnalisé de l'utilisateur.
+        
+        Returns:
+            Optional[Dict]: Résultats de l'association du mémo à l'utilisateur, ou None si échec.
+        """
+        async with self.driver.session() as session:
+            try:
+                # Log de débogage
+                logger.info(f"Requête Cypher avec custom_id: {custom_id}, user_id: {user_id}")
+                
+                # Vérifier l'existence des nœuds
+                check_memo_query = "MATCH (memo {custom_id: $custom_id, entity_type: 'memo'}) RETURN memo"
+                check_user_query = """
+                MATCH (user) 
+                WHERE user.entity_type = 'user' AND 
+                (
+                    user.custom_id = $user_id OR 
+                    user.custom_id = $normalized_user_id
+                )
+                RETURN user
+                """
+                
+                # Normaliser l'ID utilisateur
+                normalized_user_id = self.normalize_label(user_id) if user_id else None
+                
+                memo_result = await session.run(check_memo_query, {"custom_id": custom_id})
+                user_result = await session.run(check_user_query, {
+                    "user_id": user_id, 
+                    "normalized_user_id": normalized_user_id
+                })
+                
+                memo_records = await memo_result.data()
+                user_records = await user_result.data()
+                
+                logger.info(f"Mémos trouvés : {memo_records}")
+                logger.info(f"Utilisateurs trouvés : {user_records}")
+                
+                # Exécution de la requête Cypher
+                query = """
+                MATCH (memo {custom_id: $custom_id})
+                OPTIONAL MATCH (user {
+                    custom_id: $normalized_user_id, 
+                    entity_type: 'user'
+                })
+                OPTIONAL MATCH (user)-[existing_relation:HAS_MEMO]->(memo)
+                WITH memo, user, existing_relation
+                WHERE user IS NOT NULL AND existing_relation IS NULL
+                CREATE (user)-[:HAS_MEMO]->(memo)
+                RETURN memo, 
+                    user, 
+                    CASE 
+                        WHEN user IS NOT NULL AND existing_relation IS NULL THEN 'created'
+                        WHEN user IS NOT NULL AND existing_relation IS NOT NULL THEN 'existing'
+                        ELSE 'no_user'
+                    END AS memo_status
+                """
+                
+                # Log de débogage
+                logger.info(f"Requête Cypher avec custom_id: {custom_id}, user_id: {user_id}, normalized_user_id: {normalized_user_id}")
+                
+                # Exécution de la requête Cypher
+                result = await session.run(query, {
+                    "custom_id": custom_id, 
+                    "user_id": user_id,
+                    "normalized_user_id": normalized_user_id
+                })
+                records = await result.data()
+                
+                # Extraction du résultat
+                if records:
+                    logger.info(f"Résultats de la requête : {records}")
+                    record = records[0]
+                else:
+                    logger.warning("Aucun résultat trouvé pour la requête")
+                    return None
+
+                # Récupération des données
+                memo = record["memo"]
+                user = record["user"]
+                memo_status = record["memo_status"]
+
+                logger.info(f"Mémo {custom_id} : Relation {memo_status}")
+                
+                return {
+                    "memo": dict(memo) if memo else None,
+                    "user": dict(user) if user else None,
+                    "memo_status": memo_status
+                }
+            
+            except Exception as e:
+                logger.error(f"❌ Erreur lors de l'association du mémo '{custom_id}' avec l'utilisateur '{user_id}' : {e}")
+                return None
+
 
     async def merge_duplicate_users(self):
         """
@@ -926,3 +1051,15 @@ class Neo4JStorage(BaseGraphStorage):
         #logger.info(f"IDs collectés : {filtered_ids}")
         
         return filtered_ids
+
+    def normalize_label(self, label: str) -> str:
+        """
+        Normalise un label en supprimant les espaces et en convertissant en minuscules.
+        
+        Args:
+            label (str): Le label à normaliser
+        
+        Returns:
+            str: Le label normalisé
+        """
+        return label.replace(" ", "").lower()

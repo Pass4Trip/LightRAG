@@ -463,6 +463,7 @@ async def extract_entities(
             "user_preference": [],
             "user_attribute": [],
             "event": [],
+            "memo": [],
             "other": []
         }
 
@@ -496,6 +497,8 @@ async def extract_entities(
                         entity_metadata["custom_id"] = metadata["user_id"]
                     elif prompt_domain == "event" and "event_id" in metadata:
                         entity_metadata["custom_id"] = metadata["event_id"]
+                    elif prompt_domain == "memo" and "custom_id" in metadata:
+                        entity_metadata["custom_id"] = metadata["custom_id"]
                 
                 # Ajouter les metadata à l'entité si disponibles
                 if entity_metadata and if_entities["entity_type"] == prompt_domain:
@@ -515,6 +518,8 @@ async def extract_entities(
                     entity_types["user_attribute"].append(if_entities["entity_name"])
                 elif if_entities["entity_type"] == "event":
                     entity_types["event"].append(if_entities["entity_name"])
+                elif if_entities["entity_type"] == "memo":
+                    entity_types["memo"].append(if_entities["entity_name"])
                 else:
                     entity_types["other"].append(if_entities["entity_name"])                
                 continue

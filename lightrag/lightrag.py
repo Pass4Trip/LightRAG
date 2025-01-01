@@ -422,6 +422,33 @@ class LightRAG:
                             logger.error(f"❌ Erreur lors de l'appel de categorize_dates : {e}")
                     else:
                         logger.warning("❌ Méthode categorize_dates non trouvée")
+                
+                # Catégorisation des mémos
+                elif prompt_domain == 'memo':
+                    logger.info("📝 Début de la catégorisation des mémos")
+                    
+                    if hasattr(self.chunk_entity_relation_graph, 'categorize_memos') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_memos')):
+                        logger.info("✅ Méthode categorize_memos trouvée")
+                        try:
+                            # Extraire l'ID du mémo des métadonnées
+                            custom_id = metadata.get('custom_id')
+                            
+                            if custom_id:
+                                # Extraire l'ID de l'utilisateur des métadonnées si disponible
+                                user_id = metadata.get('user_id')
+                                
+                                await self.chunk_entity_relation_graph.categorize_memos(
+                                    custom_id=custom_id, 
+                                    user_id=user_id
+                                )
+                                logger.info(f"✅ Mémo {custom_id} associé")
+                            else:
+                                logger.warning("❌ custom_id manquant pour la catégorisation du mémo")
+                        
+                        except Exception as e:
+                            logger.error(f"❌ Erreur lors de l'appel de categorize_memos : {e}")
+                    else:
+                        logger.warning("❌ Méthode categorize_memos non trouvée")
         finally:
             if update_storage:
                 await self._insert_done()
