@@ -37,7 +37,7 @@ class Neo4jQueryExecutor:
         
         try:
             self.driver = GraphDatabase.driver(self.uri, auth=(self.username, self.password))
-            logger.info(f"Connexion à Neo4j établie : {self.uri}")
+            logger.debug(f"Connexion à Neo4j établie : {self.uri}")
         except Exception as e:
             logger.error(f"Erreur de connexion à Neo4j : {e}")
             raise
@@ -67,7 +67,7 @@ class Neo4jQueryExecutor:
         """
         if self.driver:
             self.driver.close()
-            logger.info("Connexion Neo4j fermée.")
+            logger.debug("Connexion Neo4j fermée.")
 
     def get_node_details(self, node_ids):
         """
@@ -109,6 +109,135 @@ class Neo4jQueryExecutor:
         
         except Exception as e:
             logger.error(f"Erreur lors de la récupération des détails des nœuds : {e}")
+            return {}
+
+    def get_node_activity(self, node_ids):
+        """
+        Récupère les activités et leurs points associés pour une liste de nodes dans les deux sens de relation.
+        
+        Args:
+            node_ids (list): Liste des IDs de nœuds sources
+        
+        Returns:
+            dict: Dictionnaire avec les détails des activités et leurs points associés
+        """
+        try:
+            # Requête Cypher pour récupérer les activités et leurs points dans les deux sens
+            cypher_query = """
+            UNWIND $node_ids AS source_node_id
+            MATCH (source_point {entity_id: source_node_id})
+            
+            // Trouver le node activity lié dans les deux sens
+            OPTIONAL MATCH (source_point)-[:HAS_FEATURE]-(activity)
+            
+            // Récupérer tous les points liés à cette activité dans les deux sens
+            OPTIONAL MATCH (activity)-[:HAS_FEATURE]-(associated_point)
+            
+            RETURN 
+                source_point.entity_id AS source_node_id,
+                source_point.description AS source_description,
+                source_point.entity_type AS source_type,
+                activity.entity_id AS activity_entity_id,
+                activity.description AS activity_description,
+                activity.entity_type AS activity_type,
+                COLLECT(DISTINCT {
+                    entity_id: associated_point.entity_id, 
+                    description: associated_point.description,
+                    type: associated_point.entity_type
+                }) AS associated_points
+            """
+            
+            # Exécuter la requête
+            with self.driver.session() as session:
+                result = session.run(cypher_query, {"node_ids": node_ids})
+                
+                # Convertir les résultats en dictionnaire
+                node_activities = {}
+                for record in result:
+                    source_node_id = record['source_node_id']
+                    
+                    # Filtrer et dédupliquer les points associés
+                    unique_points = {}
+                    for point in record['associated_points']:
+                        if point['entity_id'] and point['entity_id'] not in unique_points:
+                            unique_points[point['entity_id']] = point
+                    
+                    node_activities[source_node_id] = {
+                        'source': {
+                            'type': record['source_type'],
+                            'description': record['source_description'] or 'Pas de description source'
+                        },
+                        'activity': {
+                            'entity_id': record['activity_entity_id'] or 'Pas d\'activité trouvée',
+                            'description': record['activity_description'] or 'Pas de description d\'activité',
+                            'type': record['activity_type'] or 'Type non spécifié'
+                        },
+                        'associated_points': list(unique_points.values())
+                    }
+                
+                return node_activities
+        
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des activités des nœuds : {e}")
+            return {}
+
+    def get_user_preference(self, custom_id):
+        """
+        Récupère les préférences d'un utilisateur à partir de son custom_id.
+        
+        Args:
+            custom_id (str): L'identifiant personnalisé de l'utilisateur
+        
+        Returns:
+            dict: Dictionnaire avec les détails de l'utilisateur et ses préférences
+        """
+        try:
+            # Requête Cypher pour récupérer l'utilisateur et ses préférences
+            cypher_query = """
+            // Trouver le nœud utilisateur
+            MATCH (user {custom_id: $custom_id})
+            
+            // Récupérer tous les nœuds directement liés à l'utilisateur
+            OPTIONAL MATCH (user)-[r]-(connected_node)
+            
+            RETURN 
+                user.entity_id AS user_entity_id,
+                user.description AS user_description,
+                user.entity_type AS user_type,
+                COLLECT(DISTINCT {
+                    entity_id: connected_node.entity_id, 
+                    description: connected_node.description,
+                    type: connected_node.entity_type,
+                    relation_type: type(r)
+                }) AS connected_nodes
+            """
+            
+            # Exécuter la requête
+            with self.driver.session() as session:
+                result = session.run(cypher_query, {"custom_id": custom_id})
+                
+                # Convertir les résultats en dictionnaire
+                user_preferences = {}
+                for record in result:
+                    # Filtrer et dédupliquer les nœuds connectés
+                    unique_nodes = {}
+                    for node in record['connected_nodes']:
+                        if node['entity_id'] and node['entity_id'] not in unique_nodes:
+                            unique_nodes[node['entity_id']] = node
+                    
+                    user_preferences = {
+                        'user': {
+                            'entity_id': record['user_entity_id'],
+                            'description': record['user_description'] or 'Pas de description utilisateur',
+                            'type': record['user_type'] or 'Type non spécifié'
+                        },
+                        'preferences': list(unique_nodes.values())
+                    }
+                
+                return user_preferences
+        
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des préférences de l'utilisateur : {e}")
             return {}
 
 # Paramètres de connexion Milvus
@@ -399,14 +528,14 @@ def enrich_correlations_with_gpt_validation(correlations, neo4j_client):
         list: Corrélations enrichies avec validation GPT
     """
     try:
-        # Récupérer les détails des nœuds sources et corrélés
+        # Récupérer les ids des des nœuds sources et corrélés
         all_node_ids = set()
         for correlation_group in correlations:
             all_node_ids.add(correlation_group['source_node_id'])
             for corr in correlation_group['correlations']:
                 all_node_ids.add(corr['correlated_node_id'])
         
-        # Récupérer les détails des nœuds
+        # Récupérer les détails des nœuds sources et corrélés via neo4j
         node_details = neo4j_client.get_node_details(list(all_node_ids))
         
         # Enrichir les corrélations
@@ -445,8 +574,20 @@ def create_gpt_validated_relationships(neo4j_client, correlations):
         int: Nombre de relations créées
     """
     try:
+        # Requête Cypher pour vérifier les relations existantes
+        check_existing_relation_query = """
+        MATCH (source {entity_id: $source_id})-[r:RECO]->(target {entity_id: $target_id})
+        RETURN r.status AS status, id(r) AS relationship_id
+        """
+        
+        # Requête Cypher pour supprimer une relation existante
+        delete_relation_query = """
+        MATCH ()-[r]->() WHERE id(r) = $relationship_id
+        DELETE r
+        """
+        
         # Requête Cypher pour créer les relations
-        cypher_query = """
+        create_relation_query = """
         MATCH (source {entity_id: $source_id}), (target {entity_id: $target_id})
         CREATE (source)-[r:RECO {
             description: $description,
@@ -480,11 +621,37 @@ def create_gpt_validated_relationships(neo4j_client, correlations):
                     
                     # Exécuter la requête Cypher
                     with neo4j_client.driver.session() as session:
-                        result = session.run(cypher_query, params)
+                        # Vérifier s'il existe déjà une relation
+                        existing_relation = session.run(
+                            check_existing_relation_query, 
+                            {
+                                'source_id': source_node_id, 
+                                'target_id': corr['correlated_node_id']
+                            }
+                        ).single()
+                        
+                        if existing_relation:
+                            existing_status = existing_relation['status']
+                            existing_relationship_id = existing_relation['relationship_id']
+                            
+                            if existing_status == 'a valider':
+                                # Supprimer la relation existante
+                                session.run(
+                                    delete_relation_query, 
+                                    {'relationship_id': existing_relationship_id}
+                                )
+                                logger.debug(f"Relation existante supprimée : {source_node_id} -> {corr['correlated_node_id']}")
+                            elif existing_status == 'done':
+                                # Ne pas créer de nouvelle relation
+                                logger.debug(f"Relation déjà validée, pas de nouvelle création : {source_node_id} -> {corr['correlated_node_id']}")
+                                continue
+                        
+                        # Créer la nouvelle relation
+                        result = session.run(create_relation_query, params)
                         relationship_id = result.single()['relationship_id']
                         relationships_created += 1
                         
-                        logger.info(f"Relation RECO créée : {source_node_id} -> {corr['correlated_node_id']} (ID relation: {relationship_id})")
+                        logger.debug(f"Relation RECO créée : {source_node_id} -> {corr['correlated_node_id']} (ID relation: {relationship_id})")
         
         return relationships_created
     
@@ -656,5 +823,147 @@ def main():
         # Fermer la connexion Neo4j
         neo4j_client.close()
 
+def test_get_node_activity():
+    """
+    Test de la méthode get_node_activity avec un node ID spécifique.
+    """
+    # Initialiser le client Neo4j
+    neo4j_client = Neo4jQueryExecutor()
+    
+    try:
+        # ANSI color codes
+        RESET = "\033[0m"
+        BOLD = "\033[1m"
+        BLUE = "\033[94m"
+        GREEN = "\033[92m"
+        YELLOW = "\033[93m"
+        MAGENTA = "\033[95m"
+        RED = "\033[91m"
+        
+        # Node ID à tester
+        test_node_id = 'ent-23099d926a13332639f8c973fd3f23cf'
+        
+        # Requête pour obtenir les détails complets du nœud
+        cypher_query = """
+        MATCH (n {entity_id: $node_id})
+        RETURN 
+            n.entity_id AS entity_id, 
+            labels(n) AS labels, 
+            n.description AS description, 
+            n.entity_type AS entity_type,
+            [(n)-[r]-() | {type: type(r), end_node: endNode(r)}] AS relationships
+        """
+        
+        # Exécuter la requête de diagnostic
+        with neo4j_client.driver.session() as session:
+            result = session.run(cypher_query, {"node_id": test_node_id})
+            node_details = result.single()
+        
+        # Afficher les détails du nœud
+        print(f"\n{BOLD}🔍 Détails du nœud {test_node_id}{RESET}")
+        print("=" * 50)
+        print(f"{GREEN}Entity ID:{RESET} {node_details['entity_id']}")
+        print(f"{BLUE}Labels:{RESET} {node_details['labels']}")
+        print(f"{YELLOW}Description:{RESET} {node_details['description']}")
+        print(f"{MAGENTA}Entity Type:{RESET} {node_details['entity_type']}")
+        
+        # Afficher les relations
+        print(f"\n{RED}Relations:{RESET}")
+        for rel in node_details['relationships']:
+            print(f"  - Type: {rel['type']}")
+        
+        # Appel de la méthode get_node_activity
+        node_activities = neo4j_client.get_node_activity([test_node_id])
+        
+        print(f"\n{BOLD}🔍 Résultats des activités pour le nœud {test_node_id}{RESET}")
+        print("=" * 50)
+
+        print(node_activities)
+        
+        # if node_activities:
+        #     for source_node, activity_data in node_activities.items():
+        #         print(f"\n{GREEN}Source Node ID:{RESET} {source_node}")
+                
+        #         # Afficher le nœud source
+        #         print(f"{BLUE}Source:{RESET}")
+        #         print(f"  Type: {activity_data['source']['type']}")
+        #         print(f"  Description: {activity_data['source']['description']}")
+                
+        #         # Afficher l'activité
+        #         print(f"\n{BLUE}Activité:{RESET}")
+        #         print(f"  Entity ID: {activity_data['activity']['entity_id']}")
+        #         print(f"  Description: {activity_data['activity']['description']}")
+        #         print(f"  Type: {activity_data['activity']['type']}")
+                
+        #         # Afficher les points associés
+        #         print(f"\n{YELLOW}Points Associés:{RESET}")
+        #         for point in activity_data['associated_points']:
+        #             print(f"  - Entity ID: {point['entity_id']}")
+        #             print(f"    Description: {point['description']}")
+        #             print(f"    Type: {point['type']}")
+        # else:
+        #     print(f"{RED}❌ Aucune activité trouvée pour le nœud {test_node_id}{RESET}")
+    
+    except Exception as e:
+        print(f"{RED}Erreur lors du test : {e}{RESET}")
+    finally:
+        # Fermer la connexion Neo4j
+        neo4j_client.close()
+
+def test_get_user_preference():
+    """
+    Test de la méthode get_user_preference avec un utilisateur spécifique.
+    """
+    # Initialiser le client Neo4j
+    neo4j_client = Neo4jQueryExecutor()
+    
+    try:
+        # ANSI color codes
+        RESET = "\033[0m"
+        BOLD = "\033[1m"
+        BLUE = "\033[94m"
+        GREEN = "\033[92m"
+        YELLOW = "\033[93m"
+        MAGENTA = "\033[95m"
+        RED = "\033[91m"
+        
+        # Utilisateur à tester
+        test_custom_id = 'lea'
+        
+        # Appel de la méthode get_user_preference
+        user_preferences = neo4j_client.get_user_preference(test_custom_id)
+        
+        print(f"\n{BOLD}🔍 Préférences de l'utilisateur {test_custom_id}{RESET}")
+        print("=" * 50)
+        
+
+        print(user_preferences)
+
+        # if user_preferences:
+        #     # Afficher les détails de l'utilisateur
+        #     print(f"\n{GREEN}Utilisateur:{RESET}")
+        #     print(f"  Entity ID: {user_preferences['user']['entity_id']}")
+        #     print(f"  Description: {user_preferences['user']['description']}")
+        #     print(f"  Type: {user_preferences['user']['type']}")
+            
+        #     # Afficher les préférences
+        #     print(f"\n{YELLOW}Préférences:{RESET}")
+        #     for pref in user_preferences['preferences']:
+        #         print(f"  - Entity ID: {pref['entity_id']}")
+        #         print(f"    Description: {pref['description']}")
+        #         print(f"    Type: {pref['type']}")
+        #         print(f"    Type de Relation: {pref['relation_type']}")
+        # else:
+        #     print(f"{RED}❌ Aucune préférence trouvée pour l'utilisateur {test_custom_id}{RESET}")
+    
+    except Exception as e:
+        print(f"{RED}Erreur lors du test : {e}{RESET}")
+    finally:
+        # Fermer la connexion Neo4j
+        neo4j_client.close()
+
+# Point d'entrée pour le test
 if __name__ == "__main__":
-    main()
+    #main()
+    test_get_node_activity()
+    test_get_user_preference()
