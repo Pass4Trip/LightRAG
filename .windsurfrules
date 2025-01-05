@@ -1,0 +1,2 @@
+Pour la base neo4j et rabbitMQ, ils sont installé sur un serveur vps-ovh. j'y accède depuis mon pc avec ssh.
+Sur vps-ovh les installations sont faites avec microk8s.

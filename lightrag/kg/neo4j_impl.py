@@ -39,7 +39,14 @@ class Neo4JStorage(BaseGraphStorage):
         URI = os.environ["NEO4J_URI"]
         USERNAME = os.environ["NEO4J_USERNAME"]
         PASSWORD = os.environ["NEO4J_PASSWORD"]
-        self._driver: AsyncDriver = AsyncGraphDatabase.driver(URI, auth=(USERNAME, PASSWORD))
+        self._driver: AsyncDriver = AsyncGraphDatabase.driver(
+            URI,
+            auth=(USERNAME, PASSWORD),
+            max_connection_lifetime=3600,
+            connection_timeout=10,
+            max_connection_pool_size=50,
+            resolver=lambda x: [("vps-af24e24d.vps.ovh.net", 32045)]
+        )
         return None
 
     def __post_init__(self):
@@ -1046,9 +1053,9 @@ class Neo4JStorage(BaseGraphStorage):
         filtered_ids = await self.aextract_filtered_ids(filtered_results)
         
         # Afficher les informations de base
-        #logger.info(f"Type du Resultat du filtrage: {type(filtered_results)}")
-        #logger.info(f"Resultats du filtrage: {filtered_results}")
-        #logger.info(f"IDs collectés : {filtered_ids}")
+        logger.debug(f"Type du Resultat du filtrage: {type(filtered_results)}")
+        logger.debug(f"Resultats du filtrage: {filtered_results}")
+        logger.debug(f"IDs collectés : {filtered_ids}")
         
         return filtered_ids
 

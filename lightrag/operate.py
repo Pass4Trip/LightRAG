@@ -486,7 +486,7 @@ async def extract_entities(
                 record_attributes, chunk_key
             )
             if if_entities is not None:
-                logger.info(f"Found Entity: {if_entities}")
+                logger.debug(f"Found Entity: {if_entities}")
                 
                 # Récupérer les metadata spécifiques au type d'entité
                 entity_metadata = {}
@@ -625,9 +625,9 @@ async def extract_entities(
         for k, v in m_edges.items():
             maybe_edges[tuple(sorted(k))].extend(v)
 
-    logger.info("Inserting entities into storage...")
-    logger.info(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
-    logger.info(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
+    logger.debug("Inserting entities into storage...")
+    logger.debug(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
+    logger.debug(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
     all_entities_data = []
     for result in tqdm_async(
         asyncio.as_completed(
@@ -644,7 +644,7 @@ async def extract_entities(
         logger.debug(f"Entity merge result: {entity_result}")
         all_entities_data.append(entity_result)
 
-    logger.info(f"Total entities processed: {len(all_entities_data)}")
+    logger.debug(f"Total entities processed: {len(all_entities_data)}")
     #logger.info(f"All entities data: {all_entities_data}")
     
     # Structurer le log avec des couleurs pour plus de lisibilité
@@ -672,7 +672,7 @@ async def extract_entities(
                 f"{color}→ {Style.BRIGHT}{entity_name}{Style.RESET_ALL}"
             )
 
-    logger.info("Inserting relationships into storage...")
+    logger.debug("Inserting relationships into storage...")
     all_relationships_data = []
     for result in tqdm_async(
         asyncio.as_completed(
@@ -688,7 +688,7 @@ async def extract_entities(
         unit="relationship",
     ):
         # Log détaillé sur les relations avant insertion
-        logger.info(f"Relations à insérer - Source: {k[0]}, Cible: {k[1]}")
+        logger.debug(f"Relations à insérer - Source: {k[0]}, Cible: {k[1]}")
         logger.debug(f"Détails des relations : {v}")
         
         all_relationships_data.append(await result)
@@ -919,6 +919,7 @@ async def kg_query(
     else:
         hl_keywords = ", ".join(hl_keywords)
 
+
     # Build context
     keywords = [ll_keywords, hl_keywords]
     context = await _build_query_context(
@@ -1081,6 +1082,7 @@ async def _get_node_data(
     vdb_filter: Optional[Dict[str, Any]] = None,
 ):
     
+
     # get similar entities
     filtered_node_ids = await knowledge_graph_inst.get_filtered_ids(vdb_filter)
     
@@ -1088,8 +1090,8 @@ async def _get_node_data(
     filtered_node_ids = filtered_node_ids.get('node_ids', [])
 
     # Logs pour visualiser filtered_node_ids
-    #logger.info(f"Type de filtered_node_ids : {type(filtered_node_ids)}")
-    #logger.info(f"Contenu de filtered_node_ids : {filtered_node_ids}")
+    logger.debug(f"Type de filtered_node_ids : {type(filtered_node_ids)}")
+    logger.debug(f"Contenu de filtered_node_ids : {filtered_node_ids}")
 
 
     if vdb_filter is not None:
@@ -1142,18 +1144,18 @@ async def _get_node_data(
     )
 
     # Logs pour tracer l'origine de l'erreur
-    logger.info(f"Nombre de node_datas : {len(node_datas)}")
+    logger.debug(f"Nombre de node_datas : {len(node_datas)}")
     for i, node in enumerate(node_datas):
-        logger.info(f"Node {i} - Clés disponibles : {list(node.keys())}")
+        logger.debug(f"Node {i} - Clés disponibles : {list(node.keys())}")
 
     # Log avant la construction des relations
-    logger.info(f"Nombre de relations : {len(use_relations)}")
+    logger.debug(f"Nombre de relations : {len(use_relations)}")
     for i, relation in enumerate(use_relations):
-        logger.info(f"Relation {i} - Clés disponibles : {list(relation.keys())}")
+        logger.debug(f"Relation {i} - Clés disponibles : {list(relation.keys())}")
         # Vérifier spécifiquement l'accès à 'weight'
         try:
             weight = relation['weight']
-            logger.info(f"Relation {i} - weight: {weight}")
+            logger.debug(f"Relation {i} - weight: {weight}")
         except KeyError:
             logger.warning(f"Relation {i} - 'weight' key is missing")
 

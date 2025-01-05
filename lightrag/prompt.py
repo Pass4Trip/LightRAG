@@ -35,7 +35,7 @@ PROMPTS["user_ENTITY_TYPES"] = [
 PROMPTS["event_ENTITY_TYPES"] = [
     "event",
     "date",
-    "city",
+    #"city",
     "positive_point",
     "negative_point"
 ]
@@ -223,7 +223,6 @@ Key requirements:
 1. **Entity Types and Descriptions:**  
    - **event :** Represents any described real-world event or occasion, including concerts, exhibitions, festivals, or other organized gatherings. This entity must include details such as name, type, theme, and notable attributes.  
    - **date :** Represents the date or period of the event.  
-   - **city :** Represents the city where the event takes place.  
    - **positive_point :** Represents generic positive aspects applicable across multiple events. These points must remain reusable and should not include specific details about individual events.  
    - **negative_point :** Represents generic negative aspects linked to events. These points must remain reusable and should not include specific details about individual events.  
 
@@ -465,13 +464,11 @@ En somme, le Festival Lumières de Lyon est une expérience unique pour découvr
 Output:  
 ("entity"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"event"{tuple_delimiter}"Événement annuel à Lyon célébrant la lumière et l’art, attirant des visiteurs internationaux. Ambiance magique et captivante, installations lumineuses spectaculaires."){record_delimiter}  
 ("entity"{tuple_delimiter}"8-11 décembre"{tuple_delimiter}"date"{tuple_delimiter}"Le festival se tient du 8 au 11 décembre."){record_delimiter}  
-("entity"{tuple_delimiter}"Lyon"{tuple_delimiter}"city"{tuple_delimiter}"Le festival est organisé dans la ville de Lyon."){record_delimiter}  
 ("entity"{tuple_delimiter}"Ambiance magique"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les visiteurs décrivent l’atmosphère du festival comme magique et captivante."){record_delimiter}  
 ("entity"{tuple_delimiter}"Créativité des œuvres"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les œuvres lumineuses sont louées pour leur créativité et leur diversité."){record_delimiter}  
 ("entity"{tuple_delimiter}"Difficultés liées à la foule"{tuple_delimiter}"negative_point"{tuple_delimiter}"Certains visiteurs ont rencontré des problèmes liés à la densité de la foule, rendant l’accès difficile."){record_delimiter}  
 ("entity"{tuple_delimiter}"Files d’attente longues"{tuple_delimiter}"negative_point"{tuple_delimiter}"Les files d’attente pour accéder aux zones populaires sont fréquemment mentionnées comme un inconvénient."){record_delimiter}  
 ("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"8-11 décembre"{tuple_delimiter}"Le festival se déroule sur ces dates précises."{tuple_delimiter}"date de l’événement"{tuple_delimiter}0.9){record_delimiter}  
-("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Lyon"{tuple_delimiter}"Le festival est situé dans la ville de Lyon."{tuple_delimiter}"lieu de l’événement"{tuple_delimiter}0.95){record_delimiter}  
 ("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Ambiance magique"{tuple_delimiter}"L’ambiance générale du festival est décrite comme magique et captivante."{tuple_delimiter}"atmosphère positive"{tuple_delimiter}0.85){record_delimiter}  
 ("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Créativité des œuvres"{tuple_delimiter}"Les œuvres exposées sont louées pour leur créativité."{tuple_delimiter}"qualité artistique"{tuple_delimiter}0.9){record_delimiter}  
 ("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Difficultés liées à la foule"{tuple_delimiter}"Les foules denses peuvent rendre certains endroits moins accessibles."{tuple_delimiter}"désavantage logistique"{tuple_delimiter}0.7){record_delimiter}  
