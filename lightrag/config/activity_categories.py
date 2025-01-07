@@ -55,7 +55,7 @@ class ActivityCategoriesManager:
             matching_keywords = [keyword for keyword in keywords if keyword in description_lower]
             if matching_keywords:
                 logger.info(f"✅ Catégorie trouvée : {category}")
-                logger.info(f"   Mots-clés correspondants : {matching_keywords}")
+                logger.debug(f"   Mots-clés correspondants : {matching_keywords}")
                 return category
         
         logger.warning(f"❌ Aucune catégorie trouvée, utilisation de la catégorie par défaut : {self._default_category}")

@@ -146,6 +146,12 @@ async def _handle_single_relationship_extraction(
     keywords = clean_str(record_attributes[4])
     weight = 1
     
+    # if len(record_attributes) > 5:
+    #     try:
+    #         weight = int(record_attributes[5])
+    #     except ValueError:
+    #         logger.warning(f"Could not convert weight to integer: {record_attributes[5]}")
+
     weight = (
         float(record_attributes[-1]) if is_float_regex(record_attributes[-1]) else 1.0
     )
@@ -171,8 +177,6 @@ async def _merge_nodes_then_upsert(
     prompt_domain: str = "not_specified",
 ):
     """Fusionne et met à jour les nœuds dans le graphe de connaissances"""
-    logger.debug(f"nodes_data : {nodes_data}")
-
     # Normaliser les noms d'entités
     nodes_data = [
         {**node, 
@@ -184,9 +188,9 @@ async def _merge_nodes_then_upsert(
         } 
         for node in nodes_data
     ]
-
-    logger.info(f"nodes_data apres nomralisation : {nodes_data}")
     
+    logger.debug(f"nodes_data : {nodes_data}")
+
     try:
         # S'assurer d'utiliser la même boucle d'événements
         loop = asyncio.get_event_loop()
@@ -287,7 +291,16 @@ async def _merge_edges_then_upsert(
     source_id = GRAPH_FIELD_SEP.join(
         set([dp["source_id"] for dp in edges_data] + already_source_ids)
     )
-
+    for need_insert_id in [src_id, tgt_id]:
+        if not (await knowledge_graph_inst.has_node(need_insert_id)):
+            await knowledge_graph_inst.upsert_node(
+                need_insert_id,
+                node_data={
+                    "source_id": source_id,
+                    "description": description,
+                    "entity_type": '"UNKNOWN"',
+                },
+            )
     description = await _handle_entity_relation_summary(
         f"({src_id}, {tgt_id})", description, global_config
     )
@@ -308,6 +321,7 @@ async def _merge_edges_then_upsert(
         description=description,
         keywords=keywords,
     )
+
     return edge_data
 
 

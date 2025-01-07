@@ -1,0 +1,18 @@
+version: '3'
+services:
+  neo4j-backup:
+    image: neo4j:5.13.0
+    container_name: neo4j-backup
+    ports:
+      - "7475:7474"  # Interface web sur un port différent
+      - "7688:7687"  # Bolt sur un port différent
+    environment:
+      - NEO4J_AUTH=neo4j/neo4jbackup123
+      - NEO4J_server_memory_pagecache_size=1G
+      - NEO4J_server_memory_heap_initial__size=1G
+      - NEO4J_server_memory_heap_max__size=1G
+    volumes:
+      - ./neo4j-backup-data:/data
+      - ./neo4j-backup-logs:/logs
+      - ./neo4j-backup-import:/var/lib/neo4j/import
+      - ./neo4j-backup-plugins:/plugins

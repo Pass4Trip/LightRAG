@@ -7,6 +7,7 @@ import logging
 from openai import OpenAI
 import json
 from typing import List, Dict, Union
+import argparse
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, 
@@ -852,9 +853,18 @@ def verify_gpt_validated_relationships(neo4j_client, custom_id):
         logger.error(f"Erreur lors de la vérification des relations : {e}")
         return []
 
-def main():
+def main(custom_id):
     """
-    Exemple d'utilisation de la fonction de corrélation ANN avec filtrage.
+    Génère des recommandations personnalisées pour un utilisateur donné en utilisant 
+    la corrélation ANN (Approximate Nearest Neighbors) avec un filtrage multi-niveau.
+    
+    Le filtrage des recommendations est effectué sur 3 niveaux :
+    1. Distance ANN : Proximité vectorielle initiale
+    2. Similarité cosinus : Raffinement de la correspondance vectorielle
+    3. LLM (Large Language Model) : Validation sémantique finale
+    
+    Args:
+        custom_id (str): L'identifiant unique de l'utilisateur pour lequel générer les recommandations.
     """
     # Initialiser le client Neo4j
     neo4j_client = Neo4jQueryExecutor()
@@ -869,8 +879,7 @@ def main():
         MAGENTA = "\033[95m"
         RED = "\033[91m"
         
-        # Exemple avec un utilisateur spécifique
-        custom_id = 'lea'
+
         
         # Récupérer les IDs des préférences utilisateur
         user_preference_node_ids = get_user_preferences_nodes(neo4j_client, custom_id)
@@ -878,7 +887,11 @@ def main():
         # Récupérer les IDs des points positifs
         positive_points_node_ids = get_positive_points_nodes(neo4j_client)
     
+    
         # Calculer les corrélations ANN
+        # Première étape de filtrage : Sélection par distance ANN (Approximate Nearest Neighbors)
+        # Deuxième étape de filtrage : Raffinement par similarité cosinus
+        # Ces deux niveaux permettent de réduire l'espace de recherche et d'affiner les recommandations
         correlations = compute_ann_correlations_with_filter(
             collection_name="entities", 
             node_ids=user_preference_node_ids, 
@@ -888,11 +901,42 @@ def main():
             distance_threshold=0.8  # Augmentation du seuil
         )
         
-        # Enrichir les corrélations avec validation GPT
-        correlations = enrich_correlations_with_gpt_validation(correlations, neo4j_client)
+        # Récupérer les détails des nœuds pour la validation
+        user_preference_details = neo4j_client.get_node_details(user_preference_node_ids)
+        positive_points_details = neo4j_client.get_node_details(positive_points_node_ids)
+        
+        # Troisième étape de filtrage : Validation sémantique par LLM
+        validated_correlations = []
+        for correlation in correlations:
+            source_node_id = correlation['source_node_id']
+            target_node_id = correlation['correlations'][0]['correlated_node_id']
+            
+            # Récupérer les descriptions
+            source_details = user_preference_details.get(source_node_id, {})
+            target_details = positive_points_details.get(target_node_id, {})
+            
+            # Préparer les descriptions
+            all_source_description = [source_details.get('description', '')]
+            source_description = source_details.get('description', '')
+            all_correlated_description = [target_details.get('description', '')]
+            correlated_description = target_details.get('description', '')
+            
+            # Valider la corrélation
+            compatibility_result = validate_comprehensive_correlation(
+                all_source_description=all_source_description,
+                source_description=source_description,
+                all_correlated_description=all_correlated_description,
+                correlated_description=correlated_description
+            )
+            
+            # Ne conserver que les corrélations compatibles
+            if compatibility_result['is_compatible']:
+                correlation['compatibility_score'] = compatibility_result['compatibility_score']
+                correlation['reasoning'] = compatibility_result['reasoning']
+                validated_correlations.append(correlation)
         
         # Créer les relations pour les corrélations validées
-        relationships_created = create_gpt_validated_relationships(neo4j_client, correlations)
+        relationships_created = create_gpt_validated_relationships(neo4j_client, validated_correlations)
         print(f"\n{GREEN}✨ Nombre de relations RECO créées : {relationships_created}{RESET}")
         
         # Vérifier les relations créées
@@ -1106,9 +1150,8 @@ def test_get_user_preference():
         # Fermer la connexion Neo4j
         neo4j_client.close()
 
-def test_validate_comprehensive_correlation(test_node_id_activity, test_node_id_preference):
-    """
-    Test de la méthode validate_comprehensive_correlation 
+def set_validate_comprehensive_correlation(test_node_id_activity, test_node_id_preference):
+    """ 
     en utilisant les résultats de get_node_activity et get_user_preference.
 
     Args:
@@ -1223,7 +1266,15 @@ def test_validate_comprehensive_correlation(test_node_id_activity, test_node_id_
 
 # Point d'entrée pour le test
 if __name__ == "__main__":
-    #main()
-    #test_get_node_activity()
-    #test_get_user_preference()
-    test_validate_comprehensive_correlation(test_node_id_activity='ent-e46cc1f7ad469fa9752aca682f4981e6', test_node_id_preference='ent-13c22d15662d613848defa8bf5bbb957')
+    import argparse
+    
+    # Configurer le parseur d'arguments
+    parser = argparse.ArgumentParser(description='Génération de recommandations pour un utilisateur')
+    parser.add_argument('--custom_id', type=str, required=True, help='ID de l\'utilisateur pour lequel générer des recommandations')
+    
+    # Parser les arguments
+    args = parser.parse_args()
+    
+    # Appeler main avec l'ID utilisateur fourni
+    main(args.custom_id)
+    set_validate_comprehensive_correlation(test_node_id_activity='ent-e46cc1f7ad469fa9752aca682f4981e6', test_node_id_preference='ent-13c22d15662d613848defa8bf5bbb957')
