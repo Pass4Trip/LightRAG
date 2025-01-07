@@ -449,15 +449,15 @@ class Neo4JStorage(BaseGraphStorage):
         async with session:
             # Initialiser les catégories prédéfinies
             init_query = """
-            MERGE (restauration:ActivityCategory {name: 'Restauration'})
-            MERGE (culture:ActivityCategory {name: 'Culture et Loisirs'})
-            MERGE (sport:ActivityCategory {name: 'Sport et Fitness'})
-            MERGE (voyage:ActivityCategory {name: 'Voyage et Tourisme'})
-            MERGE (formation:ActivityCategory {name: 'Formation et Éducation'})
-            MERGE (bienetre:ActivityCategory {name: 'Bien-être et Santé'})
-            MERGE (pro:ActivityCategory {name: 'Événements Professionnels'})
-            MERGE (unknown:ActivityCategory {name: 'Unknown'})
-            
+            MERGE (restauration:ActivityCategory {name: 'Restauration', custom_id: 'restauration'})
+            MERGE (culture:ActivityCategory {name: 'Culture et Loisirs', custom_id: 'culture_loisirs'})
+            MERGE (sport:ActivityCategory {name: 'Sport et Fitness', custom_id: 'sport_fitness'})
+            MERGE (voyage:ActivityCategory {name: 'Voyage et Tourisme', custom_id: 'voyage_tourisme'})
+            MERGE (formation:ActivityCategory {name: 'Formation et Éducation', custom_id: 'formation_education'})
+            MERGE (bienetre:ActivityCategory {name: 'Bien-être et Santé', custom_id: 'bien_etre_sante'})
+            MERGE (pro:ActivityCategory {name: 'Événements Professionnels', custom_id: 'evenements'})
+            MERGE (unknown:ActivityCategory {name: 'Unknown', custom_id: 'unknown'})
+
             // Requête pour récupérer les activités sans catégorie
             WITH 1 as dummy
             MATCH (n {entity_type: 'activity'})

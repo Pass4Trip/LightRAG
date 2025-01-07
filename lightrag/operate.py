@@ -549,20 +549,7 @@ async def extract_entities(
                 maybe_nodes[if_entities["entity_name"]].append(if_entities)
                 
                 # Collecter les entités par type
-                if if_entities["entity_type"] == "activity":
-                    entity_types["activity"].append(if_entities["entity_name"])
-                elif if_entities["entity_type"] == "user":
-                    entity_types["user"].append(if_entities["entity_name"])
-                elif if_entities["entity_type"] == "user_preference":
-                    entity_types["user_preference"].append(if_entities["entity_name"])
-                elif if_entities["entity_type"] == "user_attribute":
-                    entity_types["user_attribute"].append(if_entities["entity_name"])
-                elif if_entities["entity_type"] == "event":
-                    entity_types["event"].append(if_entities["entity_name"])
-                elif if_entities["entity_type"] == "memo":
-                    entity_types["memo"].append(if_entities["entity_name"])
-                else:
-                    entity_types["other"].append(if_entities["entity_name"])                
+                entity_types.setdefault(if_entities["entity_type"], []).append(if_entities["entity_name"])
                 continue
 
             if_relation = await _handle_single_relationship_extraction(
@@ -581,8 +568,8 @@ async def extract_entities(
                 default_relation = {
                     "src_id": user,
                     "tgt_id": preference,
-                    "description": f"Préférence personnelle de {user}",
-                    "keywords": "préférence personnelle",
+                    "description": f"Préférence de {user}",
+                    "keywords": f"{user}",
                     "weight": 1,
                     "source_id": chunk_key
                 }
@@ -596,7 +583,7 @@ async def extract_entities(
                     "src_id": user,
                     "tgt_id": attribute,
                     "description": f"Attribut de {user}",
-                    "keywords": "information utilisateur",
+                    "keywords": f"{user}",
                     "weight": 1,
                     "source_id": chunk_key
                 }
@@ -610,37 +597,19 @@ async def extract_entities(
                 default_relation = {
                     "src_id": main_activity,
                     "tgt_id": other_entity,
-                    "description": f"Contexte lié à {main_activity}",
-                    "keywords": "contexte",
+                    "description": f"{main_activity}",
+                    "keywords": f"{main_activity}",
                     "weight": 1,
                     "source_id": chunk_key
                 }
                 maybe_edges[(main_activity, other_entity)].append(default_relation)
                 logger.debug(f"Generated Activity Context Relation: {default_relation}")
 
-        logger.debug(f"DEBUG: Extracted Entities for Chunk {chunk_key}:")
-        for entity_type, entities in maybe_nodes.items():
-            logger.debug(f"  Entity Type {entity_type}: {len(entities)} entities")
-            for entity in entities:
-                logger.debug(f"    - {entity}")
-        
-        logger.debug(f"DEBUG: Extracted Relationships for Chunk {chunk_key}:")
-        for relationship_key, relationships in maybe_edges.items():
-            logger.debug(f"  Relationship Key {relationship_key}: {len(relationships)} relationships")
-            for relationship in relationships:
-                logger.debug(f"    - {relationship}")
 
         already_processed += 1
         already_entities += len(maybe_nodes)
         already_relations += len(maybe_edges)
-        now_ticks = PROMPTS["process_tickers"][
-            already_processed % len(PROMPTS["process_tickers"])
-        ]
-        logger.debug(
-            f"{now_ticks} Processed {already_processed} chunks, {already_entities} entities(duplicated), {already_relations} relations(duplicated)\r",
-            end="",
-            flush=True,
-        )
+
         return dict(maybe_nodes), dict(maybe_edges)
 
 
