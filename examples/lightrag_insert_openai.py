@@ -218,10 +218,25 @@ class RabbitMQConsumer:
             resume = payload.get('resume')
             cid = payload.get('cid')
             city = payload.get('city')
+            lat = payload.get('lat')
+            lng = payload.get('lng')
             
             if not resume or not cid:
                 logger.warning(f"Message activity incomplet: {payload}")
                 return
+            
+            # Préparer les métadonnées
+            metadata = {
+                'cid': cid,
+                'city': city,
+                'custom_id': f"{cid}"  # Utiliser cid comme custom_id
+            }
+            
+            # Ajouter les coordonnées si disponibles
+            if lat is not None and lng is not None:
+                metadata['lat'] = lat
+                metadata['lng'] = lng
+                logger.info(f"Coordonnées ajoutées pour l'activité : {lat}, {lng}")
             
             # Insertion avec le prompt_domain et metadata
             await self.insert_to_lightrag(
@@ -230,7 +245,9 @@ class RabbitMQConsumer:
                 metadata={
                     'cid': cid,
                     'city': city,
-                    'custom_id': f"{cid}"  # Utiliser cid comme custom_id
+                    'custom_id': f"{cid}",
+                    'lat': payload.get('lat'),
+                    'lng': payload.get('lng')
                 }
             )
         

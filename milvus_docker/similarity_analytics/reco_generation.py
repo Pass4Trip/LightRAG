@@ -883,9 +883,11 @@ def main(custom_id):
         
         # Récupérer les IDs des préférences utilisateur
         user_preference_node_ids = get_user_preferences_nodes(neo4j_client, custom_id)
+        logging.info(f"user_preference_node_ids pour custom_id {custom_id}: {user_preference_node_ids}")
 
         # Récupérer les IDs des points positifs
         positive_points_node_ids = get_positive_points_nodes(neo4j_client)
+        logging.info(f"positive_points_node_ids: {positive_points_node_ids}")
     
     
         # Calculer les corrélations ANN
@@ -1276,5 +1278,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     # Appeler main avec l'ID utilisateur fourni
-    main(args.custom_id)
-    set_validate_comprehensive_correlation(test_node_id_activity='ent-e46cc1f7ad469fa9752aca682f4981e6', test_node_id_preference='ent-13c22d15662d613848defa8bf5bbb957')
+    #main(args.custom_id)
+    set_validate_comprehensive_correlation(test_node_id_activity='ent-991d1e8102450805c6cc5c9a6fb93889', test_node_id_preference='ent-6154bd0c4b2ff8250baa0299f98f54d3')

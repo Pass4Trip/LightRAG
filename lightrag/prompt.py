@@ -15,7 +15,8 @@ PROMPTS["DEFAULT_ENTITY_TYPES"] = [
     "user_preference",
     "positive_point",
     "negative_point",
-    "recommandation"
+    "recommandation",
+    "city"
 ]
 
 
@@ -23,19 +24,23 @@ PROMPTS["activity_ENTITY_TYPES"] = [
     "activity",
     "positive_point",
     "negative_point",
-    "recommandation"
+    "recommandation",
+    "city",
+    "coordinate"
 ]
 
 PROMPTS["user_ENTITY_TYPES"] = [
     "user",
     "user_attribute",
-    "user_preference"
+    "user_preference",
+    "city"
 ]
 
 PROMPTS["event_ENTITY_TYPES"] = [
     "event",
     "date",
-    #"city",
+    "city",
+    "coordinate",
     "positive_point",
     "negative_point"
 ]
@@ -44,6 +49,7 @@ PROMPTS["memo_ENTITY_TYPES"] = [
     "memo", 
     "date", 
     "city", 
+    "coordinate",
     "priority", 
     "note", 
     "user"
@@ -62,6 +68,7 @@ CRUCIAL INSTRUCTIONS:
 - If information is not clearly indicated, do NOT attempt to guess or complete it.
 - Your goal is to be a precise and faithful extractor, not an information generator.
 - In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.
+- Labels must be lowercase, without special characters, except for '_' and '/', and must not contain accents.
 
 Key requirements:
 
@@ -71,6 +78,8 @@ Key requirements:
      - **positive_point :** Represents generic positive aspects applicable across multiple activities. These points must remain reusable and should not include specific details about individual activities.
      - **negative_point :** Represents generic negative aspects linked to activities. These points must remain reusable and should not include specific details about individual activities.
      - **recommandation :** Represents suggestions or recommendations derived from the data.
+     - **city :** Represents geographical locations or urban areas with specific attributes.
+     - **coordinate :** Represents geographical coordinates (latitude and longitude) associated with an activity.
 
 2. **Extraction Entity Guideline:**
    - For each entity, extract:
@@ -136,6 +145,7 @@ CRUCIAL INSTRUCTIONS:
 - If information is not clearly indicated, do NOT attempt to guess or complete it.
 - Your goal is to be a precise and faithful extractor, not an information generator.
 - In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.
+- Labels must be lowercase, without special characters, except for '_' and '/', and must not contain accents.
 
 Key requirements:
 
@@ -143,6 +153,7 @@ Key requirements:
    - **user :** Represents a person, identified by their name or a unique identifier.
    - **user_attribute :** Represents specific attributes of a user, such as age, height, address, or any other personal information. These attributes are directly linked to a user.
    - **user_preference :** Represents preferences specific to a user. These preferences describe what the user likes or dislikes.
+   - **city :** Represents the geographical location or residence of a user.
 
 2. **Extraction Entity Guideline:**
    - For each entity, extract:
@@ -217,6 +228,7 @@ CRUCIAL INSTRUCTIONS:
 - If information is not clearly indicated, do NOT attempt to guess or complete it.  
 - Your goal is to be a precise and faithful extractor, not an information generator.  
 - In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.  
+- Labels must be lowercase, without special characters, except for '_' and '/', and must not contain accents.
 
 Key requirements:  
 
@@ -225,11 +237,13 @@ Key requirements:
    - **date :** Represents the date or period of the event.  
    - **positive_point :** Represents generic positive aspects applicable across multiple events. These points must remain reusable and should not include specific details about individual events.  
    - **negative_point :** Represents generic negative aspects linked to events. These points must remain reusable and should not include specific details about individual events.  
+   - **city :** Represents geographical locations or urban areas with specific attributes.
+   - **coordinate :** Represents geographical coordinates (latitude and longitude) associated with an event.
 
 2. **Extraction Entity Guideline:**  
    - For each entity, extract:  
      - entity_name: Name of the entity.  
-     - entity_type: One of the types: [{entity_types}].
+     - entity_type: One of the types: [{entity_types}].  
      - entity_description: A detailed description of the entity's attributes, if available.  
      - Format: (entity{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)  
 
@@ -262,6 +276,7 @@ Key requirements:
 
 11. When finished, output {completion_delimiter}.  
 
+
 ######################  
 -Examples-  
 ######################  
@@ -288,16 +303,18 @@ CRUCIAL INSTRUCTIONS:
 - If information is not clearly indicated, do NOT attempt to guess or complete it.  
 - Your goal is to be a precise and faithful extractor, not an information generator.  
 - In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.  
+- Labels must be lowercase, without special characters, except for '_' and '/', and must not contain accents.
 
 Key requirements:  
 
 1. **Entity Types and Descriptions:**  
    - **memo :** Represents the main task, appointment, or note described in the memo. This entity must include details such as the task's name, purpose, or key attributes.  
-   - **date :** Represents the date or time of the memo or appointment.  
-   - **city :** Represents the city where the memo task or appointment takes place, if applicable.  
-   - **priority :** Represents the priority level of the memo (e.g., high, medium, low), if explicitly mentioned.  
+   - **date :** Represents the date or time of the memo or appointment. (Optional)
+   - **city :** Represents geographical locations or urban areas with specific attributes. (Optional)
+   - **priority :** Represents the priority level of the memo (e.g., high, medium, low), if explicitly mentioned. (Optional)
    - **note :** Represents any additional notes or information linked to the memo.  
-   - **user :** Represents a person explicitly mentioned in the memo (e.g., attendees, person for whom the task is being performed, or others relevant to the memo).  
+   - **user :** Represents a person explicitly mentioned in the memo (e.g., attendees, person for whom the task is being performed, or others relevant to the memo). (Optional)  
+   - **coordinate :** Represents geographical coordinates (latitude and longitude) associated with a memo. (Optional)
 
 2. **Extraction Entity Guideline:**  
    - For each entity, extract:  
@@ -355,10 +372,11 @@ PROMPTS["activity_extraction_examples"] = [
 Entity_types: ["activity",
     "positive_point",
     "negative_point",
-    "recommandation"
+    "recommandation",
+    "city"
     ]
 Text:
-Résumé du Restaurant : JUNK LYON
+Résumé de cette activté = Restaurant : JUNK LYON
 
 Situé à Lyon, JUNK LYON est un restaurant qui se spécialise dans les burgers, avec une fourchette de prix raisonnable allant de 10 à 20 euros. Ce lieu est particulièrement apprécié des amateurs de gastronomie décontractée et a su s’imposer comme une adresse incontournable pour les gourmands.
 
@@ -385,29 +403,35 @@ Le restaurant est ouvert tous les jours de la semaine, avec des horaires étendu
 
 En somme, JUNK LYON est une adresse à considérer pour les amateurs de burgers à Lyon, malgré quelques critiques sur les portions, son ambiance accueillante et la qualité de ses plats en font un lieu prisé.
 
+Cette activité est située à Lyon
+
 ################
 Output:
-("entity"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"activity"{tuple_delimiter}"Restaurant situé à Lyon, spécialisé dans les burgers avec une gamme de prix raisonnable de 10 à 20 euros. Ambiance chaleureuse et décontractée, appréciée pour ses plats comme les burgers, frites et cookies. Propose livraison, vente à emporter et repas sur place."){record_delimiter}
-("entity"{tuple_delimiter}"Qualité de la viande"{tuple_delimiter}"positive_point"{tuple_delimiter}"La viande utilisée dans les burgers est appréciée pour sa qualité supérieure."){record_delimiter}
-("entity"{tuple_delimiter}"Variété des burgers"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant offre une variété de burgers, dont un burger veggie, adapté aux végétariens."){record_delimiter}
-("entity"{tuple_delimiter}"Desserts faits maison"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les cookies faits maison sont particulièrement appréciés par les clients."){record_delimiter}
-("entity"{tuple_delimiter}"Portions insuffisantes"{tuple_delimiter}"negative_point"{tuple_delimiter}"Certains clients trouvent que les portions des burgers sont trop petites par rapport au prix."){record_delimiter}
-("entity"{tuple_delimiter}"Burger à la crème de truffe"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le burger à la crème de truffe est décrit comme exceptionnel par plusieurs clients."){record_delimiter}
-("entity"{tuple_delimiter}"Frites"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les frites sont mentionnées comme un incontournable de l’établissement."){record_delimiter}
-("entity"{tuple_delimiter}"Accueil chaleureux"{tuple_delimiter}"positive_point"{tuple_delimiter}"La qualité de l’accueil contribue à une expérience agréable pour les clients."){record_delimiter}
-("entity"{tuple_delimiter}"Prix abordables"{tuple_delimiter}"positive_point"{tuple_delimiter}"La gamme de prix est raisonnable pour une clientèle variée, bien que certains avis divergent."){record_delimiter}
-("entity"{tuple_delimiter}"Amélioration des portions"{tuple_delimiter}"recommandation"{tuple_delimiter}"Étoffer les portions des burgers pour répondre aux critiques récurrentes des clients."){record_delimiter}
-("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Qualité de la viande"{tuple_delimiter}"Le restaurant est reconnu pour la qualité de la viande utilisée dans ses burgers."{tuple_delimiter}"qualité des ingrédients"{tuple_delimiter}0.9){record_delimiter}
-("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Variété des burgers"{tuple_delimiter}"Le restaurant propose une variété de burgers, attirant les amateurs de gastronomie décontractée et les végétariens."{tuple_delimiter}"variété culinaire"{tuple_delimiter}0.8){record_delimiter}
-("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Desserts faits maison"{tuple_delimiter}"Les desserts faits maison, notamment les cookies, renforcent l’attractivité du restaurant."{tuple_delimiter}"qualité des desserts"{tuple_delimiter}0.85){record_delimiter}
-("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Portions insuffisantes"{tuple_delimiter}"Certains clients critiquent les portions, notamment pour les burgers, ce qui constitue une critique récurrente."{tuple_delimiter}"quantité des plats"{tuple_delimiter}0.7){record_delimiter}
-("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Burger à la crème de truffe"{tuple_delimiter}"Le burger à la crème de truffe est une spécialité appréciée et mentionnée positivement."{tuple_delimiter}"plat signature"{tuple_delimiter}0.95){record_delimiter}
-("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Frites"{tuple_delimiter}"Les frites sont considérées comme un incontournable et sont souvent mentionnées positivement."{tuple_delimiter}"accompagnement apprécié"{tuple_delimiter}0.85){record_delimiter}
-("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Accueil chaleureux"{tuple_delimiter}"L’ambiance et l’accueil chaleureux améliorent l’expérience globale des clients."{tuple_delimiter}"ambiance conviviale"{tuple_delimiter}0.9){record_delimiter}
-("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Prix abordables"{tuple_delimiter}"Le restaurant est perçu comme abordable, attirant une clientèle variée malgré des avis partagés."{tuple_delimiter}"rapport qualité-prix"{tuple_delimiter}0.8){record_delimiter}
-("relationship"{tuple_delimiter}"JUNK LYON"{tuple_delimiter}"Amélioration des portions"{tuple_delimiter}"Les portions pourraient être étoffées pour répondre aux attentes des clients."{tuple_delimiter}"suggestion d’amélioration"{tuple_delimiter}0.75){record_delimiter}
-("content_keywords"{tuple_delimiter}"restaurant, burgers, truffe, frites, cookies, portions, prix abordables, ambiance conviviale, végétarien, qualité des ingrédients"){completion_delimiter}
-#############################"""]
+("entity"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"activity"{tuple_delimiter}"Restaurant situé à Lyon, spécialisé dans les burgers avec une gamme de prix raisonnable de 10 à 20 euros. Ambiance chaleureuse et décontractée, appréciée pour ses plats comme les burgers, frites et cookies. Propose livraison, vente à emporter et repas sur place."){record_delimiter}
+("entity"{tuple_delimiter}"lyon"{tuple_delimiter}"city"{tuple_delimiter}"Lyon"){record_delimiter}
+("entity"{tuple_delimiter}"qualite_burger"{tuple_delimiter}"positive_point"{tuple_delimiter}"La viande utilisée dans les burgers est appréciée pour sa qualité supérieure."){record_delimiter}
+("entity"{tuple_delimiter}"variete_burger"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le restaurant offre une variété de burgers, dont un burger veggie, adapté aux végétariens."){record_delimiter}
+("entity"{tuple_delimiter}"dessert_fait_maison"{tuple_delimiter}"positive_point"{tuple_delimiter}"le Fait Maison est particulièrement appréciés par les clients."){record_delimiter}
+("entity"{tuple_delimiter}"portions_insuffisantes"{tuple_delimiter}"negative_point"{tuple_delimiter}"Les portions sont trop petites par rapport au prix."){record_delimiter}
+("entity"{tuple_delimiter}"burger_creme_de_truffe"{tuple_delimiter}"positive_point"{tuple_delimiter}"Le burger à la crème de truffe est décrit comme exceptionnel par plusieurs clients."){record_delimiter}
+("entity"{tuple_delimiter}"frite"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les frites sont mentionnées comme un incontournable de l'établissement."){record_delimiter}
+("entity"{tuple_delimiter}"accueil_chaleureux"{tuple_delimiter}"positive_point"{tuple_delimiter}"La qualité de l'accueil contribue à une expérience agréable pour les clients."){record_delimiter}
+("entity"{tuple_delimiter}"prix_abordable"{tuple_delimiter}"positive_point"{tuple_delimiter}"La gamme de prix est raisonnable pour une clientèle variée."){record_delimiter}
+("entity"{tuple_delimiter}"amelioration_des_portions"{tuple_delimiter}"recommandation"{tuple_delimiter}"Étoffer les portions des burgers pour répondre aux critiques récurrentes des clients."){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"qualite_burger"{tuple_delimiter}"Le restaurant est reconnu pour la qualité de la viande utilisée dans ses burgers."{tuple_delimiter}"qualité des ingrédients"{tuple_delimiter}0.9){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"variete_burger"{tuple_delimiter}"Le restaurant propose une variété de burgers, attirant les amateurs de gastronomie décontractée et les végétariens."{tuple_delimiter}"variété culinaire"{tuple_delimiter}0.8){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"dessert_fait_maison"{tuple_delimiter}"Les desserts faits maison, notamment les cookies, renforcent l'attractivité du restaurant."{tuple_delimiter}"qualité des desserts"{tuple_delimiter}0.85){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"portions_insuffisantes"{tuple_delimiter}"Certains clients critiquent les portions, notamment pour les burgers, ce qui constitue une critique récurrente."{tuple_delimiter}"quantité des plats"{tuple_delimiter}0.7){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"burger_creme_de_truffe"{tuple_delimiter}"Le burger à la crème de truffe est une spécialité appréciée et mentionnée positivement."{tuple_delimiter}"plat signature"{tuple_delimiter}0.95){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"frite"{tuple_delimiter}"Les frites sont considérées comme un incontournable et sont souvent mentionnées positivement."{tuple_delimiter}"accompagnement apprécié"{tuple_delimiter}0.85){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"accueil_chaleureux"{tuple_delimiter}"L'ambiance et l'accueil chaleureux améliorent l'expérience globale des clients."{tuple_delimiter}"ambiance conviviale"{tuple_delimiter}0.9){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"prix_abordable"{tuple_delimiter}"Le restaurant est perçu comme abordable, attirant une clientèle variée malgré des avis partagés."{tuple_delimiter}"rapport qualité-prix"{tuple_delimiter}0.8){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"amelioration_des_portions"{tuple_delimiter}"Les portions pourraient être étoffées pour répondre aux attentes des clients."{tuple_delimiter}"suggestion d'amélioration"{tuple_delimiter}0.75){record_delimiter}
+("relationship"{tuple_delimiter}"junk_lyon"{tuple_delimiter}"lyon"{tuple_delimiter}" ette activité de type restaurant JUNK LYON est situé dans la ville de Lyon."{tuple_delimiter}"localisation"{tuple_delimiter}0.9){record_delimiter}
+("content_keywords"{tuple_delimiter}"restaurant, burgers, truffe, frites, cookies, portions, prix abordables, ambiance conviviale, vegetarien, qualite des ingredients, coordonnees gps"){completion_delimiter}
+#############################
+
+"""]
 
 
 PROMPTS["user_extraction_examples"] = [
@@ -416,22 +440,25 @@ PROMPTS["user_extraction_examples"] = [
 Entity_types: [
     "user",
     "user_preference"
+    "city",
+    "user_attribute"
   ]
 Text:
-Les informations suivantes concernent Vinh : Vinh adore les restaurants	calme et qui propose de la bonne viande. Je sais que Vinh a 48 ans et habite a Serris. 
+J'adore les restaurants	calme et qui propose de la bonne viande. Je sais que Vinh a 48 ans et habite a Serris. 
+
 
 ################
 Output:
-("entity"{tuple_delimiter}"Vinh"{tuple_delimiter}"user"{tuple_delimiter}"Utilisateur nommé Vinh"){record_delimiter}
-("entity"{tuple_delimiter}"48 ans - Vinh user_attribute"{tuple_delimiter}"user_attribute"{tuple_delimiter}"Vinh à 48 ans"){record_delimiter}
-("entity"{tuple_delimiter}"Serris - Vinh user_attribute"{tuple_delimiter}"user_attribute"{tuple_delimiter}"Vinh réside à Serris"){record_delimiter}
-("entity"{tuple_delimiter}"Restaurants calmes - Vinh user_preference"{tuple_delimiter}"user_preference"{tuple_delimiter}"Vinh préfère les restaurants offrant une ambiance calme et reposante"){record_delimiter}
-("entity"{tuple_delimiter}"Bonne viande - Vinh user_preference"{tuple_delimiter}"user_preference"{tuple_delimiter}"Vinh apprécie particulièrement les restaurants proposant de la viande de qualité supérieure"){record_delimiter}
-("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"48 ans - Vinh user_attribute"{tuple_delimiter}"Vinh est âgé de 48 ans"{tuple_delimiter}0.95){record_delimiter}
-("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"Serris - Vinh user_attribute"{tuple_delimiter}"Vinh habite à Serris, une information importante pour localiser ses préférences."{tuple_delimiter}"localisation"{tuple_delimiter}0.9){record_delimiter}
-("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"Restaurants calmes - Vinh user_preference"{tuple_delimiter}"Vinh recherche des restaurants calmes car il apprécie les lieux paisibles."{tuple_delimiter}"calme, ambiance"{tuple_delimiter}0.9){record_delimiter}
-("relationship"{tuple_delimiter}"Vinh"{tuple_delimiter}"Bonne viande - Vinh user_preference"{tuple_delimiter}"Vinh préfère les restaurants proposant de la viande de qualité, ce qui reflète ses goût"{tuple_delimiter}"viande, qualité"{tuple_delimiter}0.85){record_delimiter}
-("content_keywords"{tuple_delimiter}"restaurants calmes, bonne viande, Serris, 48 ans"){completion_delimiter}
+("entity"{tuple_delimiter}"vinh"{tuple_delimiter}"user"{tuple_delimiter}"Utilisateur nommé Vinh"){record_delimiter}
+("entity"{tuple_delimiter}"48_ans"{tuple_delimiter}"user_attribute"{tuple_delimiter}"48 ans"){record_delimiter}
+("entity"{tuple_delimiter}"serris"{tuple_delimiter}"city"{tuple_delimiter}"Serris"){record_delimiter}
+("entity"{tuple_delimiter}"restaurant_calme"{tuple_delimiter}"user_preference"{tuple_delimiter}"Restaurant offrant une ambiance calme et reposante"){record_delimiter}
+("entity"{tuple_delimiter}"bonne_viande"{tuple_delimiter}"user_preference"{tuple_delimiter}"Restaurants proposant de la viande de qualité supérieure"){record_delimiter}
+("relationship"{tuple_delimiter}"vinh"{tuple_delimiter}"48_ans"{tuple_delimiter}"Vinh est âgé de 48 ans"{tuple_delimiter}0.95){record_delimiter}
+("relationship"{tuple_delimiter}"vinh"{tuple_delimiter}"serris"{tuple_delimiter}"Vinh habite à Serris, une information importante pour localiser ses préférences."{tuple_delimiter}"localisation"{tuple_delimiter}0.9){record_delimiter}
+("relationship"{tuple_delimiter}"vinh"{tuple_delimiter}"restaurant_calme"{tuple_delimiter}"Vinh recherche des restaurants calmes car il apprécie les lieux paisibles."{tuple_delimiter}"calme, ambiance"{tuple_delimiter}0.9){record_delimiter}
+("relationship"{tuple_delimiter}"vinh"{tuple_delimiter}"bonne_viande"{tuple_delimiter}"Vinh préfère les restaurants proposant de la viande de qualité, ce qui reflète ses goût"{tuple_delimiter}"viande, qualité"{tuple_delimiter}0.85){record_delimiter}
+("content_keywords"{tuple_delimiter}"vinh, restaurants calmes, bonne viande, serris, 48 ans"){completion_delimiter}
 """
 ]
 
@@ -442,7 +469,7 @@ PROMPTS["event_extraction_examples"] = [
 
 Entity_types: ["event", "date", "city", "positive_point", "negative_point"]  
 Text:  
-Résumé de l'Événement : FESTIVAL LUMIÈRES DE LYON  
+Résumé de l'activité = Événement FESTIVAL LUMIÈRES DE LYON  
 
 Situé à Lyon, le Festival Lumières est un événement annuel incontournable qui célèbre la lumière et l'art. Organisé chaque décembre, il attire des milliers de visiteurs locaux et internationaux.  
 
@@ -460,20 +487,23 @@ Le festival se déroule sur quatre jours, du 8 au 11 décembre, avec des horaire
 
 En somme, le Festival Lumières de Lyon est une expérience unique pour découvrir l’art sous un nouvel angle, malgré quelques désagréments logistiques.  
 
+Cette activité est située à Lyon
+
 ################  
 Output:  
-("entity"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"event"{tuple_delimiter}"Événement annuel à Lyon célébrant la lumière et l’art, attirant des visiteurs internationaux. Ambiance magique et captivante, installations lumineuses spectaculaires."){record_delimiter}  
-("entity"{tuple_delimiter}"8-11 décembre"{tuple_delimiter}"date"{tuple_delimiter}"Le festival se tient du 8 au 11 décembre."){record_delimiter}  
-("entity"{tuple_delimiter}"Ambiance magique"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les visiteurs décrivent l’atmosphère du festival comme magique et captivante."){record_delimiter}  
-("entity"{tuple_delimiter}"Créativité des œuvres"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les œuvres lumineuses sont louées pour leur créativité et leur diversité."){record_delimiter}  
-("entity"{tuple_delimiter}"Difficultés liées à la foule"{tuple_delimiter}"negative_point"{tuple_delimiter}"Certains visiteurs ont rencontré des problèmes liés à la densité de la foule, rendant l’accès difficile."){record_delimiter}  
-("entity"{tuple_delimiter}"Files d’attente longues"{tuple_delimiter}"negative_point"{tuple_delimiter}"Les files d’attente pour accéder aux zones populaires sont fréquemment mentionnées comme un inconvénient."){record_delimiter}  
-("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"8-11 décembre"{tuple_delimiter}"Le festival se déroule sur ces dates précises."{tuple_delimiter}"date de l’événement"{tuple_delimiter}0.9){record_delimiter}  
-("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Ambiance magique"{tuple_delimiter}"L’ambiance générale du festival est décrite comme magique et captivante."{tuple_delimiter}"atmosphère positive"{tuple_delimiter}0.85){record_delimiter}  
-("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Créativité des œuvres"{tuple_delimiter}"Les œuvres exposées sont louées pour leur créativité."{tuple_delimiter}"qualité artistique"{tuple_delimiter}0.9){record_delimiter}  
-("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Difficultés liées à la foule"{tuple_delimiter}"Les foules denses peuvent rendre certains endroits moins accessibles."{tuple_delimiter}"désavantage logistique"{tuple_delimiter}0.7){record_delimiter}  
-("relationship"{tuple_delimiter}"FESTIVAL LUMIÈRES DE LYON"{tuple_delimiter}"Files d’attente longues"{tuple_delimiter}"Les files d’attente longues sont un problème récurrent pour accéder aux zones populaires."{tuple_delimiter}"organisation à améliorer"{tuple_delimiter}0.65){record_delimiter}  
-("content_keywords"{tuple_delimiter}"festival, lumière, Lyon, art, foule, ambiance magique, créativité, files d’attente"){completion_delimiter}  
+("entity"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"event"{tuple_delimiter}"Événement annuel à Lyon célébrant la lumière et l’art, attirant des visiteurs internationaux. Ambiance magique et captivante, installations lumineuses spectaculaires."){record_delimiter}  
+("entity"{tuple_delimiter}"08/12/2024"{tuple_delimiter}"date"{tuple_delimiter}"08/12/2024"){record_delimiter}  
+("entity"{tuple_delimiter}"lyon"{tuple_delimiter}"city"{tuple_delimiter}"Lyon"){record_delimiter}
+("entity"{tuple_delimiter}"ambiance_magique"{tuple_delimiter}"positive_point"{tuple_delimiter}"Atmosphère du festival comme magique et captivante."){record_delimiter}  
+("entity"{tuple_delimiter}"creativite_œuvre"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les œuvres lumineuses sont louées pour leur créativité et leur diversité."){record_delimiter}  
+("entity"{tuple_delimiter}"difficultes_foule"{tuple_delimiter}"negative_point"{tuple_delimiter}"Problèmes liés à la densité de la foule."){record_delimiter}  
+("entity"{tuple_delimiter}"files_attente_longue"{tuple_delimiter}"negative_point"{tuple_delimiter}"Les files d’attente pour accéder aux zones populaires sont fréquemment mentionnées comme un inconvénient."){record_delimiter}  
+("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"08/12/2024"{tuple_delimiter}"Le festival se déroule le 08/12/2024."{tuple_delimiter}"date de l’événement"{tuple_delimiter}0.9){record_delimiter}  
+("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"lyon"{tuple_delimiter}"Cette activité de type événement festival se déroule dans la ville de Lyon."{tuple_delimiter}"lieu de l'événement"{tuple_delimiter}0.95){record_delimiter}
+("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"ambiance_magique"{tuple_delimiter}"L’ambiance générale du festival est décrite comme magique et captivante."{tuple_delimiter}"atmosphère positive"{tuple_delimiter}0.85){record_delimiter}  
+("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"creativite_œuvre"{tuple_delimiter}"Les œuvres exposées sont louées pour leur créativité."{tuple_delimiter}"qualité artistique"{tuple_delimiter}0.9){record_delimiter}  
+("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"difficultes_foule"{tuple_delimiter}"Les foules denses peuvent rendre certains endroits moins accessibles."{tuple_delimiter}"désavantage logistique"{tuple_delimiter}0.7){record_delimiter}  
+("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"files_attente_longue"{tuple_delimiter}"Les files d’attente longues sont un problème récurrent pour accéder aux zones populaires."{tuple_delimiter}"organisation à améliorer"{tuple_delimiter}0.65){record_delimiter}  
 """
 ]
 
@@ -489,6 +519,8 @@ Entity_types: ["memo", "date", "city", "priority", "note", "user"]
 Text:Résumé du Mémo : Organiser l'anniversaire de Tom, mon meilleur ami.
 
 Catégories :
+
+user_id ="lucien"
 
 Objectifs :
 Planifier une fête d'anniversaire mémorable pour Tom, avec une décoration sur le thème des super-héros, un gâteau au chocolat, et une playlist personnalisée.
@@ -507,18 +539,20 @@ Priorité :
 
 ################
 Output:
-("entity"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"memo"{tuple_delimiter}"Planification d'une fête d'anniversaire pour Tom avec un thème super-héros, incluant gâteau, décoration et playlist."){record_delimiter}  
-("entity"{tuple_delimiter}"15 avril"{tuple_delimiter}"date"{tuple_delimiter}"Date prévue pour l'anniversaire de Tom."){record_delimiter}  
-("entity"{tuple_delimiter}"Paris"{tuple_delimiter}"city"{tuple_delimiter}"Lieu où se tiendra l'anniversaire."){record_delimiter}  
-("entity"{tuple_delimiter}"Priorité élevée"{tuple_delimiter}"priority"{tuple_delimiter}"Tom est mon meilleur ami, donc cette tâche est prioritaire."){record_delimiter}  
-("entity"{tuple_delimiter}"Décoration super-héros"{tuple_delimiter}"note"{tuple_delimiter}"Thème de la décoration pour la fête."){record_delimiter}  
-("entity"{tuple_delimiter}"Tom"{tuple_delimiter}"user"{tuple_delimiter}"La fête est organisée pour Tom, mon meilleur ami."){record_delimiter}  
-("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"15 avril"{tuple_delimiter}"La fête est planifiée pour cette date précise."{tuple_delimiter}"date de l'événement"{tuple_delimiter}0.9){record_delimiter}  
-("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Paris"{tuple_delimiter}"La maison est le lieu choisi pour l'événement."{tuple_delimiter}"lieu de l'événement"{tuple_delimiter}0.95){record_delimiter}  
-("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Priorité élevée"{tuple_delimiter}"Cette tâche est prioritaire car Tom est un proche important."{tuple_delimiter}"importance de la tâche"{tuple_delimiter}0.85){record_delimiter}  
-("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Décoration super-héros"{tuple_delimiter}"Le thème de la décoration reflète les goûts de Tom."{tuple_delimiter}"décoration personnalisée"{tuple_delimiter}0.8){record_delimiter}  
-("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Tom"{tuple_delimiter}"La fête est spécifiquement organisée pour Tom."{tuple_delimiter}"destinataire du mémo"{tuple_delimiter}0.9){record_delimiter}  
-("content_keywords"{tuple_delimiter}"anniversaire, Tom, décoration, gâteau, super-héros, maison, invités"){completion_delimiter}
+("entity"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"memo"{tuple_delimiter}"Planification d'une fête d'anniversaire pour Tom avec un thème super-héros, incluant gâteau, décoration et playlist."){record_delimiter}  
+("entity"{tuple_delimiter}"15/04/2024"{tuple_delimiter}"date"{tuple_delimiter}"15/04/2024"){record_delimiter}  
+("entity"{tuple_delimiter}"paris"{tuple_delimiter}"city"{tuple_delimiter}"Paris"){record_delimiter}  
+("entity"{tuple_delimiter}"priorite_elevee"{tuple_delimiter}"priority"{tuple_delimiter}"Cette tâche est prioritaire."){record_delimiter}  
+("entity"{tuple_delimiter}"decoration_super_heros"{tuple_delimiter}"note"{tuple_delimiter}"Thème de la décoration Super hero."){record_delimiter}  
+("entity"{tuple_delimiter}"tom"{tuple_delimiter}"user"{tuple_delimiter}"Utilisateur nommé Tom"){record_delimiter}  
+("entity"{tuple_delimiter}"lucien"{tuple_delimiter}"user"{tuple_delimiter}"Utilisateur nommé Lucien"){record_delimiter}  
+("relationship"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"15/04/2024"{tuple_delimiter}"La fête est planifiée pour le 15/04/2024."{tuple_delimiter}"date de l'événement"{tuple_delimiter}0.9){record_delimiter}  
+("relationship"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"paris"{tuple_delimiter}"La maison est le lieu choisi pour l'événement."{tuple_delimiter}"lieu de l'événement"{tuple_delimiter}0.95){record_delimiter}  
+("relationship"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"priorite_elevee"{tuple_delimiter}"Cette tâche est prioritaire car Tom est un proche important."{tuple_delimiter}"importance de la tâche"{tuple_delimiter}0.85){record_delimiter}  
+("relationship"{tuple_delimiter}organiser_anniversaire_tom"{tuple_delimiter}"decoration_super_heros"{tuple_delimiter}"Le thème de la décoration reflète les goûts de Tom."{tuple_delimiter}"décoration personnalisée"{tuple_delimiter}0.8){record_delimiter}  
+("relationship"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"tom"{tuple_delimiter}"Utilisateur mentionné dans le Mémo : Tom -- La fête est spécifiquement organisée pour Tom."{tuple_delimiter}"destinataire du mémo"{tuple_delimiter}0.9){record_delimiter}  
+("relationship"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"lucien"{tuple_delimiter}"Utilisateur propriétaire du Mémo : Lucien -- Ils'agit d'un memo de Lucien pour la fête à organiser pour Tom."{tuple_delimiter}"destinataire du mémo"{tuple_delimiter}0.9){record_delimiter}  
+("content_keywords"{tuple_delimiter}"anniversaire, tom, decoration, gateau, super_heros, maison, invites, lucien"){completion_delimiter}
 #############################"""]
 
 

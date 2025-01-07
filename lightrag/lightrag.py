@@ -336,7 +336,7 @@ class LightRAG:
                 from .config.activity_categories import activity_categories_manager
             
                 # Catégorisation des activités
-                if prompt_domain == 'activity':
+                if prompt_domain in ['activity']:
                     # Log du début du processus de catégorisation
                     logger.info("🔍 Début de la catégorisation des activités")
                     
@@ -355,73 +355,73 @@ class LightRAG:
                         logger.warning("❌ Méthode categorize_activities non trouvée")
                 
                 # Catégorisation des activités par villes
-                if prompt_domain in ['activity', 'event']:
-                    logger.info("🌆 Début de la catégorisation des villes")
+                # if prompt_domain in ['activity', 'event']:
+                #     logger.info("🌆 Début de la catégorisation des villes")
                     
-                    if hasattr(self.chunk_entity_relation_graph, 'categorize_cities') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_cities')):
-                        logger.info("✅ Méthode categorize_cities trouvée")
-                        try:
-                            # Extraire la ville des métadonnées
-                            city_name = metadata.get('city')
+                #     if hasattr(self.chunk_entity_relation_graph, 'categorize_cities') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_cities')):
+                #         logger.info("✅ Méthode categorize_cities trouvée")
+                #         try:
+                #             # Extraire la ville des métadonnées
+                #             city_name = metadata.get('city')
                             
-                            if city_name:
-                                # Obtenir l'élément ID du nœud
-                                custom_id = metadata.get('custom_id')
+                #             if city_name:
+                #                 # Obtenir l'élément ID du nœud
+                #                 custom_id = metadata.get('custom_id')
                                 
-                                if custom_id:
-                                    await self.chunk_entity_relation_graph.categorize_cities(
-                                        custom_id=custom_id, 
-                                        city_name=city_name
-                                    )
-                                    logger.info(f"✅ Ville {city_name} associée")
-                                else:
-                                    logger.warning("❌ custom_id manquant pour la catégorisation de la ville")
-                            else:
-                                logger.debug("ℹ️ Pas de ville spécifiée dans les métadonnées")
+                #                 if custom_id:
+                #                     await self.chunk_entity_relation_graph.categorize_cities(
+                #                         custom_id=custom_id, 
+                #                         city_name=city_name
+                #                     )
+                #                     logger.info(f"✅ Ville {city_name} associée")
+                #                 else:
+                #                     logger.warning("❌ custom_id manquant pour la catégorisation de la ville")
+                #             else:
+                #                 logger.debug("ℹ️ Pas de ville spécifiée dans les métadonnées")
                         
-                        except Exception as e:
-                            logger.error(f"❌ Erreur lors de l'appel de categorize_cities : {e}")
-                    else:
-                        logger.warning("❌ Méthode categorize_cities non trouvée")
+                #         except Exception as e:
+                #             logger.error(f"❌ Erreur lors de l'appel de categorize_cities : {e}")
+                #     else:
+                #         logger.warning("❌ Méthode categorize_cities non trouvée")
                 
-                # Catégorisation des dates pour les événements
-                if prompt_domain == 'event':
-                    logger.info("📅 Début de la catégorisation des dates d'événements")
+                # # Catégorisation des dates pour les événements
+                # if prompt_domain == 'event':
+                #     logger.info("📅 Début de la catégorisation des dates d'événements")
                     
-                    if hasattr(self.chunk_entity_relation_graph, 'categorize_dates') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_dates')):
-                        logger.info("✅ Méthode categorize_dates trouvée")
-                        try:
-                            # Extraire la date de début des métadonnées
-                            start_date = metadata.get('start_date')
+                #     if hasattr(self.chunk_entity_relation_graph, 'categorize_dates') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_dates')):
+                #         logger.info("✅ Méthode categorize_dates trouvée")
+                #         try:
+                #             # Extraire la date de début des métadonnées
+                #             start_date = metadata.get('start_date')
                             
-                            if start_date:
-                                # Formater la date en YYYY-MM-DD
-                                from datetime import datetime
-                                try:
-                                    parsed_date = datetime.fromisoformat(start_date.replace('+00:00', ''))
-                                    formatted_date = parsed_date.strftime('%Y-%m-%d')
+                #             if start_date:
+                #                 # Formater la date en YYYY-MM-DD
+                #                 from datetime import datetime
+                #                 try:
+                #                     parsed_date = datetime.fromisoformat(start_date.replace('+00:00', ''))
+                #                     formatted_date = parsed_date.strftime('%Y-%m-%d')
                                     
-                                    # Obtenir l'élément ID de l'événement
-                                    custom_id = metadata.get('custom_id')
+                #                     # Obtenir l'élément ID de l'événement
+                #                     custom_id = metadata.get('custom_id')
                                     
-                                    if custom_id:
-                                        await self.chunk_entity_relation_graph.categorize_dates(
-                                            custom_id=custom_id, 
-                                            date_label=formatted_date
-                                        )
-                                        logger.info(f"✅ Date {formatted_date} associée à l'événement")
-                                    else:
-                                        logger.warning("❌ custom_id manquant pour la catégorisation de la date")
+                #                     if custom_id:
+                #                         await self.chunk_entity_relation_graph.categorize_dates(
+                #                             custom_id=custom_id, 
+                #                             date_label=formatted_date
+                #                         )
+                #                         logger.info(f"✅ Date {formatted_date} associée à l'événement")
+                #                     else:
+                #                         logger.warning("❌ custom_id manquant pour la catégorisation de la date")
                                 
-                                except ValueError as ve:
-                                    logger.error(f"❌ Erreur de formatage de date : {ve}")
-                            else:
-                                logger.debug("ℹ️ Pas de date spécifiée dans les métadonnées")
+                #                 except ValueError as ve:
+                #                     logger.error(f"❌ Erreur de formatage de date : {ve}")
+                #             else:
+                #                 logger.debug("ℹ️ Pas de date spécifiée dans les métadonnées")
                         
-                        except Exception as e:
-                            logger.error(f"❌ Erreur lors de l'appel de categorize_dates : {e}")
-                    else:
-                        logger.warning("❌ Méthode categorize_dates non trouvée")
+                #         except Exception as e:
+                #             logger.error(f"❌ Erreur lors de l'appel de categorize_dates : {e}")
+                #     else:
+                #         logger.warning("❌ Méthode categorize_dates non trouvée")
                 
                 # Catégorisation des mémos
                 elif prompt_domain == 'memo':
@@ -452,10 +452,20 @@ class LightRAG:
         finally:
             if update_storage:
                 await self._insert_done()
+                # Ajout de logs détaillés pour comprendre pourquoi la suppression des nœuds UNKNOWN ne fonctionne pas
+                logger.info("Tentative de suppression des nœuds de type UNKNOWN")
+                try:
+                    await self.chunk_entity_relation_graph.delete_nodes_by_type('UNKNOWN')
+                    logger.info("✅ Suppression des nœuds UNKNOWN réussie")
+                except Exception as e:
+                    logger.error(f"❌ Erreur lors de la suppression des nœuds UNKNOWN : {e}")
+                    logger.error(f"Type de self.chunk_entity_relation_graph : {type(self.chunk_entity_relation_graph)}")
+                    if hasattr(self.chunk_entity_relation_graph, 'delete_nodes_by_type'):
+                        logger.info("La méthode delete_nodes_by_type existe bien")
+                    else:
+                        logger.warning("La méthode delete_nodes_by_type n'existe pas")
                 # Supprimer les relations DIRECTED après le traitement
                 await self.chunk_entity_relation_graph.delete_relations_by_label('DIRECTED')
-                # Supprimer les nœuds de type UNKNOWN
-                await self.chunk_entity_relation_graph.delete_nodes_by_type('UNKNOWN')
 
     async def _insert_done(self):
         tasks = []

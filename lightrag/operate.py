@@ -101,7 +101,7 @@ async def _handle_single_entity_extraction(
         return None
     
     # add this record as a node in the G
-    entity_name = clean_str(record_attributes[1]).replace(" ", "").lower()
+    entity_name = clean_str(record_attributes[1]).replace(" ", "_").lower()
     if not entity_name.strip():
         logger.warning("Entity name is empty after cleaning")
         return None
@@ -135,8 +135,8 @@ async def _handle_single_relationship_extraction(
         return None
     
     # Normaliser les identifiants (minuscules et sans espaces)
-    src_id = clean_str(record_attributes[1]).replace(" ", "").lower()
-    tgt_id = clean_str(record_attributes[2]).replace(" ", "").lower()
+    src_id = clean_str(record_attributes[1]).replace(" ", "_").lower()
+    tgt_id = clean_str(record_attributes[2]).replace(" ", "_").lower()
     
     if not src_id or not tgt_id:
         logger.warning(f"Source or target ID is empty: src_id={src_id}, tgt_id={tgt_id}")
@@ -180,9 +180,9 @@ async def _merge_nodes_then_upsert(
     # Normaliser les noms d'entités
     nodes_data = [
         {**node, 
-         'entity_name': node['entity_name'].replace(" ", "").lower(),
+         'entity_name': node['entity_name'].replace(" ", "_").lower(),
          # Ajouter custom_id si prompt_domain est memo et entity_type est user
-         **(({'custom_id': node['entity_name'].replace(" ", "").lower()} 
+         **(({'custom_id': node['entity_name'].replace(" ", "_").lower()} 
              if prompt_domain == 'memo' and node.get('entity_type') == 'user' 
              else {}))
         } 
@@ -509,19 +509,41 @@ async def extract_entities(
                 # Récupérer les metadata spécifiques au type d'entité
                 entity_metadata = {}
                 if metadata:
-                    if prompt_domain == "activity" and "cid" in metadata:
-                        entity_metadata["custom_id"] = metadata["cid"]
+                    if prompt_domain == "activity":
+                        # Vérifier la présence de cid
+                        if "cid" not in metadata:
+                            logger.warning("No 'cid' found in activity metadata")
+                        else:
+                            entity_metadata["custom_id"] = metadata["cid"]
+                        
+                        # Ajouter les coordonnées géographiques si disponibles
+                        if "lat" in metadata:
+                            entity_metadata["lat"] = metadata["lat"]
+                        
+                        else:
+                            logger.warning("No 'lat' found in activity metadata")
+                        
+                        if "lng" in metadata:
+                            entity_metadata["lng"] = metadata["lng"]
+                        else:
+                            logger.warning("No 'lng' found in activity metadata")
+
+                        if "city" in metadata:
+                            entity_metadata["city"] = metadata["city"]
+                        else:
+                            logger.warning("No 'city' found in activity metadata")
+
                     elif prompt_domain == "user" and "user_id" in metadata:
                         entity_metadata["custom_id"] = metadata["user_id"]
                     elif prompt_domain == "event" and "event_id" in metadata:
                         entity_metadata["custom_id"] = metadata["event_id"]
                     elif prompt_domain == "memo" and "custom_id" in metadata:
                         entity_metadata["custom_id"] = metadata["custom_id"]
+  
                 
                 # Ajouter les metadata à l'entité si disponibles
                 if entity_metadata and if_entities["entity_type"] == prompt_domain:
                     if_entities.update(entity_metadata)
-                    logger.debug(f"Added metadata to entity: {entity_metadata}")
                 
                 
                 maybe_nodes[if_entities["entity_name"]].append(if_entities)
@@ -644,9 +666,9 @@ async def extract_entities(
         for k, v in m_edges.items():
             maybe_edges[tuple(sorted(k))].extend(v)
 
-    logger.info("Inserting entities into storage...")
-    logger.info(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
-    logger.info(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
+    logger.debug("Inserting entities into storage...")
+    logger.debug(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
+    logger.debug(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
 
     all_entities_data = []
     for result in tqdm_async(
@@ -693,6 +715,11 @@ async def extract_entities(
             )
 
     logger.debug("Inserting relationships into storage...")
+    logger.debug(f"Nombre total de relations potentielles : {len(maybe_edges)}")
+    for (src, tgt), relations in maybe_edges.items():
+        logger.debug(f"Relation potentielle - Source: {src}, Cible: {tgt}")
+        logger.debug(f"Détails des relations : {relations}")
+    
     all_relationships_data = []
     for result in tqdm_async(
         asyncio.as_completed(

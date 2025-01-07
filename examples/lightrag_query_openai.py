@@ -91,7 +91,9 @@ def query_lightrag(question: str, mode: str = "hybrid"):
 if __name__ == "__main__":
     try:
         # Exemple d'utilisation
-        question = "dis moi ce que tu sais sur lea"
+        #question = "dis moi ce que tu sais sur lea"
+        question = "trouver moi un restaurant qui dispose d'une ambiance chaleureuse et si possible des burgers"
+
         rag = init_lightrag()
         
         # Exemple d'utilisation avec filtrage
@@ -99,11 +101,12 @@ if __name__ == "__main__":
         
 
         # Préparation des paramètres de requête
-        mode="hybrid"
+        mode="local"
         query_param = QueryParam(mode=mode)
         
         #vdb_filter= [ "Zulli"]
-        vdb_filter= ["Zulli"]
+        #vdb_filter= ["lea"]
+        vdb_filter= []
 
         # Exécution asynchrone de la requête
         response = asyncio.run(rag.aquery(question, param=query_param, vdb_filter=vdb_filter))

@@ -228,6 +228,8 @@ class Neo4JStorage(BaseGraphStorage):
         ('negative_point', 'activity'): 'HAS_FEATURE',
         ('activity', 'recommandation'): 'RECOMMENDS',
         ('recommandation', 'activity'): 'RECOMMENDS',
+        ('activity', 'city'): 'LOCATED_IN',
+        ('city', 'activity'): 'LOCATED_IN',         
         ('user', 'user_preference'): 'LIKES',
         ('user_preference', 'user'): 'LIKES',
         ('user', 'user_attribute'): 'HAS_INFORMATION',
@@ -244,8 +246,11 @@ class Neo4JStorage(BaseGraphStorage):
         ('date', 'memo'): 'OCCURS_ON',    
         ('memo', 'note'): 'HAS_DETAIL',
         ('note', 'memo'): 'HAS_DETAIL',      
-        ('memo', 'city'): 'LOCATED_IN',
+        ('user', 'city'): 'LOCATED_IN',
+        ('city', 'user'): 'LOCATED_IN',    
+        ('event', 'city'): 'LOCATED_IN',        
         ('city', 'memo'): 'LOCATED_IN',    
+        ('city', 'event'): 'LOCATED_IN',         
         ('memo', 'priority'): 'HAS_PRIORITY',
         ('priority', 'memo'): 'HAS_PRIORITY',                         
     }
@@ -536,15 +541,19 @@ class Neo4JStorage(BaseGraphStorage):
         query = """
         MATCH (activity {custom_id: $custom_id})
         WITH activity
-        
+
         // Vérifier s'il existe déjà une relation LOCATED_IN
         OPTIONAL MATCH (activity)-[existing_relation:LOCATED_IN]->(existing_city:City)
-        
-        // Créer ou récupérer la nouvelle ville
-        MERGE (city:City {name: $city_name})
-        
+
+        // Créer ou récupérer la nouvelle ville avec entity_type et label normalisés
+        MERGE (city:City {
+            name: $city_name, 
+            label: toLower($city_name), 
+            entity_type: 'city'
+        })
+
         WITH activity, city, existing_relation, existing_city
-        
+
         // Gérer la relation
         FOREACH (_ IN CASE 
             WHEN existing_relation IS NULL THEN [1]
@@ -554,7 +563,7 @@ class Neo4JStorage(BaseGraphStorage):
             MERGE (activity)-[:LOCATED_IN]->(city)
             SET activity.city_conflict = CASE WHEN existing_city.name <> $city_name THEN true ELSE false END
         )
-        
+
         RETURN activity, city, 
                CASE 
                    WHEN activity.city_conflict IS NOT NULL AND activity.city_conflict = true THEN 'conflict' 
@@ -608,38 +617,51 @@ class Neo4JStorage(BaseGraphStorage):
             custom_id (str): Identifiant personnalisé de l'événement
             date_label (str): Étiquette de la date (format YYYY-MM-DD)
         """
+        query = """
+        MATCH (event {custom_id: $custom_id})
+        WITH event
+
+        // Vérifier s'il existe déjà une relation OCCURS_ON
+        OPTIONAL MATCH (event)-[existing_relation:OCCURS_ON]->(existing_date:Date)
+
+        // Convertir la date au format DD/MM/YYYY
+        WITH event, 
+             existing_relation,
+             existing_date,
+             $date_label AS original_date,
+             substring($date_label, 8, 2) + '/' + substring($date_label, 5, 2) + '/' + substring($date_label, 0, 4) AS formatted_date
+
+        // Créer ou récupérer le nouveau nœud de date avec entity_type, name et label
+        MERGE (date:Date {
+            name: formatted_date, 
+            label: formatted_date, 
+            entity_type: 'date'
+        })
+
+        WITH event, date, existing_relation, existing_date, formatted_date
+
+        // Gérer la relation
+        FOREACH (_ IN CASE 
+            WHEN existing_relation IS NULL THEN [1]
+            WHEN existing_date.name <> formatted_date THEN [1]
+            ELSE []
+        END |
+            MERGE (event)-[:OCCURS_ON]->(date)
+            SET event.date_conflict = CASE WHEN existing_date.name <> formatted_date THEN true ELSE false END
+        )
+
+        RETURN event, date, 
+               CASE 
+                   WHEN event.date_conflict IS NOT NULL AND event.date_conflict = true THEN 'conflict' 
+                   WHEN existing_relation IS NULL THEN 'created' 
+                   ELSE 'existing' 
+               END AS date_status
+        """
+        
         async with self.driver.session() as session:
             try:
-                # Requête pour créer ou récupérer le nœud de date et le lier à l'événement
-                query = """
-                MATCH (event {custom_id: $custom_id})
-                WITH event
-                
-                // Vérifier s'il existe déjà une relation OCCURS_ON
-                OPTIONAL MATCH (event)-[existing_relation:OCCURS_ON]->(existing_date:Date)
-                
-                // Créer ou récupérer la nouvelle date
-                MERGE (date:Date {label: $date_label})
-                
-                WITH event, date, existing_relation, existing_date
-                
-                // Gérer la relation
-                FOREACH (_ IN CASE 
-                    WHEN existing_relation IS NULL THEN [1]
-                    WHEN existing_date.label <> $date_label THEN [1]
-                    ELSE []
-                END |
-                    MERGE (event)-[:OCCURS_ON]->(date)
-                    SET event.date_conflict = CASE WHEN existing_date.label <> $date_label THEN true ELSE false END
-                )
-                
-                RETURN event, date, 
-                       CASE 
-                           WHEN event.date_conflict IS NOT NULL AND event.date_conflict = true THEN 'conflict' 
-                           WHEN existing_relation IS NULL THEN 'created' 
-                           ELSE 'existing' 
-                       END AS date_status
-                """
+                # Log de débogage
+                logger.info(f"Requête Cypher avec custom_id: {custom_id}, date_label: {date_label}")
                 
                 # Exécuter l'initialisation et récupérer les activités
                 result = await session.run(
@@ -1074,7 +1096,7 @@ class Neo4JStorage(BaseGraphStorage):
         Returns:
             str: Le label normalisé
         """
-        return label.replace(" ", "").lower()
+        return label.replace(" ", "_").lower()
 
     async def delete_relations_by_label(self, label: str):
         """

@@ -29,8 +29,8 @@ class ActivityCategoriesManager:
                 "spa", "massage", "yoga", "méditation", "relaxation", 
                 "soins", "bien-être", "santé"
             ],
-            "Événements Professionnels": [
-                "networking", "conférence", "salon", "réunion", "séminaire", 
+            "Événements": [
+                "event", "networking", "conférence", "salon", "réunion", "séminaire", 
                 "business", "professionnel", "entreprise"
             ],
             "Unknown": []  # Catégorie explicite pour les activités non classées
