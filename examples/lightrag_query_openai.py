@@ -103,7 +103,7 @@ if __name__ == "__main__":
         query_param = QueryParam(mode=mode)
         
         #vdb_filter= [ "Zulli"]
-        vdb_filter= ["lea"]
+        vdb_filter= ["Zulli"]
 
         # Exécution asynchrone de la requête
         response = asyncio.run(rag.aquery(question, param=query_param, vdb_filter=vdb_filter))

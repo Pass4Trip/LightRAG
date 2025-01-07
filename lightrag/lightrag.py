@@ -452,6 +452,10 @@ class LightRAG:
         finally:
             if update_storage:
                 await self._insert_done()
+                # Supprimer les relations DIRECTED après le traitement
+                await self.chunk_entity_relation_graph.delete_relations_by_label('DIRECTED')
+                # Supprimer les nœuds de type UNKNOWN
+                await self.chunk_entity_relation_graph.delete_nodes_by_type('UNKNOWN')
 
     async def _insert_done(self):
         tasks = []

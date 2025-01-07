@@ -46,7 +46,7 @@ PROMPTS["memo_ENTITY_TYPES"] = [
     "city", 
     "priority", 
     "note", 
-    "memo_user"
+    "user"
 ]
 
 
@@ -297,7 +297,7 @@ Key requirements:
    - **city :** Represents the city where the memo task or appointment takes place, if applicable.  
    - **priority :** Represents the priority level of the memo (e.g., high, medium, low), if explicitly mentioned.  
    - **note :** Represents any additional notes or information linked to the memo.  
-   - **memo_user :** Represents a person explicitly mentioned in the memo (e.g., attendees, person for whom the task is being performed, or others relevant to the memo).  
+   - **user :** Represents a person explicitly mentioned in the memo (e.g., attendees, person for whom the task is being performed, or others relevant to the memo).  
 
 2. **Extraction Entity Guideline:**  
    - For each entity, extract:  
@@ -485,7 +485,7 @@ Output:
 PROMPTS["memo_extraction_examples"] = [
     """
 
-Entity_types: ["memo", "date", "city", "priority", "note", "memo_user"]
+Entity_types: ["memo", "date", "city", "priority", "note", "user"]
 Text:Résumé du Mémo : Organiser l'anniversaire de Tom, mon meilleur ami.
 
 Catégories :
@@ -512,7 +512,7 @@ Output:
 ("entity"{tuple_delimiter}"Paris"{tuple_delimiter}"city"{tuple_delimiter}"Lieu où se tiendra l'anniversaire."){record_delimiter}  
 ("entity"{tuple_delimiter}"Priorité élevée"{tuple_delimiter}"priority"{tuple_delimiter}"Tom est mon meilleur ami, donc cette tâche est prioritaire."){record_delimiter}  
 ("entity"{tuple_delimiter}"Décoration super-héros"{tuple_delimiter}"note"{tuple_delimiter}"Thème de la décoration pour la fête."){record_delimiter}  
-("entity"{tuple_delimiter}"Tom"{tuple_delimiter}"memo_user"{tuple_delimiter}"La fête est organisée pour Tom, mon meilleur ami."){record_delimiter}  
+("entity"{tuple_delimiter}"Tom"{tuple_delimiter}"user"{tuple_delimiter}"La fête est organisée pour Tom, mon meilleur ami."){record_delimiter}  
 ("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"15 avril"{tuple_delimiter}"La fête est planifiée pour cette date précise."{tuple_delimiter}"date de l'événement"{tuple_delimiter}0.9){record_delimiter}  
 ("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Paris"{tuple_delimiter}"La maison est le lieu choisi pour l'événement."{tuple_delimiter}"lieu de l'événement"{tuple_delimiter}0.95){record_delimiter}  
 ("relationship"{tuple_delimiter}"Organiser l'anniversaire de Tom"{tuple_delimiter}"Priorité élevée"{tuple_delimiter}"Cette tâche est prioritaire car Tom est un proche important."{tuple_delimiter}"importance de la tâche"{tuple_delimiter}0.85){record_delimiter}  

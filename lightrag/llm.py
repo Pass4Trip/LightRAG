@@ -9,7 +9,7 @@ import aioboto3
 import aiohttp
 import numpy as np
 import ollama
-import torch
+#import torch
 from openai import (
     AsyncOpenAI,
     APIConnectionError,
@@ -24,7 +24,7 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
 )
-from transformers import AutoTokenizer, AutoModelForCausalLM
+#from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from .utils import (
     wrap_embedding_func_with_attrs,
@@ -198,18 +198,18 @@ async def bedrock_complete_if_cache(
     return response["output"]["message"]["content"][0]["text"]
 
 
-@lru_cache(maxsize=1)
-def initialize_hf_model(model_name):
-    hf_tokenizer = AutoTokenizer.from_pretrained(
-        model_name, device_map="auto", trust_remote_code=True
-    )
-    hf_model = AutoModelForCausalLM.from_pretrained(
-        model_name, device_map="auto", trust_remote_code=True
-    )
-    if hf_tokenizer.pad_token is None:
-        hf_tokenizer.pad_token = hf_tokenizer.eos_token
+# @lru_cache(maxsize=1)
+# def initialize_hf_model(model_name):
+#     hf_tokenizer = AutoTokenizer.from_pretrained(
+#         model_name, device_map="auto", trust_remote_code=True
+#     )
+#     hf_model = AutoModelForCausalLM.from_pretrained(
+#         model_name, device_map="auto", trust_remote_code=True
+#     )
+#     if hf_tokenizer.pad_token is None:
+#         hf_tokenizer.pad_token = hf_tokenizer.eos_token
 
-    return hf_model, hf_tokenizer
+#     return hf_model, hf_tokenizer
 
 
 @retry(
@@ -790,18 +790,18 @@ async def bedrock_embedding(
         return np.array(embed_texts)
 
 
-async def hf_embedding(texts: list[str], tokenizer, embed_model) -> np.ndarray:
-    device = next(embed_model.parameters()).device
-    input_ids = tokenizer(
-        texts, return_tensors="pt", padding=True, truncation=True
-    ).input_ids.to(device)
-    with torch.no_grad():
-        outputs = embed_model(input_ids)
-        embeddings = outputs.last_hidden_state.mean(dim=1)
-    if embeddings.dtype == torch.bfloat16:
-        return embeddings.detach().to(torch.float32).cpu().numpy()
-    else:
-        return embeddings.detach().cpu().numpy()
+# async def hf_embedding(texts: list[str], tokenizer, embed_model) -> np.ndarray:
+#     device = next(embed_model.parameters()).device
+#     input_ids = tokenizer(
+#         texts, return_tensors="pt", padding=True, truncation=True
+#     ).input_ids.to(device)
+#     with torch.no_grad():
+#         outputs = embed_model(input_ids)
+#         embeddings = outputs.last_hidden_state.mean(dim=1)
+#     if embeddings.dtype == torch.bfloat16:
+#         return embeddings.detach().to(torch.float32).cpu().numpy()
+#     else:
+#         return embeddings.detach().cpu().numpy()
 
 
 async def ollama_embedding(texts: list[str], embed_model, **kwargs) -> np.ndarray:

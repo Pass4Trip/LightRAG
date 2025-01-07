@@ -101,7 +101,7 @@ async def _handle_single_entity_extraction(
         return None
     
     # add this record as a node in the G
-    entity_name = clean_str(record_attributes[1])
+    entity_name = clean_str(record_attributes[1]).replace(" ", "").lower()
     if not entity_name.strip():
         logger.warning("Entity name is empty after cleaning")
         return None
@@ -134,8 +134,9 @@ async def _handle_single_relationship_extraction(
         logger.warning(f"First attribute is not 'relationship': {first_attr}")
         return None
     
-    src_id = clean_str(record_attributes[1])
-    tgt_id = clean_str(record_attributes[2])
+    # Normaliser les identifiants (minuscules et sans espaces)
+    src_id = clean_str(record_attributes[1]).replace(" ", "").lower()
+    tgt_id = clean_str(record_attributes[2]).replace(" ", "").lower()
     
     if not src_id or not tgt_id:
         logger.warning(f"Source or target ID is empty: src_id={src_id}, tgt_id={tgt_id}")
@@ -145,12 +146,6 @@ async def _handle_single_relationship_extraction(
     keywords = clean_str(record_attributes[4])
     weight = 1
     
-    # if len(record_attributes) > 5:
-    #     try:
-    #         weight = int(record_attributes[5])
-    #     except ValueError:
-    #         logger.warning(f"Could not convert weight to integer: {record_attributes[5]}")
-
     weight = (
         float(record_attributes[-1]) if is_float_regex(record_attributes[-1]) else 1.0
     )
@@ -173,8 +168,25 @@ async def _merge_nodes_then_upsert(
     nodes_data: list[dict],
     knowledge_graph_inst: BaseGraphStorage,
     global_config: dict,
+    prompt_domain: str = "not_specified",
 ):
     """Fusionne et met à jour les nœuds dans le graphe de connaissances"""
+    logger.debug(f"nodes_data : {nodes_data}")
+
+    # Normaliser les noms d'entités
+    nodes_data = [
+        {**node, 
+         'entity_name': node['entity_name'].replace(" ", "").lower(),
+         # Ajouter custom_id si prompt_domain est memo et entity_type est user
+         **(({'custom_id': node['entity_name'].replace(" ", "").lower()} 
+             if prompt_domain == 'memo' and node.get('entity_type') == 'user' 
+             else {}))
+        } 
+        for node in nodes_data
+    ]
+
+    logger.info(f"nodes_data apres nomralisation : {nodes_data}")
+    
     try:
         # S'assurer d'utiliser la même boucle d'événements
         loop = asyncio.get_event_loop()
@@ -229,6 +241,8 @@ async def _merge_nodes_then_upsert(
             source_id=source_id,
             **metadata  # Ajouter les metadata au nœud
         )
+
+        
         await knowledge_graph_inst.upsert_node(
             entity_name,
             node_data=node_data,
@@ -273,16 +287,7 @@ async def _merge_edges_then_upsert(
     source_id = GRAPH_FIELD_SEP.join(
         set([dp["source_id"] for dp in edges_data] + already_source_ids)
     )
-    for need_insert_id in [src_id, tgt_id]:
-        if not (await knowledge_graph_inst.has_node(need_insert_id)):
-            await knowledge_graph_inst.upsert_node(
-                need_insert_id,
-                node_data={
-                    "source_id": source_id,
-                    "description": description,
-                    "entity_type": '"UNKNOWN"',
-                },
-            )
+
     description = await _handle_entity_relation_summary(
         f"({src_id}, {tgt_id})", description, global_config
     )
@@ -303,7 +308,6 @@ async def _merge_edges_then_upsert(
         description=description,
         keywords=keywords,
     )
-
     return edge_data
 
 
@@ -505,6 +509,7 @@ async def extract_entities(
                     if_entities.update(entity_metadata)
                     logger.debug(f"Added metadata to entity: {entity_metadata}")
                 
+                
                 maybe_nodes[if_entities["entity_name"]].append(if_entities)
                 
                 # Collecter les entités par type
@@ -625,14 +630,15 @@ async def extract_entities(
         for k, v in m_edges.items():
             maybe_edges[tuple(sorted(k))].extend(v)
 
-    logger.debug("Inserting entities into storage...")
-    logger.debug(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
-    logger.debug(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
+    logger.info("Inserting entities into storage...")
+    logger.info(f"Total maybe_nodes before processing: {len(maybe_nodes)}")
+    logger.info(f"maybe_nodes keys: {list(maybe_nodes.keys())}")
+
     all_entities_data = []
     for result in tqdm_async(
         asyncio.as_completed(
             [
-                _merge_nodes_then_upsert(k, v, knowledge_graph_inst, global_config)
+                _merge_nodes_then_upsert(k, v, knowledge_graph_inst, global_config, prompt_domain)
                 for k, v in maybe_nodes.items()
             ]
         ),

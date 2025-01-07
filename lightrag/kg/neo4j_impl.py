@@ -21,6 +21,13 @@ from tenacity import (
     retry_if_exception_type,
 )
 
+import logging
+
+# Configurer le logger Neo4j pour réduire les notifications
+logging.getLogger('neo4j').setLevel(logging.ERROR)
+logging.getLogger('neo4j.bolt').setLevel(logging.ERROR)
+logging.getLogger('neo4j.notifications').setLevel(logging.ERROR)
+
 
 @dataclass
 class Neo4JStorage(BaseGraphStorage):
@@ -231,12 +238,10 @@ class Neo4JStorage(BaseGraphStorage):
         ('positive_point', 'event'): 'HAS_FEATURE',
         ('event', 'negative_point'): 'HAS_FEATURE',
         ('negative_point', 'event'): 'HAS_FEATURE',
-        ('user', 'memo'): 'HAS_MEMO',
-        ('memo', 'user'): 'HAS_MEMO',
+        ('user', 'memo'): 'IS_MENTIONED_IN_MEMO',
+        ('memo', 'user'): 'IS_MENTIONED_IN_MEMO',
         ('memo', 'date'): 'OCCURS_ON',
-        ('date', 'memo'): 'OCCURS_ON',
-        ('memo', 'memo_user'): 'IMPACT_USER',
-        ('memo_user', 'memo'): 'IMPACT_USER',     
+        ('date', 'memo'): 'OCCURS_ON',    
         ('memo', 'note'): 'HAS_DETAIL',
         ('note', 'memo'): 'HAS_DETAIL',      
         ('memo', 'city'): 'LOCATED_IN',
@@ -1070,3 +1075,29 @@ class Neo4JStorage(BaseGraphStorage):
             str: Le label normalisé
         """
         return label.replace(" ", "").lower()
+
+    async def delete_relations_by_label(self, label: str):
+        """
+        Supprime toutes les relations avec un label spécifique dans le graphe Neo4j.
+        
+        :param label: Le label de la relation à supprimer
+        """
+        query = f"""
+        MATCH ()-[r:{label}]->()
+        DELETE r
+        """
+        async with self._driver.session() as session:
+            await session.run(query)
+
+    async def delete_nodes_by_type(self, entity_type: str):
+        """
+        Supprime tous les nœuds avec un type d'entité spécifique dans le graphe Neo4j.
+        
+        :param entity_type: Le type d'entité à supprimer
+        """
+        query = f"""
+        MATCH (n {{entity_type: '{entity_type}'}})
+        DETACH DELETE n
+        """
+        async with self._driver.session() as session:
+            await session.run(query)
