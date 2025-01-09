@@ -207,3 +207,7 @@ dmypy.json
 Network Trash Folder
 Temporary Items
 .apdisk
+
+secu.txt
+security/security_keys.json
+security_keys.json
