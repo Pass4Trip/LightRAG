@@ -450,11 +450,11 @@ J'adore les restaurants	calme et qui propose de la bonne viande. Je sais que Vin
 ################
 Output:
 ("entity"{tuple_delimiter}"vinh"{tuple_delimiter}"user"{tuple_delimiter}"Utilisateur nommé Vinh"){record_delimiter}
-("entity"{tuple_delimiter}"48_ans"{tuple_delimiter}"user_attribute"{tuple_delimiter}"48 ans"){record_delimiter}
+("entity"{tuple_delimiter}"age_48_ans"{tuple_delimiter}"user_attribute"{tuple_delimiter}"48 ans"){record_delimiter}
 ("entity"{tuple_delimiter}"serris"{tuple_delimiter}"city"{tuple_delimiter}"Serris"){record_delimiter}
 ("entity"{tuple_delimiter}"restaurant_calme"{tuple_delimiter}"user_preference"{tuple_delimiter}"Restaurant offrant une ambiance calme et reposante"){record_delimiter}
 ("entity"{tuple_delimiter}"bonne_viande"{tuple_delimiter}"user_preference"{tuple_delimiter}"Restaurants proposant de la viande de qualité supérieure"){record_delimiter}
-("relationship"{tuple_delimiter}"vinh"{tuple_delimiter}"48_ans"{tuple_delimiter}"Vinh est âgé de 48 ans"{tuple_delimiter}0.95){record_delimiter}
+("relationship"{tuple_delimiter}"vinh"{tuple_delimiter}"age_48_ans"{tuple_delimiter}"Vinh est âgé de 48 ans"{tuple_delimiter}0.95){record_delimiter}
 ("relationship"{tuple_delimiter}"vinh"{tuple_delimiter}"serris"{tuple_delimiter}"Vinh habite à Serris, une information importante pour localiser ses préférences."{tuple_delimiter}"localisation"{tuple_delimiter}0.9){record_delimiter}
 ("relationship"{tuple_delimiter}"vinh"{tuple_delimiter}"restaurant_calme"{tuple_delimiter}"Vinh recherche des restaurants calmes car il apprécie les lieux paisibles."{tuple_delimiter}"calme, ambiance"{tuple_delimiter}0.9){record_delimiter}
 ("relationship"{tuple_delimiter}"vinh"{tuple_delimiter}"bonne_viande"{tuple_delimiter}"Vinh préfère les restaurants proposant de la viande de qualité, ce qui reflète ses goût"{tuple_delimiter}"viande, qualité"{tuple_delimiter}0.85){record_delimiter}
@@ -492,13 +492,13 @@ Cette activité est située à Lyon
 ################  
 Output:  
 ("entity"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"event"{tuple_delimiter}"Événement annuel à Lyon célébrant la lumière et l’art, attirant des visiteurs internationaux. Ambiance magique et captivante, installations lumineuses spectaculaires."){record_delimiter}  
-("entity"{tuple_delimiter}"08/12/2024"{tuple_delimiter}"date"{tuple_delimiter}"08/12/2024"){record_delimiter}  
+("entity"{tuple_delimiter}"date_08/12/2024"{tuple_delimiter}"date"{tuple_delimiter}"08/12/2024"){record_delimiter}  
 ("entity"{tuple_delimiter}"lyon"{tuple_delimiter}"city"{tuple_delimiter}"Lyon"){record_delimiter}
 ("entity"{tuple_delimiter}"ambiance_magique"{tuple_delimiter}"positive_point"{tuple_delimiter}"Atmosphère du festival comme magique et captivante."){record_delimiter}  
 ("entity"{tuple_delimiter}"creativite_œuvre"{tuple_delimiter}"positive_point"{tuple_delimiter}"Les œuvres lumineuses sont louées pour leur créativité et leur diversité."){record_delimiter}  
 ("entity"{tuple_delimiter}"difficultes_foule"{tuple_delimiter}"negative_point"{tuple_delimiter}"Problèmes liés à la densité de la foule."){record_delimiter}  
 ("entity"{tuple_delimiter}"files_attente_longue"{tuple_delimiter}"negative_point"{tuple_delimiter}"Les files d’attente pour accéder aux zones populaires sont fréquemment mentionnées comme un inconvénient."){record_delimiter}  
-("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"08/12/2024"{tuple_delimiter}"Le festival se déroule le 08/12/2024."{tuple_delimiter}"date de l’événement"{tuple_delimiter}0.9){record_delimiter}  
+("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"date_08/12/2024"{tuple_delimiter}"Le festival se déroule le 08/12/2024."{tuple_delimiter}"date de l’événement"{tuple_delimiter}0.9){record_delimiter}  
 ("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"lyon"{tuple_delimiter}"Cette activité de type événement festival se déroule dans la ville de Lyon."{tuple_delimiter}"lieu de l'événement"{tuple_delimiter}0.95){record_delimiter}
 ("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"ambiance_magique"{tuple_delimiter}"L’ambiance générale du festival est décrite comme magique et captivante."{tuple_delimiter}"atmosphère positive"{tuple_delimiter}0.85){record_delimiter}  
 ("relationship"{tuple_delimiter}"festival_lumiere_lyon"{tuple_delimiter}"creativite_œuvre"{tuple_delimiter}"Les œuvres exposées sont louées pour leur créativité."{tuple_delimiter}"qualité artistique"{tuple_delimiter}0.9){record_delimiter}  
@@ -540,13 +540,13 @@ Priorité :
 ################
 Output:
 ("entity"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"memo"{tuple_delimiter}"Planification d'une fête d'anniversaire pour Tom avec un thème super-héros, incluant gâteau, décoration et playlist."){record_delimiter}  
-("entity"{tuple_delimiter}"15/04/2024"{tuple_delimiter}"date"{tuple_delimiter}"15/04/2024"){record_delimiter}  
+("entity"{tuple_delimiter}"date_15/04/2024"{tuple_delimiter}"date"{tuple_delimiter}"15/04/2024"){record_delimiter}  
 ("entity"{tuple_delimiter}"paris"{tuple_delimiter}"city"{tuple_delimiter}"Paris"){record_delimiter}  
 ("entity"{tuple_delimiter}"priorite_elevee"{tuple_delimiter}"priority"{tuple_delimiter}"Cette tâche est prioritaire."){record_delimiter}  
 ("entity"{tuple_delimiter}"decoration_super_heros"{tuple_delimiter}"note"{tuple_delimiter}"Thème de la décoration Super hero."){record_delimiter}  
 ("entity"{tuple_delimiter}"tom"{tuple_delimiter}"user"{tuple_delimiter}"Utilisateur nommé Tom"){record_delimiter}  
 ("entity"{tuple_delimiter}"lucien"{tuple_delimiter}"user"{tuple_delimiter}"Utilisateur nommé Lucien"){record_delimiter}  
-("relationship"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"15/04/2024"{tuple_delimiter}"La fête est planifiée pour le 15/04/2024."{tuple_delimiter}"date de l'événement"{tuple_delimiter}0.9){record_delimiter}  
+("relationship"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"date_15/04/2024"{tuple_delimiter}"La fête est planifiée pour le 15/04/2024."{tuple_delimiter}"date de l'événement"{tuple_delimiter}0.9){record_delimiter}  
 ("relationship"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"paris"{tuple_delimiter}"La maison est le lieu choisi pour l'événement."{tuple_delimiter}"lieu de l'événement"{tuple_delimiter}0.95){record_delimiter}  
 ("relationship"{tuple_delimiter}"organiser_anniversaire_tom"{tuple_delimiter}"priorite_elevee"{tuple_delimiter}"Cette tâche est prioritaire car Tom est un proche important."{tuple_delimiter}"importance de la tâche"{tuple_delimiter}0.85){record_delimiter}  
 ("relationship"{tuple_delimiter}organiser_anniversaire_tom"{tuple_delimiter}"decoration_super_heros"{tuple_delimiter}"Le thème de la décoration reflète les goûts de Tom."{tuple_delimiter}"décoration personnalisée"{tuple_delimiter}0.8){record_delimiter}  
