@@ -62,7 +62,7 @@ def decrypt_description(user_id: str, encrypted_description: str) -> str:
 
 def main():
     # Exemple d'utilisation
-    user_id = 'albert'
+    user_id = 'lea'
     encrypted_description = input("Entrez la description chiffrée : ")
     
     decrypted = decrypt_description(user_id, encrypted_description)

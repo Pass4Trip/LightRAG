@@ -177,6 +177,7 @@ async def _merge_nodes_then_upsert(
     knowledge_graph_inst: BaseGraphStorage,
     global_config: dict,
     prompt_domain: str = "not_specified",
+    user_id: str = None
 ):
     """Fusionne et met à jour les nœuds dans le graphe de connaissances"""
     # Initialiser le gestionnaire de sécurité
@@ -195,7 +196,7 @@ async def _merge_nodes_then_upsert(
         for node in nodes_data
     ]
     
-    user_id ='albert'
+
     logger.info(f"prompt_domain : {prompt_domain}")
     logger.info(f"nodes_data : {nodes_data}")
 
@@ -209,7 +210,7 @@ async def _merge_nodes_then_upsert(
         # Gestion des clés utilisateur si prompt_domain est 'user'
         user_public_key = None
         user_private_key = None
-        #user_id = None
+
         
         if prompt_domain == 'user':
             # Charger les clés existantes, initialiser un dict vide si le fichier est vide
@@ -363,7 +364,7 @@ async def _merge_edges_then_upsert(
     # Gestion des clés utilisateur si prompt_domain est 'user'
     user_public_key = None
     user_private_key = None
-    user_id = 'albert'
+
     
     if user_id:
         # Charger les clés existantes, initialiser un dict vide si le fichier est vide
@@ -799,8 +800,14 @@ async def extract_entities(
     for result in tqdm_async(
         asyncio.as_completed(
             [
-                _merge_nodes_then_upsert(k, v, knowledge_graph_inst, global_config, prompt_domain)
-                for k, v in maybe_nodes.items()
+                _merge_nodes_then_upsert(
+                    k, 
+                    v, 
+                    knowledge_graph_inst, 
+                    global_config, 
+                    prompt_domain,
+                    user_id=metadata.get('user_id') if metadata else None
+                ) for k, v in maybe_nodes.items()
             ]
         ),
         total=len(maybe_nodes),
@@ -850,9 +857,9 @@ async def extract_entities(
         asyncio.as_completed(
             [
                 _merge_edges_then_upsert(
-                    k[0], k[1], v, knowledge_graph_inst, global_config
-                )
-                for k, v in maybe_edges.items()
+                    k[0], k[1], v, knowledge_graph_inst, global_config,
+                    user_id=metadata.get('user_id') if metadata else None
+                ) for k, v in maybe_edges.items()
             ]
         ),
         total=len(maybe_edges),
@@ -1778,3 +1785,369 @@ async def naive_query(
     )
 
     return response
+
+
+async def _decrypt_description(description, user_id=None):
+    """
+    Tente de déchiffrer une description si nécessaire.
+    
+    Args:
+        description (str): Description potentiellement chiffrée
+        user_id (str, optional): ID de l'utilisateur pour récupérer la clé
+    
+    Returns:
+        str: Description déchiffrée ou originale
+    """
+    if not description or not isinstance(description, str):
+        return description
+    
+    try:
+        # Vérifier si la description semble être chiffrée (base64 ou JSON)
+        import json
+        import base64
+        
+        # Tester si c'est un JSON (multi-fragments)
+        try:
+            json.loads(description)
+            is_json = True
+        except (json.JSONDecodeError, TypeError):
+            is_json = False
+        
+        # Tester si c'est du base64
+        try:
+            base64.b64decode(description)
+            is_base64 = True
+        except Exception:
+            is_base64 = False
+        
+        # Si la description semble chiffrée
+        if is_json or is_base64:
+            # Récupérer le gestionnaire de sécurité
+            from lightrag.secu import SecurityManager
+            sec_manager = SecurityManager()
+            
+            # Récupérer les clés de l'utilisateur
+            if user_id:
+                user_keys = sec_manager.get_user_keys(user_id)
+                if user_keys and 'private_key' in user_keys:
+                    # Tenter de déchiffrer
+                    decrypted_desc = sec_manager.decrypt_data(description, user_keys['private_key'])
+                    return decrypted_desc
+        
+        # Si le déchiffrement échoue, retourner la description originale
+        return description
+    
+    except Exception as e:
+        logger.warning(f"Erreur lors du déchiffrement : {e}")
+        return description
+
+
+async def _merge_nodes_then_upsert(
+    entity_name: str,
+    nodes_data: list[dict],
+    knowledge_graph_inst: BaseGraphStorage,
+    global_config: dict,
+    prompt_domain: str = "not_specified",
+    user_id: str = None
+):
+    """Fusionne et met à jour les nœuds dans le graphe de connaissances"""
+    # Initialiser le gestionnaire de sécurité
+    sec_manager = SecurityManager()
+    security_keys_path = '/Users/vinh/Documents/LightRAG/security/security_keys.json'
+
+    # Normaliser les noms d'entités
+    nodes_data = [
+        {**node, 
+         'entity_name': node['entity_name'].replace(" ", "_").lower(),
+         # Ajouter custom_id si prompt_domain est memo et entity_type est user
+         **(({'custom_id': node['entity_name'].replace(" ", "_").lower()} 
+             if prompt_domain == 'memo' and node.get('entity_type') == 'user' 
+             else {}))
+        } 
+        for node in nodes_data
+    ]
+    
+
+    logger.info(f"prompt_domain : {prompt_domain}")
+    logger.info(f"nodes_data : {nodes_data}")
+
+    try:
+        # S'assurer d'utiliser la même boucle d'événements
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        # Gestion des clés utilisateur si prompt_domain est 'user'
+        user_public_key = None
+        user_private_key = None
+
+        
+        if prompt_domain == 'user':
+            # Charger les clés existantes, initialiser un dict vide si le fichier est vide
+            try:
+                with open(security_keys_path, 'r') as f:
+                    security_keys = json.load(f) or {}
+            except json.JSONDecodeError:
+                security_keys = {}
+            
+            
+            # Générer des clés si l'utilisateur n'existe pas
+            if user_id not in security_keys:
+                sec_manager.generate_rsa_key_pair(user_id)
+                logger.info(f"Nouvelles clés générées pour l'utilisateur {user_id}")
+                # Recharger les clés après génération
+                with open(security_keys_path, 'r') as f:
+                    security_keys = json.load(f)
+                    logger.info(f"Clés utilisées pour l'utilisateur {user_id}")
+            
+            # Récupérer les clés
+            user_public_key = security_keys.get(user_id, {}).get('public_key')
+            user_private_key = security_keys.get(user_id, {}).get('private_key')
+            
+            if user_public_key and user_private_key:
+                logger.info(f"Clés récupérées pour l'utilisateur {user_id}")
+            else:
+                logger.error(f"Impossible de récupérer les clés pour {user_id}")
+                user_public_key = None
+                user_private_key = None
+        
+        # Vérifier si le nœud existe déjà
+        already_node = await knowledge_graph_inst.get_node(entity_name)
+        if already_node is not None:
+            already_entitiy_types = [already_node["entity_type"]]
+            already_source_ids = split_string_by_multi_markers(already_node["source_id"], [GRAPH_FIELD_SEP])
+            already_description = [already_node["description"]]
+            
+            # Récupérer les metadata existantes
+            already_metadata = {k: v for k, v in already_node.items() 
+                              if k not in ["entity_type", "description", "source_id", "entity_name"]}
+            
+            # Si c'est un utilisateur et qu'on a une clé privée, décrypter la description
+            if prompt_domain == 'user' and user_private_key and 'description' in already_node:
+                try:
+                    # Ne décrypter que si une description existe
+                    if already_node and 'description' in already_node:
+                        decrypted_description = sec_manager.decrypt_data(
+                            already_node['description'], 
+                            user_private_key
+                        )
+                        already_description = [decrypted_description]
+                        logger.info(f"Description déchiffrée pour {user_id}")
+                except Exception as e:
+                    logger.error(f"Erreur lors du déchiffrement : {e}")
+        else:
+            already_entitiy_types = []
+            already_source_ids = []
+            already_description = []
+            already_metadata = {}
+
+        # Fusionner les metadata de tous les nœuds
+        metadata = {}
+        for node in nodes_data:
+            node_metadata = {k: v for k, v in node.items() 
+                           if k not in ["entity_type", "description", "source_id", "entity_name"]}
+            
+            # Si c'est un utilisateur et qu'on a une clé publique, chiffrer la description
+            if prompt_domain == 'user' and user_public_key and 'description' in node:
+                try:
+                    encrypted_description = sec_manager.encrypt_data(
+                        node['description'], 
+                        user_public_key
+                    )
+                    node['description'] = encrypted_description
+                    logger.info(f"Description chiffrée pour {user_id}")
+                except Exception as e:
+                    logger.error(f"Erreur lors du chiffrement : {e}")
+            
+            metadata.update(node_metadata)
+        
+        # Combiner avec les metadata existantes
+        metadata.update(already_metadata)
+
+        entity_type = sorted(
+            Counter(
+                [dp["entity_type"] for dp in nodes_data] + already_entitiy_types
+            ).items(),
+            key=lambda x: x[1],
+            reverse=True,
+        )[0][0]
+        description = GRAPH_FIELD_SEP.join(
+            sorted(set([dp["description"] for dp in nodes_data] + already_description))
+        )
+        source_id = GRAPH_FIELD_SEP.join(
+            set([dp["source_id"] for dp in nodes_data] + already_source_ids)
+        )
+        description = await _handle_entity_relation_summary(
+            entity_name, description, global_config
+        )
+        node_data = dict(
+            entity_type=entity_type,
+            description=description,
+            source_id=source_id,
+            **metadata  # Ajouter les metadata au nœud
+        )
+
+        
+        await knowledge_graph_inst.upsert_node(
+            entity_name,
+            node_data=node_data,
+        )
+        node_data["entity_name"] = entity_name
+        return node_data
+    except Exception as e:
+        logger.error(f"Erreur lors de la fusion des nœuds : {e}")
+        return None
+
+
+async def _merge_edges_then_upsert(
+    src_id: str,
+    tgt_id: str,
+    edges_data: list[dict],
+    knowledge_graph_inst: BaseGraphStorage,
+    global_config: dict,
+    user_id: str = None
+):
+    already_weights = []
+    already_source_ids = []
+    already_description = []
+    already_keywords = []
+
+
+    # Initialiser le gestionnaire de sécurité
+    sec_manager = SecurityManager()
+    security_keys_path = '/Users/vinh/Documents/LightRAG/security/security_keys.json'
+
+    if await knowledge_graph_inst.has_edge(src_id, tgt_id):
+        already_edge = await knowledge_graph_inst.get_edge(src_id, tgt_id)
+        already_weights = [already_edge.get("weight", 0)] if already_edge else [0]
+        already_source_ids = (
+            split_string_by_multi_markers(already_edge["source_id"], [GRAPH_FIELD_SEP]) 
+            if already_edge else []
+        )
+        already_description = [already_edge["description"]] if already_edge else []
+        already_keywords = (
+            split_string_by_multi_markers(already_edge["keywords"], [GRAPH_FIELD_SEP])
+            if already_edge else []
+        )
+
+
+    # Gestion des clés utilisateur si prompt_domain est 'user'
+    user_public_key = None
+    user_private_key = None
+
+    
+    if user_id:
+        # Charger les clés existantes, initialiser un dict vide si le fichier est vide
+        try:
+            with open(security_keys_path, 'r') as f:
+                security_keys = json.load(f) or {}
+        except json.JSONDecodeError:
+            security_keys = {}
+        
+        # Générer des clés si l'utilisateur n'existe pas
+        if user_id not in security_keys:
+            sec_manager.generate_rsa_key_pair(user_id)
+            logger.info(f"Nouvelles clés générées pour l'utilisateur {user_id}")
+            # Recharger les clés après génération
+            with open(security_keys_path, 'r') as f:
+                security_keys = json.load(f)
+            logger.info(f"Clés utilisé pour l'utilisateur {user_id}")
+        
+        # Récupérer les clés
+        user_public_key = security_keys.get(user_id, {}).get('public_key')
+        user_private_key = security_keys.get(user_id, {}).get('private_key')
+        
+        if user_public_key and user_private_key:
+            logger.info(f"Clés récupérées pour l'utilisateur {user_id}")
+        else:
+            logger.error(f"Impossible de récupérer les clés pour {user_id}")
+            user_public_key = None
+            user_private_key = None
+
+    # Traitement du chiffrement pour les relations existantes
+    already_edge = await knowledge_graph_inst.get_edge(src_id, tgt_id)
+    already_weights = [already_edge.get("weight", 0)] if already_edge else [0]
+    already_source_ids = (
+        split_string_by_multi_markers(already_edge["source_id"], [GRAPH_FIELD_SEP]) 
+        if already_edge else []
+    )    
+    already_description = [already_edge["description"]] if already_edge else []
+    already_keywords = (
+        split_string_by_multi_markers(already_edge["keywords"], [GRAPH_FIELD_SEP])
+        if already_edge else []
+    )
+
+    if user_id:
+        try:
+            # Ne décrypter que si une description existe
+            if already_edge and 'description' in already_edge:
+                decrypted_description = sec_manager.decrypt_data(
+                    already_edge['description'], 
+                    user_private_key
+                )
+                already_description = [decrypted_description]
+                logger.info(f"Description de relation déchiffrée pour target {tgt_id} et source {src_id}")
+        except Exception as e:
+            logger.error(f"Erreur lors du déchiffrement de la relation : {e}")
+    else:
+        already_description = [already_edge["description"]] if already_edge else []
+
+    weight = sum([dp["weight"] for dp in edges_data] + already_weights)
+    description = GRAPH_FIELD_SEP.join(
+        sorted(set([dp["description"] for dp in edges_data] + already_description))
+    )
+
+
+    if user_id:
+        try:
+            encrypted_description = sec_manager.encrypt_data(
+                description, 
+                user_public_key
+            )
+            description= encrypted_description
+            logger.info(f"Description de relation chiffrée pour target {tgt_id} et source {src_id}")
+        except Exception as e:
+            logger.error(f"Erreur lors du chiffrement de la relation : {e}")
+
+
+    keywords = GRAPH_FIELD_SEP.join(
+        sorted(set([dp["keywords"] for dp in edges_data] + already_keywords))
+    )
+    source_id = GRAPH_FIELD_SEP.join(
+        set([dp["source_id"] for dp in edges_data] + already_source_ids)
+    )
+    for need_insert_id in [src_id, tgt_id]:
+        if not (await knowledge_graph_inst.has_node(need_insert_id)):
+            await knowledge_graph_inst.upsert_node(
+                need_insert_id,
+                node_data={
+                    "source_id": source_id,
+                    "description": description,
+                    "entity_type": '"UNKNOWN"',
+                },
+            )
+    
+
+    description = await _handle_entity_relation_summary(
+        f"({src_id}, {tgt_id})", description, global_config
+    )
+    await knowledge_graph_inst.upsert_edge(
+        src_id,
+        tgt_id,
+        edge_data=dict(
+            weight=weight,
+            description=description,
+            keywords=keywords,
+            source_id=source_id,
+        ),
+    )
+
+    edge_data = dict(
+        src_id=src_id,
+        tgt_id=tgt_id,
+        description=description,
+        keywords=keywords,
+    )
+
+    return edge_data
