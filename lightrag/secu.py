@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding as asymmetric_padding
 from cryptography.hazmat.backends import default_backend
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -217,6 +218,200 @@ class SecurityManager:
             self._save_keys(keys_data)
             return True
         return False
+
+    def generate_token(self, user_id, expiration_minutes=30, token_name=None):
+        """
+        Génère un token JWT pour un utilisateur en utilisant sa clé privée RSA.
+        
+        Args:
+            user_id (str): Identifiant de l'utilisateur
+            expiration_minutes (int): Durée de validité du token en minutes
+            token_name (str, optional): Nom personnalisé pour identifier le token
+            
+        Returns:
+            str: Token JWT généré
+        """
+        try:
+            keys_data = self._load_keys()
+            if user_id not in keys_data:
+                raise ValueError(f"Aucune clé trouvée pour l'utilisateur {user_id}")
+                
+            private_key_pem = keys_data[user_id]['private_key']
+            private_key = serialization.load_pem_private_key(
+                private_key_pem.encode('utf-8'),
+                password=None,
+                backend=default_backend()
+            )
+            
+            # Générer un identifiant unique pour le token
+            token_id = str(uuid.uuid4())
+            
+            payload = {
+                'sub': user_id,
+                'iat': datetime.utcnow(),
+                'exp': datetime.utcnow() + timedelta(minutes=expiration_minutes),
+                'jti': token_id,  # Identifiant unique du token
+                'name': token_name  # Nom personnalisé optionnel
+            }
+            
+            token = jwt.encode(
+                payload,
+                private_key,
+                algorithm='RS256'
+            )
+            
+            # Stocker les informations du token
+            if 'active_tokens' not in keys_data[user_id]:
+                keys_data[user_id]['active_tokens'] = {}
+            
+            keys_data[user_id]['active_tokens'][token_id] = {
+                'created_at': datetime.utcnow().isoformat(),
+                'name': token_name,
+                'is_active': True
+            }
+            
+            self._save_keys(keys_data)
+            
+            return token
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la génération du token : {e}")
+            raise
+
+    def revoke_token(self, user_id, token_id=None, token_name=None):
+        """
+        Révoque un token spécifique pour un utilisateur.
+        
+        Args:
+            user_id (str): Identifiant de l'utilisateur
+            token_id (str, optional): ID du token à révoquer
+            token_name (str, optional): Nom du token à révoquer
+        
+        Returns:
+            bool: True si le token a été révoqué, False sinon
+        """
+        try:
+            keys_data = self._load_keys()
+            
+            if user_id not in keys_data:
+                raise ValueError(f"Aucune clé trouvée pour l'utilisateur {user_id}")
+            
+            # Vérifier si la section active_tokens existe
+            if 'active_tokens' not in keys_data[user_id]:
+                keys_data[user_id]['active_tokens'] = {}
+            
+            # Rechercher le token à révoquer
+            token_to_revoke = None
+            
+            if token_id:
+                # Recherche par token_id
+                if token_id in keys_data[user_id]['active_tokens']:
+                    token_to_revoke = token_id
+            
+            if token_name and not token_to_revoke:
+                # Recherche par token_name
+                for tid, token_info in keys_data[user_id]['active_tokens'].items():
+                    if token_info.get('name') == token_name:
+                        token_to_revoke = tid
+                        break
+            
+            if not token_to_revoke:
+                logger.warning(f"Aucun token trouvé pour l'utilisateur {user_id}")
+                return False
+            
+            # Marquer le token comme inactif
+            keys_data[user_id]['active_tokens'][token_to_revoke]['is_active'] = False
+            keys_data[user_id]['active_tokens'][token_to_revoke]['revoked_at'] = datetime.utcnow().isoformat()
+            
+            # Sauvegarder les modifications
+            self._save_keys(keys_data)
+            
+            logger.info(f"Token {token_to_revoke} révoqué pour l'utilisateur {user_id}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Erreur lors de la révocation du token : {e}")
+            raise
+
+    def verify_token(self, token, user_id):
+        """
+        Vérifie la validité d'un token JWT en utilisant la clé publique de l'utilisateur.
+        
+        Args:
+            token (str): Token JWT à vérifier
+            user_id (str): Identifiant de l'utilisateur
+            
+        Returns:
+            dict: Payload du token si valide
+        """
+        try:
+            keys_data = self._load_keys()
+            if user_id not in keys_data:
+                raise ValueError(f"Aucune clé trouvée pour l'utilisateur {user_id}")
+                
+            public_key_pem = keys_data[user_id]['public_key']
+            public_key = serialization.load_pem_public_key(
+                public_key_pem.encode('utf-8'),
+                backend=default_backend()
+            )
+            
+            # Décoder le token sans vérification pour obtenir le token_id
+            unverified_payload = jwt.decode(token, options={"verify_signature": False})
+            token_id = unverified_payload.get('jti')
+            
+            # Vérifier si le token a été révoqué
+            if 'active_tokens' in keys_data[user_id]:
+                token_info = keys_data[user_id]['active_tokens'].get(token_id, {})
+                if not token_info.get('is_active', False):
+                    raise jwt.InvalidTokenError("Token révoqué")
+            
+            # Vérifier la signature et l'expiration
+            payload = jwt.decode(
+                token,
+                public_key,
+                algorithms=['RS256']
+            )
+            
+            return payload
+            
+        except jwt.ExpiredSignatureError:
+            logger.error("Le token a expiré")
+            raise
+        except jwt.InvalidTokenError as e:
+            logger.error(f"Token invalide : {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Erreur lors de la vérification du token : {e}")
+            raise
+
+    def list_active_tokens(self, user_id):
+        """
+        Liste tous les tokens actifs pour un utilisateur.
+        
+        Args:
+            user_id (str): Identifiant de l'utilisateur
+        
+        Returns:
+            dict: Dictionnaire des tokens actifs
+        """
+        try:
+            keys_data = self._load_keys()
+            
+            if user_id not in keys_data:
+                raise ValueError(f"Aucune clé trouvée pour l'utilisateur {user_id}")
+            
+            # Récupérer les tokens actifs
+            active_tokens = {
+                token_id: token_info 
+                for token_id, token_info in keys_data[user_id].get('active_tokens', {}).items() 
+                if token_info.get('is_active', False)
+            }
+            
+            return active_tokens
+        
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des tokens actifs : {e}")
+            raise
 
 # Exemple d'utilisation
 if __name__ == "__main__":

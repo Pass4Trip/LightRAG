@@ -806,7 +806,7 @@ async def extract_entities(
                     knowledge_graph_inst, 
                     global_config, 
                     prompt_domain,
-                    user_id=metadata.get('user_id') if metadata else None
+                    user_id=metadata.get('user_id', '').lower() if metadata else None
                 ) for k, v in maybe_nodes.items()
             ]
         ),
@@ -858,7 +858,7 @@ async def extract_entities(
             [
                 _merge_edges_then_upsert(
                     k[0], k[1], v, knowledge_graph_inst, global_config,
-                    user_id=metadata.get('user_id') if metadata else None
+                    user_id=metadata.get('user_id', '').lower() if metadata else None
                 ) for k, v in maybe_edges.items()
             ]
         ),
@@ -1116,16 +1116,26 @@ async def kg_query(
     if context is None:
         return PROMPTS["fail_response"]
     sys_prompt_temp = PROMPTS["rag_response"]
+    
+    logger.info(f">>>>>>>>>>>>>>>>>>>>>>>>>> sys_prompt_temp: {sys_prompt_temp}")
+    
     sys_prompt = sys_prompt_temp.format(
         context_data=context, response_type=query_param.response_type
     )
     if query_param.only_need_prompt:
         return sys_prompt
+        
+    logger.info(f">>>>>>>>>>>>>>>>>>>>>>>>>> Query for LLM: {query}")
+    logger.info(f">>>>>>>>>>>>>>>>>>>>>>>>>> System Prompt: {sys_prompt}...") 
+    
     response = await use_model_func(
         query,
         system_prompt=sys_prompt,
         stream=query_param.stream,
     )
+    
+    logger.info("++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    
     if isinstance(response, str) and len(response) > len(sys_prompt):
         response = (
             response.replace(sys_prompt, "")
@@ -1245,11 +1255,13 @@ async def _build_query_context(
 ```csv
 {relations_context}
 ```
------Sources-----
-```csv
-{text_units_context}
-```
+
 """
+
+# -----Sources-----
+# ```csv
+# {text_units_context}
+# ```
 
 
 async def _get_node_data(
@@ -1532,7 +1544,6 @@ async def _get_edge_data(
     edge_datas = [
         {"src_id": k["src_id"], "tgt_id": k["tgt_id"], "rank": d, **v}
         for k, v, d in zip(results, edge_datas, edge_degree)
-        if v is not None
     ]
     edge_datas = sorted(
         edge_datas, key=lambda x: (x["rank"], x["weight"]), reverse=True
@@ -1753,6 +1764,8 @@ async def naive_query(
     if query_param.only_need_prompt:
         return sys_prompt
 
+    logger.info(f"Query for LLM: {query}")
+    logger.info(f"System Prompt: {sys_prompt[:500]}...")  # Tronquer pour éviter un log trop long
     response = await use_model_func(
         query,
         system_prompt=sys_prompt,
