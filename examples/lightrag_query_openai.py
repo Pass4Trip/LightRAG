@@ -92,7 +92,7 @@ if __name__ == "__main__":
     try:
         # Exemple d'utilisation
         #question = "dis moi ce que tu sais sur lea"
-        question = "trouver moi un restaurant qui dispose d'une ambiance chaleureuse et surtout il faut absolument un service accueillant, "
+        question = "trouver moi un restaurant avec des horaires flexible"
 
         rag = init_lightrag()
         
@@ -105,8 +105,8 @@ if __name__ == "__main__":
         query_param = QueryParam(mode=mode)
         
         #vdb_filter= [ "Zulli"]
-        vdb_filter= ["16204433116771456015","3091293945615310311"]
-        #vdb_filter= []
+        #vdb_filter= ["16204433116771456015","3091293945615310311"]
+        vdb_filter= []
 
         # Exécution asynchrone de la requête
         response = asyncio.run(rag.aquery(question, param=query_param, vdb_filter=vdb_filter))

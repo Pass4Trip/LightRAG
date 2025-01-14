@@ -162,7 +162,8 @@ class RabbitMQConsumer:
                     'activity': self.process_activity_message,
                     'user': self.process_user_message,
                     'event': self.process_event_message,
-                    'memo': self.process_memo_message
+                    'memo': self.process_memo_message,
+                    'query': self.process_query_histo_message
                 }
                 
                 # Récupération et exécution du gestionnaire approprié
@@ -334,6 +335,38 @@ class RabbitMQConsumer:
         except Exception as e:
             logger.error(f"Erreur lors du traitement du message de mémo: {e}")
             logger.error(traceback.format_exc())
+
+    async def process_query_histo_message(self, payload: dict):
+        """
+        Traite les messages de type 'query'
+        
+        Args:
+            payload (dict): Charge utile du message
+        """
+        try:
+            response = payload.get('response', '')
+            user_id = payload.get('user_id', 'unknown_user_id')
+            timestamp = payload.get('timestamp', datetime.now().isoformat())
+            
+            if not response:
+                logger.warning("Message de requête historique vide")
+                return
+            
+            # Insertion avec le prompt_domain et metadata
+            await self.insert_to_lightrag(
+                response, 
+                prompt_domain='query',
+                metadata={
+                    'user_id': user_id,
+                    'type': 'query',
+                    'timestamp': timestamp
+                }
+            )
+            
+            logger.info(f"📝 Requête historique insérée pour l'utilisateur {user_id} à {timestamp}")
+        
+        except Exception as e:
+            logger.error(f"❌ Erreur lors du traitement du message query: {e}", exc_info=True)
 
     async def insert_to_lightrag(self, text: str, prompt_domain: str = 'activity', metadata: dict = None):
         """

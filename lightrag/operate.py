@@ -34,6 +34,13 @@ from .base import (
 )
 from .prompt import GRAPH_FIELD_SEP, PROMPTS
 
+# Ajouter les imports nécessaires pour RabbitMQ
+import pika
+from dotenv import load_dotenv
+from datetime import datetime
+
+# Charger les variables d'environnement
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
 def chunking_by_token_size(
     content: str, overlap_token_size=128, max_token_size=1024, tiktoken_model="gpt-4o"
@@ -197,8 +204,8 @@ async def _merge_nodes_then_upsert(
     ]
     
 
-    logger.info(f"prompt_domain : {prompt_domain}")
-    logger.info(f"nodes_data : {nodes_data}")
+    logger.debug(f"prompt_domain : {prompt_domain}")
+    logger.debug(f"nodes_data : {nodes_data}")
 
     try:
         # S'assurer d'utiliser la même boucle d'événements
@@ -224,18 +231,18 @@ async def _merge_nodes_then_upsert(
             # Générer des clés si l'utilisateur n'existe pas
             if user_id not in security_keys:
                 sec_manager.generate_rsa_key_pair(user_id)
-                logger.info(f"Nouvelles clés générées pour l'utilisateur {user_id}")
+                logger.debug(f"Nouvelles clés générées pour l'utilisateur {user_id}")
                 # Recharger les clés après génération
                 with open(security_keys_path, 'r') as f:
                     security_keys = json.load(f)
-                    logger.info(f"Clés utilisées pour l'utilisateur {user_id}")
+                    logger.debug(f"Clés utilisées pour l'utilisateur {user_id}")
             
             # Récupérer les clés
             user_public_key = security_keys.get(user_id, {}).get('public_key')
             user_private_key = security_keys.get(user_id, {}).get('private_key')
             
             if user_public_key and user_private_key:
-                logger.info(f"Clés récupérées pour l'utilisateur {user_id}")
+                logger.debug(f"Clés récupérées pour l'utilisateur {user_id}")
             else:
                 logger.error(f"Impossible de récupérer les clés pour {user_id}")
                 user_public_key = None
@@ -262,7 +269,7 @@ async def _merge_nodes_then_upsert(
                             user_private_key
                         )
                         already_description = [decrypted_description]
-                        logger.info(f"Description déchiffrée pour {user_id}")
+                        logger.debug(f"Description déchiffrée pour {user_id}")
                 except Exception as e:
                     logger.error(f"Erreur lors du déchiffrement : {e}")
         else:
@@ -285,7 +292,7 @@ async def _merge_nodes_then_upsert(
                         user_public_key
                     )
                     node['description'] = encrypted_description
-                    logger.info(f"Description chiffrée pour {user_id}")
+                    logger.debug(f"Description chiffrée pour {user_id}")
                 except Exception as e:
                     logger.error(f"Erreur lors du chiffrement : {e}")
             
@@ -335,6 +342,7 @@ async def _merge_edges_then_upsert(
     edges_data: list[dict],
     knowledge_graph_inst: BaseGraphStorage,
     global_config: dict,
+    prompt_domain: str = "not_specified",
     user_id: str = None
 ):
     already_weights = []
@@ -366,7 +374,7 @@ async def _merge_edges_then_upsert(
     user_private_key = None
 
     
-    if user_id:
+    if prompt_domain == "user":
         # Charger les clés existantes, initialiser un dict vide si le fichier est vide
         try:
             with open(security_keys_path, 'r') as f:
@@ -377,18 +385,18 @@ async def _merge_edges_then_upsert(
         # Générer des clés si l'utilisateur n'existe pas
         if user_id not in security_keys:
             sec_manager.generate_rsa_key_pair(user_id)
-            logger.info(f"Nouvelles clés générées pour l'utilisateur {user_id}")
+            logger.debug(f"Nouvelles clés générées pour l'utilisateur {user_id}")
             # Recharger les clés après génération
             with open(security_keys_path, 'r') as f:
                 security_keys = json.load(f)
-            logger.info(f"Clés utilisé pour l'utilisateur {user_id}")
+            logger.debug(f"Clés utilisé pour l'utilisateur {user_id}")
         
         # Récupérer les clés
         user_public_key = security_keys.get(user_id, {}).get('public_key')
         user_private_key = security_keys.get(user_id, {}).get('private_key')
         
         if user_public_key and user_private_key:
-            logger.info(f"Clés récupérées pour l'utilisateur {user_id}")
+            logger.debug(f"Clés récupérées pour l'utilisateur {user_id}")
         else:
             logger.error(f"Impossible de récupérer les clés pour {user_id}")
             user_public_key = None
@@ -407,7 +415,7 @@ async def _merge_edges_then_upsert(
         if already_edge else []
     )
 
-    if user_id:
+    if prompt_domain == "user":
         try:
             # Ne décrypter que si une description existe
             if already_edge and 'description' in already_edge:
@@ -416,7 +424,7 @@ async def _merge_edges_then_upsert(
                     user_private_key
                 )
                 already_description = [decrypted_description]
-                logger.info(f"Description de relation déchiffrée pour target {tgt_id} et source {src_id}")
+                logger.debug(f"Description de relation déchiffrée pour target {tgt_id} et source {src_id}")
         except Exception as e:
             logger.error(f"Erreur lors du déchiffrement de la relation : {e}")
     else:
@@ -428,14 +436,14 @@ async def _merge_edges_then_upsert(
     )
 
 
-    if user_id:
+    if prompt_domain == "user" and user_public_key:  
         try:
             encrypted_description = sec_manager.encrypt_data(
                 description, 
                 user_public_key
             )
             description= encrypted_description
-            logger.info(f"Description de relation chiffrée pour target {tgt_id} et source {src_id}")
+            logger.debug(f"Description de relation chiffrée pour target {tgt_id} et source {src_id}")
         except Exception as e:
             logger.error(f"Erreur lors du chiffrement de la relation : {e}")
 
@@ -443,6 +451,8 @@ async def _merge_edges_then_upsert(
     keywords = GRAPH_FIELD_SEP.join(
         sorted(set([dp["keywords"] for dp in edges_data] + already_keywords))
     )
+    # VTT Modif le 14/01/2025 01:44
+    keywords = keywords.replace("<SEP>", ", ") if "<SEP>" in keywords else keywords
     source_id = GRAPH_FIELD_SEP.join(
         set([dp["source_id"] for dp in edges_data] + already_source_ids)
     )
@@ -846,8 +856,8 @@ async def extract_entities(
                 f"{color}→ {Style.BRIGHT}{entity_name}{Style.RESET_ALL}"
             )
 
-    logger.debug("Inserting relationships into storage...")
-    logger.debug(f"Nombre total de relations potentielles : {len(maybe_edges)}")
+    logger.info("Inserting relationships into storage...")
+    logger.info(f"Nombre total de relations potentielles : {len(maybe_edges)}")
     for (src, tgt), relations in maybe_edges.items():
         logger.debug(f"Relation potentielle - Source: {src}, Cible: {tgt}")
         logger.debug(f"Détails des relations : {relations}")
@@ -857,7 +867,7 @@ async def extract_entities(
         asyncio.as_completed(
             [
                 _merge_edges_then_upsert(
-                    k[0], k[1], v, knowledge_graph_inst, global_config,
+                    k[0], k[1], v, knowledge_graph_inst, global_config, prompt_domain,
                     user_id=metadata.get('user_id', '').lower() if metadata else None
                 ) for k, v in maybe_edges.items()
             ]
@@ -1117,7 +1127,7 @@ async def kg_query(
         return PROMPTS["fail_response"]
     sys_prompt_temp = PROMPTS["rag_response"]
     
-    logger.info(f">>>>>>>>>>>>>>>>>>>>>>>>>> sys_prompt_temp: {sys_prompt_temp}")
+    logger.debug(f"sys_prompt_temp: {sys_prompt_temp}")
     
     sys_prompt = sys_prompt_temp.format(
         context_data=context, response_type=query_param.response_type
@@ -1125,8 +1135,8 @@ async def kg_query(
     if query_param.only_need_prompt:
         return sys_prompt
         
-    logger.info(f">>>>>>>>>>>>>>>>>>>>>>>>>> Query for LLM: {query}")
-    logger.info(f">>>>>>>>>>>>>>>>>>>>>>>>>> System Prompt: {sys_prompt}...") 
+    logger.debug(f"Query for LLM: {query}")
+    logger.debug(f"System Prompt: {sys_prompt}...") 
     
     response = await use_model_func(
         query,
@@ -1134,7 +1144,6 @@ async def kg_query(
         stream=query_param.stream,
     )
     
-    logger.info("++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     
     if isinstance(response, str) and len(response) > len(sys_prompt):
         response = (
@@ -1146,6 +1155,48 @@ async def kg_query(
             .replace("</system>", "")
             .strip()
         )
+
+    # Envoi de la réponse à RabbitMQ
+    try:
+        RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+        RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
+        RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
+        RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'guest')
+        QUEUE_NAME = 'queue_vinh_test'
+        
+        credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
+        parameters = pika.ConnectionParameters(
+            host=RABBITMQ_HOST, 
+            port=RABBITMQ_PORT, 
+            credentials=credentials
+        )
+        connection = pika.BlockingConnection(parameters)
+        channel = connection.channel()
+        
+        channel.queue_declare(queue=QUEUE_NAME, durable=True)
+        
+        message = {
+            "type": "query", 
+            "user_id": "user_id_example", 
+            "response": response,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        message_body = json.dumps(message, ensure_ascii=False)
+        
+        channel.basic_publish(
+            exchange='',
+            routing_key=QUEUE_NAME,
+            body=message_body,
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # Rendre le message persistant
+            )
+        )
+        
+        connection.close()
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de l'envoi à RabbitMQ : {e}")
 
     # Save to cache
     await save_to_cache(
@@ -1189,6 +1240,7 @@ async def _build_query_context(
                 ll_entities_context,
                 ll_relations_context,
                 ll_text_units_context,
+                activity_entity_custom_id, # Ajout de la variable activity_entity_custom_id pour stocker l'ID de l'entité activité
             ) = await _get_node_data(
                 ll_kewwords,
                 knowledge_graph_inst,
@@ -1256,6 +1308,11 @@ async def _build_query_context(
 {relations_context}
 ```
 
+-----Acctivity Entities used in this query-----
+```csv
+{"".join(["Entity: {}, custom_id: {} --- ".format(entity, custom_id) for entity, custom_id in activity_entity_custom_id])}
+```
+
 """
 
 # -----Sources-----
@@ -1290,7 +1347,6 @@ async def _get_node_data(
     else:
         results = await entities_vdb.query(query, top_k=query_param.top_k)
    
-
     # # Log structuré pour analyser results
     # logger.info("Analyse détaillée des résultats de recherche :")
     # logger.info(f"Nombre total de résultats : {len(results)}")
@@ -1351,14 +1407,15 @@ async def _get_node_data(
             logger.warning(f"Relation {i} - 'weight' key is missing")
 
     # build prompt
-    entites_section_list = [["id", "entity", "type", "description", "rank"]]
+    entites_section_list = [["id", "entity", "custom_id", "type", "description", "rank"]]
     for i, n in enumerate(node_datas):
         entites_section_list.append(
             [
                 i,
                 n["entity_name"],
-                n.get("entity_type", "UNKNOWN"),
-                n.get("description", "UNKNOWN"),
+                n.get("custom_id", "NOT_DEFINED_custom_id"), # Add custom_id pour piste d'audit des query
+                n.get("entity_type", "NOT_DEFINED_entity_type"),
+                n.get("description", "NOT_DEFINED_description"),
                 n["rank"],
             ]
         )
@@ -1385,7 +1442,17 @@ async def _get_node_data(
     for i, t in enumerate(use_text_units):
         text_units_section_list.append([i, t["content"]])
     text_units_context = list_of_list_to_csv(text_units_section_list)
-    return entities_context, relations_context, text_units_context
+    
+    # Liste des nodes de type activity utilisés dans le contexte
+    activity_entity_custom_id = []
+    for n in node_datas:
+        if n.get("entity_type") == "activity":
+            activity_entity_custom_id.append([
+                n["entity_name"], 
+                n.get("custom_id", "NOT_DEFINED_custom_id")
+            ])
+
+    return entities_context, relations_context, text_units_context, activity_entity_custom_id
 
 
 async def _find_most_related_text_unit_from_entities(
@@ -1764,8 +1831,8 @@ async def naive_query(
     if query_param.only_need_prompt:
         return sys_prompt
 
-    logger.info(f"Query for LLM: {query}")
-    logger.info(f"System Prompt: {sys_prompt[:500]}...")  # Tronquer pour éviter un log trop long
+    logger.debug(f"Query for LLM: {query}")
+    logger.debug(f"System Prompt: {sys_prompt[:500]}...")  # Tronquer pour éviter un log trop long
     response = await use_model_func(
         query,
         system_prompt=sys_prompt,
@@ -1782,6 +1849,48 @@ async def naive_query(
             .replace("</system>", "")
             .strip()
         )
+
+    # Envoi de la réponse à RabbitMQ
+    try:
+        RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+        RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
+        RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
+        RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'guest')
+        QUEUE_NAME = 'query_history'
+        
+        credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
+        parameters = pika.ConnectionParameters(
+            host=RABBITMQ_HOST, 
+            port=RABBITMQ_PORT, 
+            credentials=credentials
+        )
+        connection = pika.BlockingConnection(parameters)
+        channel = connection.channel()
+        
+        channel.queue_declare(queue=QUEUE_NAME, durable=True)
+        
+        message = {
+            "type": "query", 
+            "user_id": "user_id_example",  # TODO: Remplacer par le vrai user_id
+            "response": response,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        message_body = json.dumps(message, ensure_ascii=False)
+        
+        channel.basic_publish(
+            exchange='',
+            routing_key=QUEUE_NAME,
+            body=message_body,
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # Rendre le message persistant
+            )
+        )
+        
+        connection.close()
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de l'envoi à RabbitMQ : {e}")
 
     # Save to cache
     await save_to_cache(
@@ -1860,7 +1969,7 @@ async def _merge_nodes_then_upsert(
     nodes_data: list[dict],
     knowledge_graph_inst: BaseGraphStorage,
     global_config: dict,
-    prompt_domain: str = "not_specified",
+    prompt_domain: str = "prompt_domain_not_specified",
     user_id: str = None
 ):
     """Fusionne et met à jour les nœuds dans le graphe de connaissances"""
@@ -1881,8 +1990,8 @@ async def _merge_nodes_then_upsert(
     ]
     
 
-    logger.info(f"prompt_domain : {prompt_domain}")
-    logger.info(f"nodes_data : {nodes_data}")
+    logger.debug(f"prompt_domain : {prompt_domain}")
+    logger.debug(f"nodes_data : {nodes_data}")
 
     try:
         # S'assurer d'utiliser la même boucle d'événements
@@ -1908,18 +2017,18 @@ async def _merge_nodes_then_upsert(
             # Générer des clés si l'utilisateur n'existe pas
             if user_id not in security_keys:
                 sec_manager.generate_rsa_key_pair(user_id)
-                logger.info(f"Nouvelles clés générées pour l'utilisateur {user_id}")
+                logger.debug(f"Nouvelles clés générées pour l'utilisateur {user_id}")
                 # Recharger les clés après génération
                 with open(security_keys_path, 'r') as f:
                     security_keys = json.load(f)
-                    logger.info(f"Clés utilisées pour l'utilisateur {user_id}")
+                    logger.debug(f"Clés utilisées pour l'utilisateur {user_id}")
             
             # Récupérer les clés
             user_public_key = security_keys.get(user_id, {}).get('public_key')
             user_private_key = security_keys.get(user_id, {}).get('private_key')
             
             if user_public_key and user_private_key:
-                logger.info(f"Clés récupérées pour l'utilisateur {user_id}")
+                logger.debug(f"Clés récupérées pour l'utilisateur {user_id}")
             else:
                 logger.error(f"Impossible de récupérer les clés pour {user_id}")
                 user_public_key = None
@@ -1946,7 +2055,7 @@ async def _merge_nodes_then_upsert(
                             user_private_key
                         )
                         already_description = [decrypted_description]
-                        logger.info(f"Description déchiffrée pour {user_id}")
+                        logger.debug(f"Description déchiffrée pour {user_id}")
                 except Exception as e:
                     logger.error(f"Erreur lors du déchiffrement : {e}")
         else:
@@ -1969,7 +2078,7 @@ async def _merge_nodes_then_upsert(
                         user_public_key
                     )
                     node['description'] = encrypted_description
-                    logger.info(f"Description chiffrée pour {user_id}")
+                    logger.debug(f"Description chiffrée pour {user_id}")
                 except Exception as e:
                     logger.error(f"Erreur lors du chiffrement : {e}")
             
@@ -2019,6 +2128,7 @@ async def _merge_edges_then_upsert(
     edges_data: list[dict],
     knowledge_graph_inst: BaseGraphStorage,
     global_config: dict,
+    prompt_domain: str = "prompt_domain_not_specified",
     user_id: str = None
 ):
     already_weights = []
@@ -2050,7 +2160,7 @@ async def _merge_edges_then_upsert(
     user_private_key = None
 
     
-    if user_id:
+    if prompt_domain == "user":
         # Charger les clés existantes, initialiser un dict vide si le fichier est vide
         try:
             with open(security_keys_path, 'r') as f:
@@ -2061,18 +2171,18 @@ async def _merge_edges_then_upsert(
         # Générer des clés si l'utilisateur n'existe pas
         if user_id not in security_keys:
             sec_manager.generate_rsa_key_pair(user_id)
-            logger.info(f"Nouvelles clés générées pour l'utilisateur {user_id}")
+            logger.debug(f"Nouvelles clés générées pour l'utilisateur {user_id}")
             # Recharger les clés après génération
             with open(security_keys_path, 'r') as f:
                 security_keys = json.load(f)
-            logger.info(f"Clés utilisé pour l'utilisateur {user_id}")
+            logger.debug(f"Clés utilisé pour l'utilisateur {user_id}")
         
         # Récupérer les clés
         user_public_key = security_keys.get(user_id, {}).get('public_key')
         user_private_key = security_keys.get(user_id, {}).get('private_key')
         
         if user_public_key and user_private_key:
-            logger.info(f"Clés récupérées pour l'utilisateur {user_id}")
+            logger.debug(f"Clés récupérées pour l'utilisateur {user_id}")
         else:
             logger.error(f"Impossible de récupérer les clés pour {user_id}")
             user_public_key = None
@@ -2100,7 +2210,7 @@ async def _merge_edges_then_upsert(
                     user_private_key
                 )
                 already_description = [decrypted_description]
-                logger.info(f"Description de relation déchiffrée pour target {tgt_id} et source {src_id}")
+                logger.debug(f"Description de relation déchiffrée pour target {tgt_id} et source {src_id}")
         except Exception as e:
             logger.error(f"Erreur lors du déchiffrement de la relation : {e}")
     else:
@@ -2112,14 +2222,14 @@ async def _merge_edges_then_upsert(
     )
 
 
-    if user_id:
+    if user_id and user_public_key:
         try:
             encrypted_description = sec_manager.encrypt_data(
                 description, 
                 user_public_key
             )
             description= encrypted_description
-            logger.info(f"Description de relation chiffrée pour target {tgt_id} et source {src_id}")
+            logger.debug(f"Description de relation chiffrée pour target {tgt_id} et source {src_id}")
         except Exception as e:
             logger.error(f"Erreur lors du chiffrement de la relation : {e}")
 
@@ -2127,6 +2237,7 @@ async def _merge_edges_then_upsert(
     keywords = GRAPH_FIELD_SEP.join(
         sorted(set([dp["keywords"] for dp in edges_data] + already_keywords))
     )
+    keywords = keywords.replace("<SEP>", ", ") if "<SEP>" in keywords else keywords
     source_id = GRAPH_FIELD_SEP.join(
         set([dp["source_id"] for dp in edges_data] + already_source_ids)
     )

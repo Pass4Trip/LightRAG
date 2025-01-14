@@ -57,6 +57,10 @@ PROMPTS["memo_ENTITY_TYPES"] = [
 
 
 
+PROMPTS["query_ENTITY_TYPES"] = [
+    "query"
+]
+
 
 PROMPTS["activity_entity_extraction"] = """-Goal-
 You are given a text describing various activities (such as restaurants, concerts, or events).
@@ -366,6 +370,80 @@ Output:
 
 
 
+PROMPTS["query_entity_extraction"] = """-Goal-
+You are given a text describing various users and their preferences. 
+Your task is to extract structured entities, relationships, and descriptions from the text based on the following requirements.
+
+CRUCIAL INSTRUCTIONS:
+- ABSOLUTE PROHIBITION of creating, inventing, or extrapolating information not present in the original text.
+- Use ONLY information explicitly mentioned in the source text.
+- If information is not clearly indicated, do NOT attempt to guess or complete it.
+- Your goal is to be a precise and faithful extractor, not an information generator.
+- In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.
+- Labels must be lowercase, without special characters, except for '_' and '/', and must not contain accents.
+
+Key requirements:
+
+1. **Entity Types and Descriptions:**
+   - **query :** Represents a query or search term.
+   - **activity :** Represents any described real-world activity or event. It includes places like restaurants, events like concerts, or occasions like exhibitions. This entity should capture details such as name, type, location, ambiance, and notable attributes, ensuring versatility across different domains.
+   - **user :** Represents a person, identified by their name or a unique identifier.
+
+2. **Extraction Entity Guideline:**
+   - For each entity, extract:
+     - entity_name: Name of the entity.
+     - entity_type: One of the types: [{entity_types}]
+     - entity_description: A detailed description of the entity's attributes, if available.
+     - Format: (entity{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<sub_activity>{tuple_delimiter}<entity_description>)
+
+4. **Extraction Relationships Guideline:**
+   - For each relationship, extract:
+     - source_entity: The source entity name, as identified in Extraction Entity Guideline (step 2)
+     - target_entity: The target entity name, as identified in Extraction Entity Guideline (step 2)
+     - relationship_description`: Explanation of why the entities are related.
+     - relationship_description: A specific explanation of why these entities are related. The description must explicitly mention or reference both the source and target entities and be dedicated to these entities only.
+     - relationship_keywords: one or more high-level key words that summarize the overarching nature of the relationship, focusing on concepts or themes rather than specific details
+     Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_keywords>{tuple_delimiter}<relationship_strength>)
+
+
+5. **Content-level Keywords:**
+   - Identify high-level key words that summarize the main concepts, themes, or topics of the entire text. These should capture the overarching ideas present in the document.
+   - Format the content-level key words as ("content_keywords"{tuple_delimiter}<high_level_keywords>)
+
+6. **Formatting:**
+   - Use {record_delimiter} to separate entries.
+   - End output with {completion_delimiter}.
+
+7. **Language:**
+   - All extracted entities, relationships, and keywords must be in French.
+
+8. Ensure that every identified entity must have at least one relationship explicitly linking it to the 'restaurant' entity. If an entity cannot be directly or indirectly connected to the 'restaurant' through a relationship, it should not be considered valid or relevant.
+
+9. Return output in French as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter. 
+
+10. It is CRITICAL to extract ONLY ONE node with entity_type="user" per message. The only node that can have entity_type="user" is the one designated in the phrase: Les informations suivantes concernent
+
+11. It is STRICTLY FORBIDDEN to create a relationship between two entities with entity_type="user". 
+
+12. When finished, output {completion_delimiter}
+
+######################
+-Examples-
+######################
+{examples}
+
+#############################
+-Real Data-
+######################
+Entity_types: {entity_types}
+Text: {input_text}
+######################
+Output:
+"""
+
+
+
+
 PROMPTS["activity_extraction_examples"] = [
     """
 
@@ -516,7 +594,8 @@ PROMPTS["memo_extraction_examples"] = [
     """
 
 Entity_types: ["memo", "date", "city", "priority", "note", "user"]
-Text:Résumé du Mémo : Organiser l'anniversaire de Tom, mon meilleur ami.
+Text:
+Résumé du Mémo : Organiser l'anniversaire de Tom, mon meilleur ami.
 
 Catégories :
 
@@ -558,6 +637,65 @@ Output:
 
 
 
+PROMPTS["query_extraction_examples"] = [
+    """
+
+Entity_types: ["query"]
+Text:
+user_id = user1
+
+Question: trouver moi un restaurant qui dispose absolument proposer du homard
+
+Réponse: ## Analyse des Entités de Restaurants
+
+### Le Coquemar
+- **custom_id**: 3091293945615310311
+- **Résultat**: **Non recommandé**
+- **Évaluation**:
+  - **Offre de Menu**: Le Coquemar est principalement un restaurant français, célèbre pour sa cuisine traditionnelle et les plats faits maison. Cependant, aucune mention explicite du homard dans son menu n'a été trouvée dans les données.
+  - **Ambiance et Service**: Le restaurant est apprécié pour son ambiance chaleureuse et décontractée ainsi que pour son service amical et efficace. Bien qu'il soit un bon choix pour une sortie, il ne répond pas à votre critère spécifique sur le homard.
+- **Justification de son élimination**: En l'absence d'informations concernant l'offre de homard, le Coquemar ne peut pas être recommandé pour votre recherche.
+
+### Café Lisboa
+- **custom_id**: 16204433116771456015
+- **Résultat**: **Non recommandé**
+- **Évaluation**:
+  - **Offre de Menu**: Café Lisboa, bien qu'il soit connu pour sa cuisine portugaise et ses plats variés, ne mentionne pas spécifiquement le homard dans les données disponibles.
+  - **Ambiance et Service**: Il est noté pour son ambiance chaleureuse et conviviale ainsi qu'une carte des vins et cocktails variée, néanmoins, cela ne soutient pas votre besoin de homard sur le menu.
+- **Justification de son élimination**: L'absence de homard sur leur carte, combinée à des informations plus générales sur la cuisine, rend Café Lisboa non adapté à votre recherche.
+
+### Christian Tetedoie
+- **custom_id**: 3359024717080459809
+- **Résultat**: **Recommandé**
+- **Évaluation**:
+  - **Offre de Menu**: Christian Tetedoie est un restaurant gastronomique de renom à Lyon et est ici mentionné comme offrant du homard, ce qui répond exactement à votre critère.
+  - **Qualité de la Cuisine**: Réputé pour sa haute gastronomie, les plats sont souvent décrits comme "divins", et Christian Tetedoie est connu pour utiliser des ingrédients locaux, garantissant la qualité des plats proposés.
+  - **Service**: Le service est également salué, et le restaurant offre une expérience culinaire haut de gamme, y compris une sélection de vins raffinés.
+- **Justification de sa conservation**: Christian Tetedoie est le meilleur choix pour répondre à votre demande spécifique de homard, tout en offrant un cadre gastronomique prestigieux et un cadre exquis.
+
+### Fiston
+- **custom_id**: 6594662446090605168
+- **Résultat**: **Non recommandé**
+- **Évaluation**:
+  - **Offre de Menu**: Le restaurant Fiston est connu pour sa cuisine lyonnaise traditionnelle, mais aucun détail sur la disponibilité de homard n'est mentionné dans les données fournies.
+  - **Ambiance et Service**: Comme de nombreux établissements à Lyon, il contribue à une expérience chaleureuse et familiale, idéale pour des repas conviviales.
+- **Justification de son élimination**: Sans mention d'homard dans son menu, Fiston n'est pas une option viable.
+
+### Conclusion
+Pour votre recherche d'un restaurant qui propose absolument du homard, **Christian Tetedoie** est le seul restaurant recommandé. Le Coquemar, Café Lisboa, et Fiston ne correspondent pas à votre besoin spécifique en homard et ne le peuvent raisonnablement pas être recommandés.
+
+################
+Output:
+("entity"{tuple_delimiter}"user1_query_restaurant_homard"{tuple_delimiter}"query"{tuple_delimiter}"trouver moi un restaurant qui dispose absolument proposer du homard."){record_delimiter}  
+("relationship"{tuple_delimiter}"user1_query_restaurant_homard+ "{tuple_delimiter}"cafe_lisboa"{tuple_delimiter}"cafe_lisboa - **custom_id**: 16204433116771456015- **Résultat**: **Non recommandé**- **Évaluation**:- **Offre de Menu**: Café Lisboa, bien qu'il soit connu pour sa cuisine portugaise et ses plats variés, ne mentionne pas spécifiquement le homard dans les données disponibles.- **Ambiance et Service**: Il est noté pour son ambiance chaleureuse et conviviale ainsi qu'une carte des vins et cocktails variée, néanmoins, cela ne soutient pas votre besoin de homard sur le menu.- **Justification de son élimination**: L'absence de homard sur leur carte, combinée à des informations plus générales sur la cuisine, rend Café Lisboa non adapté à votre recherche."{tuple_delimiter}"resultat pour l'activité"{tuple_delimiter}0.95){record_delimiter}  
+("relationship"{tuple_delimiter}"user1_query_restaurant_homard"{tuple_delimiter}"christian_tetedoie"{tuple_delimiter}"christian_tetedoie - **custom_id**: 3359024717080459809- **Résultat**: **Recommandé*- **Évaluation**:- **Offre de Menu**: Christian Tetedoie est un restaurant gastronomique de renom à Lyon et est ici mentionné comme offrant du homard, ce qui répond exactement à votre critère.- **Qualité de la Cuisine**: Réputé pour sa haute gastronomie, les plats sont souvent décrits comme "divins", et Christian Tetedoie est connu pour utiliser des ingrédients locaux, garantissant la qualité des plats proposés.- **Service**: Le service est également salué, et le restaurant offre une expérience culinaire haut de gamme, y compris une sélection de vins raffinés.- **Justification de sa conservation**: Christian Tetedoie est le meilleur choix pour répondre à votre demande spécifique de homard, tout en offrant un cadre gastronomique prestigieux et un cadre exquis."{tuple_delimiter}"resultat pour l'activité"{tuple_delimiter}0.85){record_delimiter}  
+("relationship"{tuple_delimiter}user1_query_restaurant_homard"{tuple_delimiter}"fiston"{tuple_delimiter}"fiston - **custom_id**: 6594662446090605168- **Résultat**: **Non recommandé**- **Évaluation**:- **Offre de Menu**: Le restaurant Fiston est connu pour sa cuisine lyonnaise traditionnelle, mais aucun détail sur la disponibilité de homard n'est mentionné dans les données fournies.- **Ambiance et Service**: Comme de nombreux établissements à Lyon, il contribue à une expérience chaleureuse et familiale, idéale pour des repas conviviales.- **Justification de son élimination**: Sans mention d'homard dans son menu, Fiston n'est pas une option viable."{tuple_delimiter}"resultat pour l'activité""{tuple_delimiter}0.8){record_delimiter}  
+("relationship"{tuple_delimiter}"user1_query_restaurant_homard"{tuple_delimiter}"le_coquemar"{tuple_delimiter}"le_coquemar - **custom_id**: 3091293945615310311- **Résultat**: **Non recommandé**- **Évaluation**:- **Offre de Menu**: Le Coquemar est principalement un restaurant français, célèbre pour sa cuisine traditionnelle et les plats faits maison. Cependant, aucune mention explicite du homard dans son menu n'a été trouvée dans les données.- **Ambiance et Service**: Le restaurant est apprécié pour son ambiance chaleureuse et décontractée ainsi que pour son service amical et efficace. Bien qu'il soit un bon choix pour une sortie, il ne répond pas à votre critère spécifique sur le homard.- **Justification de son élimination**: En l'absence d'informations concernant l'offre de homard, le Coquemar ne peut pas être recommandé pour votre recherche."{tuple_delimiter}"resultat pour l'activité"{tuple_delimiter}0.9){record_delimiter}  
+("content_keywords"{tuple_delimiter}"homard, restaurant"){completion_delimiter}
+#############################"""]
+
+
+
 PROMPTS["summarize_entity_descriptions"] = """You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.
 Given one or two entities, and a list of descriptions, all related to the same entity or group of entities.
 Please concatenate all of these into a single, comprehensive description. Make sure to include information collected from all the descriptions.
@@ -585,6 +723,8 @@ PROMPTS[
 
 PROMPTS["fail_response"] = "Sorry, I'm not able to provide an answer to that question."
 
+
+
 PROMPTS["rag_response"] = """---Role---
 
 You are a helpful assistant responding to questions about data in the tables provided.
@@ -593,8 +733,134 @@ You are a helpful assistant responding to questions about data in the tables pro
 ---Goal---
 
 Generate a response of the target length and format that responds to the user's question, summarizing all information in the input data tables appropriate for the response length and format, and incorporating any relevant general knowledge.
+Perform a comprehensive analysis of each entity listed in the "-----Acctivity Entities used in this query-----" section:
+- For each entity, provide a is custom_id
+- For each entity, provide a response if the entity should be retained or eliminated
+- For each entity, provide a detailed evaluation
+- Justify why the entity should be retained or eliminated from further consideration
+- Base your analysis on the available context and supporting evidence
+- Ensure a systematic and objective assessment of each entity's relevance
+
 If you don't know the answer, just say so. Do not make anything up.
 Do not include information where the supporting evidence for it is not provided.
+
+
+######################  
+-Examples-  
+######################  
+---Target response length and format---
+
+Multiple Paragraphs
+
+---Data tables---
+
+
+-----Entities-----
+```csv
+id,entity,custom_id,type,description,rank
+0,ambiance_chaleureuse,NOT_DEFINED_custom_id,positive_point,"L'ambiance du restaurant est chaleureuse et conviviale, idéale pour des repas en famille ou entre amis.<SEP>L'ambiance du restaurant est décrite comme chaleureuse et conviviale.",2
+1,cadre_charmant,NOT_DEFINED_custom_id,positive_point,"Le cadre du restaurant est décrit comme charmant et accueillant, contribuant à une expérience agréable pour les clients.",1
+2,le_coquemar,3091293945615310311,activity,"Restaurant français situé à Lyon, proposant une cuisine traditionnelle dans une salle claire et élégante. L'ambiance est chaleureuse et décontractée, avec des plats faits maison et un bon rapport qualité-prix.",14
+3,terrasse_agréable,NOT_DEFINED_custom_id,positive_point,Le restaurant offre une terrasse agréable pour profiter des repas en extérieur.,1
+4,cafe_lisboa,16204433116771456015,activity,"Restaurant coloré de style décontracté situé dans le centre de Lyon, spécialisé dans la cuisine portugaise avec des petites assiettes et des tartes à la crème. L'établissement propose une ambiance chaleureuse et conviviale, avec une belle terrasse pour les repas en extérieur.",15
+5,cuisine_traditionnelle,NOT_DEFINED_custom_id,positive_point,Le restaurant propose une cuisine traditionnelle qui attire les amateurs de gastronomie authentique.,1
+6,service_amiable,NOT_DEFINED_custom_id,positive_point,"Le service est décrit comme amical et efficace, contribuant à une expérience agréable pour les clients.",1
+7,horaire_varie,NOT_DEFINED_custom_id,positive_point,"Le restaurant est ouvert du mardi au dimanche avec des horaires variés, facilitant les visites.",1
+8,cuisine_authentique,NOT_DEFINED_custom_id,positive_point,"Le restaurant se distingue par sa cuisine authentique et ses plats copieux, notamment les spécialités portugaises comme le pastel de nata.",1
+9,horaires_d_ouverture,NOT_DEFINED_custom_id,positive_point,"Le restaurant est ouvert du mardi au dimanche, avec des horaires qui permettent de s'adapter aux différents emplois du temps.",1
+10,plaisir_des_gourmands,NOT_DEFINED_custom_id,positive_point,Le Coquemar attire les gourmands en quête d'authenticité et de saveurs dans sa cuisine.,1
+11,qualite_des_plats,NOT_DEFINED_custom_id,positive_point,"La qualité des plats, en particulier ceux faits maison, est souvent louée par les clients.",1
+12,variabilite_de_la_qualite,NOT_DEFINED_custom_id,negative_point,"La qualité des plats peut varier, avec des retours mitigés dans certains avis.",1
+13,amelioration_communication,NOT_DEFINED_custom_id,recommandation,"Il serait bénéfique pour le restaurant d'améliorer la communication sur son offre, notamment concernant la consommation de café.",1
+14,cocktails_et_vins,NOT_DEFINED_custom_id,positive_point,Les cocktails et la carte des vins sont considérés comme des points forts du restaurant.,1
+15,rapport_qualite_prix,NOT_DEFINED_custom_id,positive_point,"Le rapport qualité-prix est jugé très bon, surtout pour les plats faits maison.",1
+16,deco_typiquement_portugaise,NOT_DEFINED_custom_id,positive_point,Le décor typiquement portugais contribue à l'atmosphère du restaurant.,1
+17,specialites_desserts,NOT_DEFINED_custom_id,positive_point,"Les desserts faits maison, comme la crème brûlée et le tiramisu, sont particulièrement appréciés.",1
+18,services_accessibles,NOT_DEFINED_custom_id,positive_point,"Le Coquemar accepte les paiements par carte de crédit, chèque, et paiements mobiles, et est accessible aux groupes.",1
+19,chorizo_flambe,NOT_DEFINED_custom_id,positive_point,Le chorizo flambé est souvent décrit comme savoureux par les clients.,1
+20,service_inadequat,NOT_DEFINED_custom_id,negative_point,"Un client a signalé un service peu accueillant, affectant son expérience.",1
+21,amélioration_service,NOT_DEFINED_custom_id,recommandation,Prendre en compte les attentes variées des clients concernant la qualité du service pour éventuellement améliorer l'expérience.,1
+22,inaccessibilite,NOT_DEFINED_custom_id,negative_point,Certaines zones du restaurant ne sont pas accessibles aux personnes à mobilité réduite.,1
+23,problems_de_service,NOT_DEFINED_custom_id,negative_point,"Des critiques soulignent des problèmes de service, notamment la gestion des attentes des clients.",1
+24,prix_raisonnables,NOT_DEFINED_custom_id,positive_point,Les prix sont considérés comme raisonnables par la clientèle.,1
+25,lyon,NOT_DEFINED_custom_id,city,Lyon,2
+26,croquettes_de_morue,NOT_DEFINED_custom_id,positive_point,Les croquettes de morue sont également souvent vues comme une spécialité savoureuse.,1
+
+```
+-----Relationships-----
+```csv
+id,source,target,description,keywords,weight,rank
+0,ambiance_chaleureuse,cafe_lisboa,L'ambiance chaleureuse et conviviale est souvent soulignée par les clients comme un atout du restaurant.,atmosphère appréciée,0.9,17
+1,cafe_lisboa,lyon,Cette activité de type restaurant Café Lisboa est située dans la ville de Lyon.,localisation,0.9,17
+2,le_coquemar,lyon,Cette activité de type restaurant Le Coquemar est situé dans la ville de Lyon.,localisation,0.9,16
+3,cafe_lisboa,terrasse_agréable,"La terrasse agréable permet aux clients de profiter de repas en extérieur, améliorant l'expérience globale.",caractéristique du lieu,0.9,16
+4,cafe_lisboa,cuisine_authentique,"Le restaurant est reconnu pour sa cuisine authentique et ses plats copieux, attirant les amateurs de gastronomie portugaise.",cuisine traditionnelle,0.9,16
+5,cafe_lisboa,chorizo_flambe,Le chorizo flambé est une spécialité souvent louée par les clients du restaurant.,plat apprécié,0.9,16
+6,ambiance_chaleureuse,le_coquemar,L'ambiance chaleureuse et décontractée du restaurant améliore l'expérience culinaire des clients.,atmosphère conviviale,0.85,16
+7,cafe_lisboa,croquettes_de_morue,Les croquettes de morue sont une autre spécialité appréciée par la clientèle.,plat recommandé,0.85,16
+8,cafe_lisboa,horaire_varie,Les horaires variés facilitent la planification des visites par les clients.,souplesse de visite,0.85,16
+9,cafe_lisboa,cocktails_et_vins,Les cocktails et la carte des vins renforce l’attractivité de Café Lisboa pour les clients cherchant à savourer des boissons.,boissons appréciées,0.85,16
+10,amelioration_communication,cafe_lisboa,Il est suggéré que Café Lisboa améliore la communication concernant les commandes pour répondre aux attentes des clients.,sugestion d'amélioration,0.8,16
+11,cafe_lisboa,deco_typiquement_portugaise,Le décor typiquement portugais contribue à l'expérience immersive des clients.,atmosphère culturelle,0.8,16
+12,cafe_lisboa,prix_raisonnables,Les prix raisonnables permettent d'attirer une clientèle diversifiée.,accessibilité financière,0.8,16
+13,cafe_lisboa,service_inadequat,"Certains clients ont exprimé des préoccupations concernant le service, impactant leur expérience dans le restaurant.",problèmes de service,0.75,16
+14,cafe_lisboa,problems_de_service,Les critiques négatives mentionnent des problèmes dans la gestion des attentes des clients dans le restaurant.,retour des clients,0.7,16
+15,cafe_lisboa,inaccessibilite,"Certaines zones du restaurant restent inaccessibles aux personnes à mobilité réduite, ce qui constitue un inconvénient.",accessibilité,0.7,16
+16,le_coquemar,specialites_desserts,"Les desserts faits maison, tels que la crème brûlée et le tiramisu, sont souvent recommandés par les clients.",plats décoratifs,0.95,15
+17,cadre_charmant,le_coquemar,Le cadre charmant et accueillant du restaurant contribue à mettre les clients à l'aise.,atmosphère esthétique,0.9,15
+18,le_coquemar,service_amiable,Le service amical et efficace renforcent l'attrait du restaurant auprès des clients.,expérience client,0.9,15
+19,le_coquemar,plaisir_des_gourmands,Le Coquemar est une destination prisée des gourmands recherchant des saveurs authentiques.,attraction culinaire,0.9,15
+20,le_coquemar,qualite_des_plats,"Le restaurant est reconnu pour la qualité des plats faits maison, ce qui contribue à son attractivité.",qualité des ingrédients,0.9,15
+21,le_coquemar,services_accessibles,"Le restaurant offre divers modes de paiement, ce qui facilite les visites pour les clients.",commodité,0.85,15
+22,cuisine_traditionnelle,le_coquemar,La cuisine traditionnelle proposée par le restaurant attire une clientèle en quête d'authenticité.,gastronomie,0.85,15
+23,le_coquemar,rapport_qualite_prix,"Le restaurant offre un excellent rapport qualité-prix, attirant ainsi une clientèle variée.",rapport qualité-prix,0.8,15
+24,horaires_d_ouverture,le_coquemar,Les horaires d'ouverture permettent aux clients de profiter des repas aux moments qui leur conviennent le mieux.,flexibilité,0.8,15
+25,amélioration_service,le_coquemar,Il serait bénéfique pour le restaurant de prendre en compte les critiques afin d'améliorer la qualité du service.,suggestion d'amélioration,0.7,15
+26,le_coquemar,variabilite_de_la_qualite,"Certaines critiques mentionnent des variations dans la qualité des plats, indiquant une attention à porter sur ce point.",critique sur la qualité,0.65,15
+
+```
+
+-----Acctivity Entities used in this query-----
+```csv
+Entity: le_coquemar, custom_id: 3091293945615310311 --- Entity: cafe_lisboa, custom_id: 16204433116771456015 --- 
+```
+
+
+Add sections and commentary to the response as appropriate for the length and format. Style the response in markdown.
+...
+
+
+Question: trouver moi un restaurant qui dispose d'une ambiance chaleureuse et surtout il faut absolument un service accueillant, 
+
+Réponse: ## Analyse des Entités de Restaurants
+
+### Le Coquemar
+- **custom_id**: 3091293945615310311
+- **Resultat**: **Recommandé**
+- **Evaluation**: 
+  - **Ambiance**: Le Coquemar est décrit comme ayant une ambiance chaleureuse et décontractée, idéale pour profiter de repas en famille ou entre amis. Cette atmosphère conviviale est un avantage notable.
+  - **Service**: Le service est mentionné comme amical et efficace, ce qui répond à votre critère d'un service accueillant. 
+  - **Cuisine**: Le restaurant propose une cuisine traditionnelle faite maison, attirant les amateurs de gastronomie authentique.
+  - **Rapport qualité-prix**: Les retours soulignent un bon rapport qualité-prix, ce qui peut être un facteur attirant pour les clients.
+- **Justification de sa conservation**: Le Coquemar remplit vos critères d'ambiance chaleureuse et de service accueillant, en faisant un choix optimal pour vos besoins. De plus, son environnement calme et sa réputation pour des plats de qualité en font une excellente option.
+
+### Café Lisboa
+- **custom_id**: 16204433116771456015
+- **Resultat**: **Non recommandé**
+- **Evaluation**:
+  - **Ambiance**: Café Lisboa est également noté pour son ambiance chaleureuse et conviviale. Cette caractéristique attire les clients à la recherche d'un environnement agréable pour leurs repas.
+  - **Service**: Toutefois, il a été signalé que certains clients ont rencontré un service inapproprié, ce qui pourrait aller à l'encontre de votre besoin d'un service accueillant.
+  - **Cuisine**: Ce restaurant se spécialise dans la cuisine portugaise, avec des petits plats et des desserts, favorisant l'authenticité et une expérience gastronomique variée.
+  - **Accessibilité**: Le cadre est accessoire et inclut des horaires flexibles, ce qui aide les clients dans leur planification.
+- **Justification de son élimination**: Bien que Café Lisboa offre une ambiance chaleureuse, les préoccupations soulevées concernant la qualité du service le rendent moins adapté à votre demande pour un service accueillant. Il serait donc préférable de le considérer comme une option secondaire.
+
+### Conclusion
+Pour répondre à votre recherche d'un restaurant avec une ambiance chaleureuse et un service accueillant, **Le Coquemar** est le choix le plus approprié, alors que **Café Lisboa** présente des lacunes dans ce dernier aspect. Ainsi, je vous recommande vivement de visiter **Le Coquemar** pour une expérience agréable.
+
+
+#############################  
+-Real Data-  
+######################  
 
 ---Target response length and format---
 
@@ -606,6 +872,11 @@ Do not include information where the supporting evidence for it is not provided.
 
 Add sections and commentary to the response as appropriate for the length and format. Style the response in markdown.
 """
+
+
+
+
+
 
 PROMPTS["keywords_extraction"] = """---Role---
 
@@ -692,6 +963,8 @@ Do not include information where the supporting evidence for it is not provided.
 
 Add sections and commentary to the response as appropriate for the length and format. Style the response in markdown.
 """
+
+
 
 PROMPTS[
     "similarity_check"

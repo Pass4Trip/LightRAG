@@ -252,7 +252,11 @@ class Neo4JStorage(BaseGraphStorage):
         ('city', 'memo'): 'LOCATED_IN',    
         ('city', 'event'): 'LOCATED_IN',         
         ('memo', 'priority'): 'HAS_PRIORITY',
-        ('priority', 'memo'): 'HAS_PRIORITY',                         
+        ('priority', 'memo'): 'HAS_PRIORITY',         
+        ('user', 'query'): 'USER_QUERY',
+        ('query', 'user'): 'USER_QUERY',    
+        ('activity', 'query'): 'RESULT_QUERY',
+        ('query', 'activity'): 'RESULT_QUERY',                           
     }
 
     @property
@@ -381,18 +385,22 @@ class Neo4JStorage(BaseGraphStorage):
                 target.entity_type as target_type
             """
             
+            logger.debug(f"Type query: {type_query}")
             result = await tx.run(type_query)
             type_record = await result.single()
+            logger.debug(f"Type record: {type_record}")
 
             # Déterminer le type de relation
             new_label = 'DIRECTED'
             if type_record:
                 source_type = type_record['source_type']
                 target_type = type_record['target_type']
+                logger.debug(f"Source type: {source_type}, Target type: {target_type}")
 
                 # Recherche dynamique dans le mapping
                 relation_key = (source_type, target_type)
                 new_label = self.RELATION_TYPE_MAPPING.get(relation_key, 'DIRECTED')
+                logger.debug(f"Relation key: {relation_key}, New label: {new_label}")
 
             # Ajouter le type de relation aux propriétés
             edge_properties['type'] = new_label
@@ -402,9 +410,12 @@ class Neo4JStorage(BaseGraphStorage):
             WITH source
             MATCH (target:`{target_node_label}`)
             MERGE (source)-[r:{new_label}]->(target)
-            SET r += $properties
+            ON CREATE SET r = $properties
+            ON MATCH SET r += $properties
             RETURN r
             """
+            logger.debug(f"Cypher query for relation upsert: {query}")
+            logger.debug(f"Properties to set: {edge_properties}")
             await tx.run(query, properties=edge_properties)
             logger.debug(
                 f"Upserted edge from '{source_node_label}' to '{target_node_label}' with type: {new_label}, properties: {edge_properties}"
@@ -584,7 +595,7 @@ class Neo4JStorage(BaseGraphStorage):
             records = await result.data()
             
             if records:
-                logger.info(f"Résultats de la requête : {records}")
+                logger.debug(f"Résultats de la requête : {records}")
                 record = records[0]
             else:
                 logger.warning("Aucun résultat trouvé pour la requête")
@@ -631,7 +642,7 @@ class Neo4JStorage(BaseGraphStorage):
              $date_label AS original_date,
              substring($date_label, 8, 2) + '/' + substring($date_label, 5, 2) + '/' + substring($date_label, 0, 4) AS formatted_date
 
-        // Créer ou récupérer le nouveau nœud de date avec entity_type, name et label
+        // Créer ou récupérer le nouveau nœud de date avec entity_type et label normalisés
         MERGE (date:Date {
             name: formatted_date, 
             label: formatted_date, 
@@ -661,7 +672,7 @@ class Neo4JStorage(BaseGraphStorage):
         async with self.driver.session() as session:
             try:
                 # Log de débogage
-                logger.info(f"Requête Cypher avec custom_id: {custom_id}, date_label: {date_label}")
+                logger.debug(f"Requête Cypher avec custom_id: {custom_id}, date_label: {date_label}")
                 
                 # Exécuter l'initialisation et récupérer les activités
                 result = await session.run(
@@ -675,7 +686,7 @@ class Neo4JStorage(BaseGraphStorage):
                 records = await result.data()
                 
                 if records:
-                    logger.info(f"Résultats de la requête : {records}")
+                    logger.debug(f"Résultats de la requête : {records}")
                     record = records[0]
                 else:
                     logger.warning("Aucun résultat trouvé pour la requête")
@@ -718,7 +729,7 @@ class Neo4JStorage(BaseGraphStorage):
         async with self.driver.session() as session:
             try:
                 # Log de débogage
-                logger.info(f"Requête Cypher avec custom_id: {custom_id}, user_id: {user_id}")
+                logger.debug(f"Requête Cypher avec custom_id: {custom_id}, user_id: {user_id}")
                 
                 # Vérifier l'existence des nœuds
                 check_memo_query = "MATCH (memo {custom_id: $custom_id, entity_type: 'memo'}) RETURN memo"
@@ -744,8 +755,8 @@ class Neo4JStorage(BaseGraphStorage):
                 memo_records = await memo_result.data()
                 user_records = await user_result.data()
                 
-                logger.info(f"Mémos trouvés : {memo_records}")
-                logger.info(f"Utilisateurs trouvés : {user_records}")
+                logger.debug(f"Mémos trouvés : {memo_records}")
+                logger.debug(f"Utilisateurs trouvés : {user_records}")
                 
                 # Exécution de la requête Cypher
                 query = """
@@ -768,7 +779,7 @@ class Neo4JStorage(BaseGraphStorage):
                 """
                 
                 # Log de débogage
-                logger.info(f"Requête Cypher avec custom_id: {custom_id}, user_id: {user_id}, normalized_user_id: {normalized_user_id}")
+                logger.debug(f"Requête Cypher avec custom_id: {custom_id}, user_id: {user_id}, normalized_user_id: {normalized_user_id}")
                 
                 # Exécution de la requête Cypher
                 result = await session.run(query, {
@@ -780,7 +791,7 @@ class Neo4JStorage(BaseGraphStorage):
                 
                 # Extraction du résultat
                 if records:
-                    logger.info(f"Résultats de la requête : {records}")
+                    logger.debug(f"Résultats de la requête : {records}")
                     record = records[0]
                 else:
                     logger.warning("Aucun résultat trouvé pour la requête")
@@ -791,7 +802,7 @@ class Neo4JStorage(BaseGraphStorage):
                 user = record["user"]
                 memo_status = record["memo_status"]
 
-                logger.info(f"Mémo {custom_id} : Relation {memo_status}")
+                logger.debug(f"Mémo {custom_id} : Relation {memo_status}")
                 
                 return {
                     "memo": dict(memo) if memo else None,
