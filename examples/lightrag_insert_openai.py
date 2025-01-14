@@ -163,7 +163,7 @@ class RabbitMQConsumer:
                     'user': self.process_user_message,
                     'event': self.process_event_message,
                     'memo': self.process_memo_message,
-                    'query': self.process_query_histo_message
+                    'query': self.process_query_message
                 }
                 
                 # Récupération et exécution du gestionnaire approprié
@@ -336,37 +336,44 @@ class RabbitMQConsumer:
             logger.error(f"Erreur lors du traitement du message de mémo: {e}")
             logger.error(traceback.format_exc())
 
-    async def process_query_histo_message(self, payload: dict):
+    async def process_query_message(self, payload: dict):
         """
         Traite les messages de type 'query'
         
         Args:
-            payload (dict): Charge utile du message
+            payload (dict): Dictionnaire contenant les informations de la requête
         """
         try:
-            response = payload.get('response', '')
-            user_id = payload.get('user_id', 'unknown_user_id')
-            timestamp = payload.get('timestamp', datetime.now().isoformat())
-            
-            if not response:
-                logger.warning("Message de requête historique vide")
+            # Récupération du custom_id
+            custom_id = payload.get('custom_id')
+            if not custom_id:
+                logger.warning("Aucun custom_id trouvé dans le message de query")
                 return
+
+            # Autres traitements existants
+            user_id = payload.get('user_id', 'user_id_example')
+            response = payload.get('response')
+            timestamp = payload.get('timestamp')
+
+            logger.info(f"Traitement de la query avec custom_id: {custom_id}")
             
-            # Insertion avec le prompt_domain et metadata
+            # Le reste du code de traitement reste inchangé
+            metadata = {
+                'custom_id': custom_id,
+                'user_id': user_id,
+                'timestamp': timestamp
+            }
+
+            # Insérer la query dans le système
             await self.insert_to_lightrag(
                 response, 
                 prompt_domain='query',
-                metadata={
-                    'user_id': user_id,
-                    'type': 'query',
-                    'timestamp': timestamp
-                }
+                metadata=metadata
             )
-            
-            logger.info(f"📝 Requête historique insérée pour l'utilisateur {user_id} à {timestamp}")
-        
+
         except Exception as e:
-            logger.error(f"❌ Erreur lors du traitement du message query: {e}", exc_info=True)
+            logger.error(f"Erreur lors du traitement du message de query: {e}")
+            logger.error(traceback.format_exc())
 
     async def insert_to_lightrag(self, text: str, prompt_domain: str = 'activity', metadata: dict = None):
         """

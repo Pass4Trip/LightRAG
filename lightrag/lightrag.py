@@ -263,7 +263,7 @@ class LightRAG:
         metadata = kwargs.get('metadata', {})
         
         # Log du domaine de prompt utilisé
-        logger.debug(f"Inserting with prompt domain: {prompt_domain}")
+        logger.info(f"Inserting with prompt domain: {prompt_domain}")
         
         update_storage = False
         try:
@@ -428,7 +428,7 @@ class LightRAG:
                     logger.info("📝 Début de la catégorisation des mémos")
                     
                     if hasattr(self.chunk_entity_relation_graph, 'categorize_memos') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_memos')):
-                        logger.info("✅ Méthode categorize_memos trouvée")
+                        logger.debug("✅ Méthode categorize_memos trouvée")
                         try:
                             # Extraire l'ID du mémo des métadonnées
                             custom_id = metadata.get('custom_id')
@@ -449,23 +449,44 @@ class LightRAG:
                             logger.error(f"❌ Erreur lors de l'appel de categorize_memos : {e}")
                     else:
                         logger.warning("❌ Méthode categorize_memos non trouvée")
+
+                # Catégorisation des query
+                elif prompt_domain == 'query':
+                    logger.info("📝 Début de la catégorisation des query")
+                    
+                    if hasattr(self.chunk_entity_relation_graph, 'categorize_query') and callable(getattr(self.chunk_entity_relation_graph, 'categorize_query')):
+                        logger.info("✅ Méthode categorize_query trouvée")
+                        try:
+                            # Extraire l'ID du mémo des métadonnées
+                            custom_id = metadata.get('custom_id')
+                            logger.info(f"custom_id : {custom_id}") 
+                            
+                            if custom_id:
+                                # Extraire l'ID de l'utilisateur des métadonnées si disponible
+                                user_id = metadata.get('user_id')
+                                logger.info(f"user_id : {user_id}")
+                                
+                                await self.chunk_entity_relation_graph.categorize_query(
+                                    custom_id=custom_id, 
+                                    user_id=user_id
+                                )
+                                logger.info(f"✅ Query {custom_id} associé")
+                            else:
+                                logger.warning("❌ custom_id manquant pour la catégorisation de la query")
+                        
+                        except Exception as e:
+                            logger.error(f"❌ Erreur lors de l'appel de categorize_query : {e}")
+                    else:
+                        logger.warning("❌ Méthode categorize_query non trouvée")                        
         finally:
             if update_storage:
                 await self._insert_done()
-                # Ajout de logs détaillés pour comprendre pourquoi la suppression des nœuds UNKNOWN ne fonctionne pas
-                logger.info("Tentative de suppression des nœuds de type UNKNOWN")
-                try:
-                    await self.chunk_entity_relation_graph.delete_nodes_by_type('UNKNOWN')
-                    logger.info("✅ Suppression des nœuds UNKNOWN réussie")
-                except Exception as e:
-                    logger.error(f"❌ Erreur lors de la suppression des nœuds UNKNOWN : {e}")
-                    logger.error(f"Type de self.chunk_entity_relation_graph : {type(self.chunk_entity_relation_graph)}")
-                    if hasattr(self.chunk_entity_relation_graph, 'delete_nodes_by_type'):
-                        logger.info("La méthode delete_nodes_by_type existe bien")
-                    else:
-                        logger.warning("La méthode delete_nodes_by_type n'existe pas")
+                # Supprimer les nodes UNKNOWN après le traitement
+                await self.chunk_entity_relation_graph.delete_nodes_by_type('UNKNOWN')
+                logger.info("✅ Suppression des nœuds UNKNOWN réussie")
                 # Supprimer les relations DIRECTED après le traitement
                 await self.chunk_entity_relation_graph.delete_relations_by_label('DIRECTED')
+                logger.info("✅ Suppression des relations DIRECTED réussie")
 
     async def _insert_done(self):
         tasks = []
@@ -651,7 +672,7 @@ class LightRAG:
         loop = always_get_an_event_loop()
         return loop.run_until_complete(self.aquery(query, param))
 
-    async def aquery(self, query: str, param: QueryParam = QueryParam(), vdb_filter: Optional[Dict[str, Any]] = None):
+    async def aquery(self, query: str, param: QueryParam = QueryParam(), vdb_filter: Optional[Dict[str, Any]] = None, user_id: Optional[str] = None):
         if param.mode in ["local", "global", "hybrid"]:
             response = await kg_query(
                 query,
@@ -663,6 +684,7 @@ class LightRAG:
                 asdict(self),
                 hashing_kv=self.llm_response_cache,
                 vdb_filter=vdb_filter,
+                user_id=user_id,
             )
         elif param.mode == "naive":
             response = await naive_query(
@@ -672,6 +694,7 @@ class LightRAG:
                 param,
                 asdict(self),
                 hashing_kv=self.llm_response_cache,
+                user_id=user_id
             )
         else:
             raise ValueError(f"Unknown mode {param.mode}")

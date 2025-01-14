@@ -38,6 +38,7 @@ from .prompt import GRAPH_FIELD_SEP, PROMPTS
 import pika
 from dotenv import load_dotenv
 from datetime import datetime
+import uuid
 
 # Charger les variables d'environnement
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
@@ -373,6 +374,79 @@ async def _merge_edges_then_upsert(
     user_public_key = None
     user_private_key = None
 
+    if prompt_domain == 'query':
+        # Initialiser query_text avec une liste vide par défaut
+        query_text = []
+        
+        # Récupérer la description si possible
+        try:
+            already_edge = await knowledge_graph_inst.get_edge(src_id, tgt_id)
+            if already_edge and 'description' in already_edge:
+                query_text = [already_edge["description"]]
+        except Exception as e:
+            logger.warning(f"Impossible de récupérer l'arête existante : {e}")
+        
+        query_prompt="""
+            Analyse détaillée de recommandation
+
+            Contexte:
+            Tu es un assistant qui doit lire un texte et en déduire si le texte recommande ou pas une activité. 
+
+            Texte à analyser:
+            {text}
+
+            Instructions d'analyse:
+            1. Identifie clairement si le texte recommande ou pas une activité 
+
+            CRUCIAL INSTRUCTIONS:  
+            - ABSOLUTE PROHIBITION of creating, inventing, or extrapolating information not present in the original text.  
+            - Use ONLY information explicitly mentioned in the source text.  
+            - If information is not clearly indicated, do NOT attempt to guess or complete it.  
+            - Your goal is to be a precise and faithful extractor, not an information generator.  
+            - In case of doubt about any information, prefer NOT to include it rather than risk inaccuracy.   
+
+
+           ######################  
+            -Examples 1 -  
+           ######################  
+        
+            ### Le Coquemar
+            - **custom_id**: 3091293945615310311
+            - **Résultat**: **Non recommandé**
+            - **Évaluation**:
+            - **Offre de Menu**: Le Coquemar est principalement un restaurant français, célèbre pour sa cuisine traditionnelle et les plats faits maison. Cependant, aucune mention explicite du homard dans son menu n'a été trouvée dans les données.
+            - **Ambiance et Service**: Le restaurant est apprécié pour son ambiance chaleureuse et décontractée ainsi que pour son service amical et efficace. Bien qu'il soit un bon choix pour une sortie, il ne répond pas à votre critère spécifique sur le homard.
+            - **Justification de son élimination**: En l'absence d'informations concernant l'offre de homard, le Coquemar ne peut pas être recommandé pour votre recherche.
+                    
+            réponse:
+            Non Recommandé
+
+           ######################  
+            -Examples 2 -  
+           ######################  
+        
+            ### Christian Tetedoie
+            - **custom_id**: 3359024717080459809
+            - **Résultat**: **Recommandé**
+            - **Évaluation**:
+            - **Offre de Menu**: Christian Tetedoie est un restaurant gastronomique de renom à Lyon et est ici mentionné comme offrant du homard, ce qui répond exactement à votre critère.
+            - **Qualité de la Cuisine**: Réputé pour sa haute gastronomie, les plats sont souvent décrits comme "divins", et Christian Tetedoie est connu pour utiliser des ingrédients locaux, garantissant la qualité des plats proposés.
+            - **Service**: Le service est également salué, et le restaurant offre une expérience culinaire haut de gamme, y compris une sélection de vins raffinés.
+            - **Justification de sa conservation**: Christian Tetedoie est le meilleur choix pour répondre à votre demande spécifique de homard, tout en offrant un cadre gastronomique prestigieux et un cadre exquis.
+                
+            réponse:
+            Recommandé
+
+
+        """
+
+        use_model_func = global_config["llm_model_func"]
+        response = await use_model_func(
+            query_text,
+            system_prompt=query_prompt.format(text=query_text),
+            stream=False,
+        )
+
     
     if prompt_domain == "user":
         # Charger les clés existantes, initialiser un dict vide si le fichier est vide
@@ -415,7 +489,7 @@ async def _merge_edges_then_upsert(
         if already_edge else []
     )
 
-    if prompt_domain == "user":
+    if prompt_domain == "user" and user_private_key:
         try:
             # Ne décrypter que si une description existe
             if already_edge and 'description' in already_edge:
@@ -451,7 +525,6 @@ async def _merge_edges_then_upsert(
     keywords = GRAPH_FIELD_SEP.join(
         sorted(set([dp["keywords"] for dp in edges_data] + already_keywords))
     )
-    # VTT Modif le 14/01/2025 01:44
     keywords = keywords.replace("<SEP>", ", ") if "<SEP>" in keywords else keywords
     source_id = GRAPH_FIELD_SEP.join(
         set([dp["source_id"] for dp in edges_data] + already_source_ids)
@@ -479,6 +552,7 @@ async def _merge_edges_then_upsert(
             description=description,
             keywords=keywords,
             source_id=source_id,
+            query_result=response if prompt_domain == 'query' else None,
         ),
     )
 
@@ -706,7 +780,8 @@ async def extract_entities(
                         entity_metadata["custom_id"] = metadata["event_id"]
                     elif prompt_domain == "memo" and "custom_id" in metadata:
                         entity_metadata["custom_id"] = metadata["custom_id"]
-  
+                    elif prompt_domain == "query" and "custom_id" in metadata:
+                        entity_metadata["custom_id"] = metadata["custom_id"]
                 
                 # Ajouter les metadata à l'entité si disponibles
                 if entity_metadata and if_entities["entity_type"] == prompt_domain:
@@ -1043,6 +1118,7 @@ async def kg_query(
     global_config: dict,
     hashing_kv: BaseKVStorage = None,
     vdb_filter: Optional[Dict[str, Any]] = None,
+    user_id: str = None
 ) -> str:
     # Handle cache
     use_model_func = global_config["llm_model_func"]
@@ -1177,7 +1253,8 @@ async def kg_query(
         
         message = {
             "type": "query", 
-            "user_id": "user_id_example", 
+            "user_id": user_id, 
+            "custom_id": str(uuid.uuid4()),  # Génération d'un identifiant unique
             "response": response,
             "timestamp": datetime.now().isoformat()
         }
@@ -1761,7 +1838,7 @@ def combine_contexts(entities, relationships, sources):
     hl_relationships, ll_relationships = relationships[0], relationships[1]
     hl_sources, ll_sources = sources[0], sources[1]
     # Combine and deduplicate the entities
-    combined_entities = process_combine_contexts(hl_entities, ll_entities)
+    combined_entities = process_combine_contexts(hl_entities, ll_entities)   
 
     # Combine and deduplicate the relationships
     combined_relationships = process_combine_contexts(
@@ -1781,6 +1858,7 @@ async def naive_query(
     query_param: QueryParam,
     global_config: dict,
     hashing_kv: BaseKVStorage = None,
+    user_id: str = None
 ):
     # Handle cache
     use_model_func = global_config["llm_model_func"]
@@ -1871,7 +1949,8 @@ async def naive_query(
         
         message = {
             "type": "query", 
-            "user_id": "user_id_example",  # TODO: Remplacer par le vrai user_id
+            "user_id": user_id,  
+            "custom_id": str(uuid.uuid4()),  # Génération d'un identifiant unique
             "response": response,
             "timestamp": datetime.now().isoformat()
         }
@@ -2159,6 +2238,65 @@ async def _merge_edges_then_upsert(
     user_public_key = None
     user_private_key = None
 
+    if prompt_domain == 'query':
+        # Initialiser query_text avec une liste vide par défaut
+        query_text = []
+        
+        # Récupérer la description si possible
+        try:
+            already_edge = await knowledge_graph_inst.get_edge(src_id, tgt_id)
+            if already_edge and 'description' in already_edge:
+                query_text = [already_edge["description"]]
+        except Exception as e:
+            logger.warning(f"Impossible de récupérer l'arête existante : {e}")
+        
+        query_prompt="""
+            Analyse détaillée de recommandation
+
+            Contexte:
+            Tu es un assistant expert en analyse de recommandations de restaurants. 
+            Tu dois évaluer précisément si un établissement est recommandable ou non.
+
+            Texte à analyser:
+            {text}
+
+            Instructions d'analyse:
+            1. Évalue rigoureusement les critères de recommandation
+            2. Analyse chaque section du texte (Offre de Menu, Ambiance et Service)
+            3. Détermine clairement si le restaurant est recommandé
+            4. Justifie ta décision de manière objective et nuancée
+
+            Format de réponse:
+            [Recommandé / Non Recommandé]
+
+
+            Exemple de réponse:
+            Non Recommandé
+
+           ######################  
+            -Examples-  
+           ######################  
+        
+            ### Le Coquemar
+            - **custom_id**: 3091293945615310311
+            - **Résultat**: **Non recommandé**
+            - **Évaluation**:
+            - **Offre de Menu**: Le Coquemar est principalement un restaurant français, célèbre pour sa cuisine traditionnelle et les plats faits maison. Cependant, aucune mention explicite du homard dans son menu n'a été trouvée dans les données.
+            - **Ambiance et Service**: Le restaurant est apprécié pour son ambiance chaleureuse et décontractée ainsi que pour son service amical et efficace. Bien qu'il soit un bon choix pour une sortie, il ne répond pas à votre critère spécifique sur le homard.
+            - **Justification de son élimination**: En l'absence d'informations concernant l'offre de homard, le Coquemar ne peut pas être recommandé pour votre recherche.
+                    
+            réponse:
+            Non Recommandé
+
+        """
+
+        use_model_func = global_config["llm_model_func"]
+        response = await use_model_func(
+            query_text,
+            system_prompt=query_prompt.format(text=query_text),
+            stream=False,
+        )
+
     
     if prompt_domain == "user":
         # Charger les clés existantes, initialiser un dict vide si le fichier est vide
@@ -2201,7 +2339,7 @@ async def _merge_edges_then_upsert(
         if already_edge else []
     )
 
-    if user_id:
+    if user_id and user_private_key:
         try:
             # Ne décrypter que si une description existe
             if already_edge and 'description' in already_edge:
@@ -2222,7 +2360,7 @@ async def _merge_edges_then_upsert(
     )
 
 
-    if user_id and user_public_key:
+    if user_id and user_public_key:  
         try:
             encrypted_description = sec_manager.encrypt_data(
                 description, 
@@ -2264,6 +2402,7 @@ async def _merge_edges_then_upsert(
             description=description,
             keywords=keywords,
             source_id=source_id,
+            query_result=response if prompt_domain == 'query' else None,
         ),
     )
 

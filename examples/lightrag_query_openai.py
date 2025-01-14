@@ -92,7 +92,8 @@ if __name__ == "__main__":
     try:
         # Exemple d'utilisation
         #question = "dis moi ce que tu sais sur lea"
-        question = "trouver moi un restaurant avec des horaires flexible"
+        question = "trouver moi un restaurant avec des plats variées"
+        user_id = "toto"
 
         rag = init_lightrag()
         
@@ -109,7 +110,7 @@ if __name__ == "__main__":
         vdb_filter= []
 
         # Exécution asynchrone de la requête
-        response = asyncio.run(rag.aquery(question, param=query_param, vdb_filter=vdb_filter))
+        response = asyncio.run(rag.aquery(question, param=query_param, vdb_filter=vdb_filter, user_id=user_id))
         
         print(f"\nQuestion: {question}")
         print(f"\nRéponse: {response}")

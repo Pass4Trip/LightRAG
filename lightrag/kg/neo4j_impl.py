@@ -492,11 +492,15 @@ class Neo4JStorage(BaseGraphStorage):
                 node_id = activity['node_id']
                 node_labels = activity['node_labels']
                 
-                # Utiliser le gestionnaire de catégories pour déterminer la catégorie
+
                 if use_model_func:
+                    logger.debug("Utilisation de use_model_func pour déterminer la catégorie")
                     category = await use_model_func(description)
                 else:
+                    logger.debug("Utilisation de activity_categories_manager pour déterminer la catégorie")
                     category = activity_categories_manager.get_category(description)
+                
+                logger.debug(f"Catégorie déterminée : {category}")
                 
                 # Catégorisation par défaut si aucune catégorie n'est trouvée
                 if not category:
@@ -814,6 +818,69 @@ class Neo4JStorage(BaseGraphStorage):
                 logger.error(f"❌ Erreur lors de l'association du mémo '{custom_id}' avec l'utilisateur '{user_id}' : {e}")
                 return None
 
+    async def categorize_query(
+        self, 
+        custom_id: str, 
+        user_id: str
+    ):
+        """
+        Crée une relation entre un nœud de requête et un nœud utilisateur.
+        
+        Args:
+            custom_id (str): L'identifiant personnalisé du nœud de requête
+            user_id (str): L'identifiant de l'utilisateur
+        """
+        async with self.driver.session() as session:
+            try:
+                # Log de débogage
+                logger.info(f"Requête Cypher pour associer query {custom_id} à l'utilisateur {user_id}")
+            
+
+                # Vérifier l'existence des nœuds
+                # check_query_node = "MATCH (query {custom_id: $custom_id, entity_type: 'query'}) RETURN query"
+                # check_user_node = "MATCH (user {custom_id: $user_id, entity_type: 'user'}) RETURN user"
+                
+                # query_result = await session.run(check_query_node, {"custom_id": custom_id})
+                # user_result = await session.run(check_user_node, {"user_id": user_id})
+                
+                # query_records = await query_result.data()
+                # user_records = await user_result.data()
+                
+                # logger.info(f"Requêtes trouvées : {query_records}")
+                # logger.info(f"Utilisateurs trouvés : {user_records}")
+                
+                # Exécution de la requête Cypher pour créer la relation
+                query = """
+                MERGE (query {custom_id: $custom_id, entity_type: 'query'})
+                MERGE (user {custom_id: $user_id, entity_type: 'user'})
+                MERGE (query)-[r:USER_QUERY]->(user)
+                ON CREATE SET 
+                    r.created_at = timestamp(),
+                    user.created_at = timestamp(),
+                    query.created_at = timestamp()
+                RETURN r
+                """
+                
+                logger.info(f"Requête Cypher finale : {query}")
+                logger.info(f"Paramètres : custom_id={custom_id}, user_id={user_id}")
+                
+                result = await session.run(query, {
+                    "custom_id": custom_id,
+                    "user_id": user_id
+                })
+                
+                records = await result.data()
+                
+                if records:
+                    logger.info(f"Relation USER_QUERY créée entre query {custom_id} et user {user_id}")
+                else:
+                    logger.warning(f"Impossible de créer la relation USER_QUERY entre query {custom_id} et user {user_id}")
+                
+                return records
+            
+            except Exception as e:
+                logger.error(f"Erreur lors de la création de la relation USER_QUERY : {e}")
+                return None
 
     async def merge_duplicate_users(self):
         """
