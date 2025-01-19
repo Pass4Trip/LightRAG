@@ -1,3 +1,5 @@
+# Répertoire actif : /Users/vinh/Documents/LightRAG
+
 # LightRAG
 
 LightRAG est avec intégration RabbitMQ, Neo4J (graphDB), Milvus (vectorDB), MongoDB (kvDB)
