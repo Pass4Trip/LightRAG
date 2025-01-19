@@ -46,7 +46,7 @@ def load_config():
     """
     # Configuration par défaut
     defaults = {
-        "RABBITMQ_USERNAME": "guest",
+        "RABBITMQ_USER": "guest",
         "RABBITMQ_HOST": "localhost",
         "RABBITMQ_PORT": "5672",
         "NEO4J_URI": "bolt://localhost:7687",
@@ -89,7 +89,7 @@ class RabbitMQConsumer:
     def __init__(self):
         # Charger la configuration
         self.config = load_config()
-        self.user = self.config["RABBITMQ_USERNAME"]
+        self.user = self.config["RABBITMQ_USER"]
         self.password = self.config["RABBITMQ_PASSWORD"]
         self.host = self.config["RABBITMQ_HOST"]
         self.port = self.config["RABBITMQ_PORT"]

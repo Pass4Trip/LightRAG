@@ -1,2 +1,3 @@
-Pour la base neo4j et rabbitMQ, ils sont installé sur un serveur vps-ovh. j'y accède depuis mon pc avec ssh.
-Sur vps-ovh les installations sont faites avec microk8s.
+- Pour la base neo4j et rabbitMQ, ils sont installé sur un serveur vps-ovh. j'y accède depuis mon pc avec ssh.
+- Sur vps-ovh les installations sont faites avec microk8s.
+- Sur mon env de dev local (macbook pro M1 16go) je suis en venv UV avec docker desktop. Je ne dispose pas de microk8s
