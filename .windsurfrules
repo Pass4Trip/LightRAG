@@ -1,3 +1,7 @@
-- Pour la base neo4j et rabbitMQ, ils sont installé sur un serveur vps-ovh. j'y accède depuis mon pc avec ssh.
+- Pour la base neo4j, postgreSQL et rabbitMQ, ils sont installé sur un serveur vps-ovh. j'y accède depuis mon pc avec ssh.
+- Pour te connecter au serveur vps-ovh, tu dois utiliser la commande ssh vps-ovh
 - Sur vps-ovh les installations sont faites avec microk8s.
-- Sur mon env de dev local (macbook pro M1 16go) je suis en venv UV avec docker desktop. Je ne dispose pas de microk8s
+
+- j'utilise en solution de venv : UV donc si tu dois me proposer des pip installs, tu dois les faire avec uv pip install...
+- j'utilise un fichier toml avec UV pour gérer les dependencies
+- Quand il manque une lib tu dois l'ajouter dans le toml, regénérer le requirements et l'installer avec uv pip install .

@@ -8,7 +8,7 @@ from typing import List, Dict, Callable, Any, Union
 import aioboto3
 import aiohttp
 import numpy as np
-import ollama
+#import ollama
 #import torch
 from openai import (
     AsyncOpenAI,

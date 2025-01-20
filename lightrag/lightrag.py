@@ -42,7 +42,7 @@ from lightrag.storage import (
 
 from lightrag.kg.neo4j_impl import Neo4JStorage
 
-from lightrag.kg.oracle_impl import OracleKVStorage, OracleGraphStorage, OracleVectorDBStorage
+#from lightrag.kg.oracle_impl import OracleKVStorage, OracleGraphStorage, OracleVectorDBStorage
 
 from lightrag.kg.milvus_impl import MilvusVectorDBStorage
 
@@ -239,28 +239,52 @@ class LightRAG:
         return {
             # kv storage
             "JsonKVStorage": JsonKVStorage,
-            "OracleKVStorage": OracleKVStorage,
+            #"OracleKVStorage": OracleKVStorage,
             "MongoKVStorage": MongoKVStorage,
             # vector storage
-            "NanoVectorDBStorage": NanoVectorDBStorage,
-            "OracleVectorDBStorage": OracleVectorDBStorage,
+            #"NanoVectorDBStorage": NanoVectorDBStorage,
+            #"OracleVectorDBStorage": OracleVectorDBStorage,
             "MilvusVectorDBStorage": MilvusVectorDBStorage,
             # graph storage
-            "NetworkXStorage": NetworkXStorage,
+            #"NetworkXStorage": NetworkXStorage,
             "Neo4JStorage": Neo4JStorage,
-            "OracleGraphStorage": OracleGraphStorage,
+            #"OracleGraphStorage": OracleGraphStorage,
             # "ArangoDBStorage": ArangoDBStorage
         }
 
-    def insert(self, string_or_strings):
+    def insert(self, string_or_strings, prompt_domain: str = None, metadata: dict = None):
+        """
+        Insertion synchrone de texte avec support de prompt_domain et metadata
+        
+        Args:
+            string_or_strings (str or List[str]): Texte(s) à insérer
+            prompt_domain (str, optional): Domaine du prompt. Defaults to None.
+            metadata (dict, optional): Métadonnées associées. Defaults to None.
+        """
         loop = always_get_an_event_loop()
-        return loop.run_until_complete(self.ainsert(string_or_strings))
+        return loop.run_until_complete(
+            self.ainsert(
+                string_or_strings, 
+                prompt_domain=prompt_domain, 
+                metadata=metadata
+            )
+        )
 
-    async def ainsert(self, string_or_strings, **kwargs):
-        # Récupérer le prompt_domain soit de kwargs, soit de l'instance
-        prompt_domain = kwargs.get('prompt_domain', self.prompt_domain)
-        # Récupérer les metadata
-        metadata = kwargs.get('metadata', {})
+    async def ainsert(self, string_or_strings, prompt_domain: str = None, metadata: dict = None):
+        """
+        Insertion asynchrone de texte avec support de prompt_domain et metadata
+        
+        Args:
+            string_or_strings (str or List[str]): Texte(s) à insérer
+            prompt_domain (str, optional): Domaine du prompt. Defaults to None.
+            metadata (dict, optional): Métadonnées associées. Defaults to None.
+        """
+        # Utiliser le prompt_domain par défaut si non spécifié
+        if prompt_domain is None:
+            prompt_domain = self.prompt_domain
+
+        # Traitement des métadonnées
+        metadata = metadata or {}
         
         # Log du domaine de prompt utilisé
         logger.info(f"Inserting with prompt domain: {prompt_domain}")

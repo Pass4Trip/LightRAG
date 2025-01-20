@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-listener
+  namespace: default
+  labels:
+    app: rabbitmq-listener
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-listener
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-listener
+    spec:
+      containers:
+      - name: listener
+        image: localhost:32000/rabbitmq-listener:v1
+        command: ["python"]
+        args: ["-u", "rabbitmq_listener.py"]
+        imagePullPolicy: Always
+        env:
+        - name: RUNTIME_ENV
+          value: dev
+        - name: RABBITMQ_HOST
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: host
+        - name: RABBITMQ_PORT
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: port
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: username
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: password
+        - name: RABBITMQ_QUEUE
+          value: queue_vinh_test
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-credentials
+  namespace: default
+type: Opaque
+stringData:
+  host: "51.77.200.196"
+  port: "30645"
+  username: rabbitmq
+  password: mypassword

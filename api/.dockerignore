@@ -1,0 +1,14 @@
+milvus_docker/
+mongodb_docker/
+neo4j_microk8s/
+openRouteService/
+rabbitMQ/
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.venv
+venv/

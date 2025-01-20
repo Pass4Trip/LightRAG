@@ -1,4 +1,4 @@
-# Répertoire actif : /Users/vinh/Documents/LightRAG
+# Répertoire actif : /Users/vinh/Documents/Prefect
 
 # LightRAG
 

@@ -1,0 +1,63 @@
+# Utiliser une image Python officielle
+FROM python:3.10-slim
+
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Installer les dépendances système
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installer Rust et Cargo
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Copier les fichiers de dépendances et le projet
+COPY requirements.txt .
+COPY . .
+
+# Copier le fichier .env
+COPY .env .
+
+# Mettre à jour pip et installer les dépendances
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -e . && \
+    pip install --no-cache-dir aio_pika
+
+# Installer jwt
+RUN pip install pyjwt
+
+# Définir PYTHONPATH
+ENV PYTHONPATH=/app:$PYTHONPATH
+ENV PYTHONUNBUFFERED=1
+
+# Variables d'environnement par défaut
+ENV MILVUS_HOST=localhost
+ENV MILVUS_PORT=19530
+ENV MILVUS_URI=tcp://localhost:19530
+ENV MILVUS_DB_NAME=lightrag
+
+ENV RABBITMQ_HOST=51.77.200.196
+ENV RABBITMQ_PORT=30645
+ENV RABBITMQ_USER=rabbitmq
+ENV RABBITMQ_PASSWORD=mypassword
+ENV RABBITMQ_VHOST=/
+ENV QUEUE_NAME=queue_vinh_test
+
+ENV NEO4J_URI=bolt://vps-af24e24d.vps.ovh.net:32045
+ENV NEO4J_USERNAME=neo4j
+ENV NEO4J_PASSWORD=my-initial-password
+
+ENV MONGO_URI=mongodb://root:root@localhost:27017/
+ENV MONGO_DATABASE=LightRAG
+
+# Commandes de debug
+RUN pip list && \
+    python -c "import sys; print(sys.path)"
+
+# Point d'entrée
+CMD ["python", "-u", "api/lightrag_insert_openai.py"]

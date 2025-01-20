@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lightrag-insert
+  namespace: default
+  labels:
+    app: lightrag-insert
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lightrag-insert
+  template:
+    metadata:
+      labels:
+        app: lightrag-insert
+    spec:
+      containers:
+      - name: lightrag-insert
+        image: localhost:32000/lightrag-insert:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: RUNTIME_ENV
+          value: production
+        - name: RABBITMQ_HOST
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: host
+        - name: RABBITMQ_PORT
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: port
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: username
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lightrag-insert-service
+spec:
+  selector:
+    app: lightrag-insert
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
