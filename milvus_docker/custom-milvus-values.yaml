@@ -1,0 +1,50 @@
+# Configuration standalone légère pour Milvus avec Attu
+global:
+  mode: "standalone"
+  persistence:
+    enabled: true
+    storageClass: "local-path"
+
+etcd:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+minio:
+  enabled: true
+  mode: "standalone"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+pulsar:
+  enabled: false
+
+attu:
+  enabled: true
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+standalone:
+  enabled: true
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"

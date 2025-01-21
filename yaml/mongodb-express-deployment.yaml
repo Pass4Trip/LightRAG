@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-express
+  labels:
+    app: mongo-express
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-express
+  template:
+    metadata:
+      labels:
+        app: mongo-express
+    spec:
+      containers:
+      - name: mongo-express
+        image: mongo-express:latest
+        ports:
+        - containerPort: 8081
+        env:
+        - name: ME_CONFIG_MONGODB_ADMINUSERNAME
+          value: "root"
+        - name: ME_CONFIG_MONGODB_ADMINPASSWORD
+          value: "root"
+        - name: ME_CONFIG_MONGODB_SERVER
+          value: "vps-af24e24d.vps.ovh.net"
+        - name: ME_CONFIG_MONGODB_PORT
+          value: "30940"
+        - name: ME_CONFIG_MONGODB_URL
+          value: "mongodb://root:root@vps-af24e24d.vps.ovh.net:30940/"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-express
+spec:
+  type: NodePort
+  selector:
+    app: mongo-express
+  ports:
+    - port: 8081
+      targetPort: 8081
+      nodePort: 32123
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-admin-credentials
+type: Opaque
+stringData:
+  username: root
+  password: password

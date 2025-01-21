@@ -1,16 +1,15 @@
+version: '3.5'
+
 services:
   etcd:
     container_name: milvus-etcd
     image: quay.io/coreos/etcd:v3.5.5
     environment:
-      - ETCD_AUTO_COMPACTION_MODE=revision
-      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_AUTO_COMPACTION_RETENTION=0
       - ETCD_QUOTA_BACKEND_BYTES=4294967296
-      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
-      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
-    command: etcd
-    networks:
-      - milvus
+    volumes:
+      - ./etcd_data:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
 
   minio:
     container_name: milvus-minio
@@ -18,16 +17,15 @@ services:
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
-    command: minio server /minio_data
     volumes:
       - ./minio_data:/minio_data
-    networks:
-      - milvus
+    command: minio server /minio_data
+    ports:
+      - "9000:9000"
 
   standalone:
     container_name: milvus-standalone
     image: milvusdb/milvus:v2.3.2
-    command: ["milvus", "run", "standalone"]
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
@@ -35,20 +33,17 @@ services:
       - ./milvus_data:/var/lib/milvus
     ports:
       - "19530:19530"
-      - "9091:9091"
+    command: ["milvus", "run", "standalone"]
     depends_on:
       - "etcd"
       - "minio"
-    networks:
-      - milvus
 
-networks:
-  milvus:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.26.0.0/16
-
-volumes:
-  milvus_data:
-  minio_data:
+  attu:
+    container_name: milvus-attu
+    image: zilliz/attu:latest
+    environment:
+      MILVUS_URL: standalone:19530
+    ports:
+      - "3000:3000"
+    depends_on:
+      - "standalone"

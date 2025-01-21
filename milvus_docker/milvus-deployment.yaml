@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: milvus-standalone
+  namespace: milvus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: milvus
+  template:
+    metadata:
+      labels:
+        app: milvus
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: milvus
+        image: milvusdb/milvus:v2.3.2
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 19530
+        - containerPort: 9091
+        env:
+        - name: ETCD_ENDPOINTS
+          value: "etcd:2379"
+        - name: MINIO_ADDRESS
+          value: "minio:9000"
+        volumeMounts:
+        - mountPath: /var/lib/milvus
+          name: milvus-data
+      volumes:
+      - name: milvus-data
+        hostPath:
+          path: /var/lib/milvus
+          type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: milvus-service
+  namespace: milvus
+spec:
+  type: NodePort
+  ports:
+  - name: grpc
+    port: 19530
+    targetPort: 19530
+    nodePort: 30001
+  - name: http
+    port: 9091
+    targetPort: 9091
+    nodePort: 30002
+  selector:
+    app: milvus

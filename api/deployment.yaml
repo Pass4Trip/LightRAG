@@ -1,29 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: lightrag-insert
+  name: lightrag-api
   namespace: default
   labels:
-    app: lightrag-insert
+    app: lightrag-api
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: lightrag-insert
+      app: lightrag-api
   template:
     metadata:
       labels:
-        app: lightrag-insert
+        app: lightrag-api
     spec:
       containers:
-      - name: lightrag-insert
-        image: localhost:32000/lightrag-insert:v1
+      - name: lightrag-api
+        image: localhost:32000/lightrag-api:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
         env:
         - name: RUNTIME_ENV
           value: production
+        
+        # Configurations RabbitMQ
         - name: RABBITMQ_HOST
           valueFrom:
             secretKeyRef:
@@ -44,16 +46,94 @@ spec:
             secretKeyRef:
               name: rabbitmq-credentials
               key: password
+        
+        # Configurations des bases de données
+        - name: MONGODB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-credentials
+              key: host
+        - name: MONGODB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-credentials
+              key: port
+        - name: MONGODB_USER
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-credentials
+              key: username
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-credentials
+              key: password
+        
+        - name: NEO4J_HOST
+          valueFrom:
+            secretKeyRef:
+              name: neo4j-credentials
+              key: host
+        - name: NEO4J_PORT
+          valueFrom:
+            secretKeyRef:
+              name: neo4j-credentials
+              key: port
+        - name: NEO4J_USER
+          valueFrom:
+            secretKeyRef:
+              name: neo4j-credentials
+              key: username
+        - name: NEO4J_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: neo4j-credentials
+              key: password
+        
+        - name: MILVUS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: milvus-credentials
+              key: host
+        - name: MILVUS_PORT
+          valueFrom:
+            secretKeyRef:
+              name: milvus-credentials
+              key: port
+        
+        # Configuration OpenAI
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-credentials
+              key: api_key
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          failureThreshold: 3
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: lightrag-insert-service
+  name: lightrag-api-service
+  labels:
+    app: lightrag-api
 spec:
-  selector:
-    app: lightrag-insert
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8000
   type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app: lightrag-api

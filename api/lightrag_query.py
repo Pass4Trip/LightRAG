@@ -5,7 +5,7 @@ import asyncio
 import traceback
 from typing import Dict, Any, Optional, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, FastAPI
 from pydantic import BaseModel
 import uvicorn
 
@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 # Initialisation de LightRAG
 from lightrag.lightrag import LightRAG, QueryParam
 from lightrag.llm import gpt_4o_mini_complete  # Ajout de cet import
+from lightrag.kg.milvus_impl import MilvusVectorDBStorage
+from lightrag.kg.mongo_impl import MongoKVStorage
+from lightrag.kg.neo4j_impl import Neo4JStorage
 
 # Créer un router pour cet API
 router = APIRouter()
@@ -39,6 +42,13 @@ def init_lightrag() -> LightRAG:
     Initialise et configure l'instance LightRAG
     """
     try:
+        # Configuration Milvus
+        milvus_config = {
+            "uri": "vps-af24e24d.vps.ovh.net:31723",
+            "username": "root",
+            "password": "Milvus"
+        }
+
         rag = LightRAG(
             working_dir=str(Path(__file__).parent.parent / "api"),
             llm_model_func=gpt_4o_mini_complete,
@@ -46,7 +56,8 @@ def init_lightrag() -> LightRAG:
             vector_storage="MilvusVectorDBStorage",
             graph_storage="Neo4JStorage",
             log_level=logging.INFO,
-            enable_llm_cache=False
+            enable_llm_cache=False,
+            vector_db_storage_cls_kwargs=milvus_config
         )
         return rag
     except Exception as e:
@@ -92,3 +103,13 @@ async def query_messages(query_request: QueryRequest):
         logger.error(f"Erreur lors de la recherche de messages : {str(e)}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
+
+# Créer l'application FastAPI
+app = FastAPI(
+    title="LightRAG Query API",
+    description="API pour effectuer des requêtes avec LightRAG",
+    version="0.1.0"
+)
+
+# Inclure le router
+app.include_router(router, tags=["Query"])

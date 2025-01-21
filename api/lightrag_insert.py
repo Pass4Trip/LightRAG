@@ -21,11 +21,26 @@ logger = logging.getLogger(__name__)
 # Imports LightRAG
 from lightrag.lightrag import LightRAG
 from lightrag.llm import gpt_4o_mini_complete
+from lightrag.kg.milvus_impl import MilvusVectorDBStorage
+from lightrag.kg.mongo_impl import MongoKVStorage
+from lightrag.kg.neo4j_impl import Neo4JStorage
 
 class MessageProcessor:
     def __init__(self):
         self.rag = None
         try:
+            # Configuration Milvus
+            milvus_config = {
+                "uri": "vps-af24e24d.vps.ovh.net:31723",
+                "username": "root",
+                "password": "Milvus"
+            }
+
+            # Configuration MongoDB
+            mongo_config = {
+                "uri": "mongodb://root:root@vps-af24e24d.vps.ovh.net:30940/"
+            }
+
             # Utiliser MilvusVectorDBStorage explicitement
             self.rag = LightRAG(
                 working_dir=str(Path(__file__).parent.parent / "api"),
@@ -34,7 +49,8 @@ class MessageProcessor:
                 kv_storage="MongoKVStorage",
                 graph_storage="Neo4JStorage",
                 log_level=logging.INFO,
-                enable_llm_cache=False
+                enable_llm_cache=False,
+                vector_db_storage_cls_kwargs=milvus_config
             )
             logger.info("LightRAG initialisé avec succès")
         except Exception as e:

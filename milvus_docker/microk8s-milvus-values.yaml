@@ -1,0 +1,30 @@
+# Configuration Milvus pour MicroK8s
+global:
+  mode: "standalone"
+  persistence:
+    enabled: true
+    storageClass: "local-path"
+
+standalone:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  service:
+    type: NodePort
+    ports:
+      grpc:
+        nodePort: 30001
+      http:
+        nodePort: 30002
+
+components:
+  etcd: false
+  minio: false
+  pulsar: false
+  attu: false
