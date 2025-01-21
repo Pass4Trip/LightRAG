@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Importer les routers depuis vos fichiers d'API
-from .lightrag_insert import router as insert_router
-from .lightrag_query import router as query_router
+from api.lightrag_insert import router as insert_router
+from api.lightrag_query import router as query_router
 
 # Créer l'application FastAPI principale
 app = FastAPI(

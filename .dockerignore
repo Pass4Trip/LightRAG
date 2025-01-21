@@ -1,0 +1,57 @@
+# Version Control
+.git
+.gitignore
+
+# Virtual Environment
+venv
+.venv
+env
+.env
+
+# Python cache files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebooks
+*.ipynb
+
+# Logs and Databases
+*.log
+*.sqlite3
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Build and Distribution
+build/
+dist/
+*.egg-info/
+
+# Development and IDE files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Large data files and caches
+*.data
+lightrag_cache/
+milvus_docker/minio_data/
+
+# Temporary and backup files
+*.bak
+*.tmp
+
+# Docker and Kubernetes
+Dockerfile
+.dockerignore
+*.yaml
+*.yml
+
+# Specific project directories to ignore
+scripts/
+tests/
+docs/

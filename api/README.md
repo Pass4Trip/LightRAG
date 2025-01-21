@@ -36,6 +36,32 @@ microk8s kubectl scale deployment lightrag-insert --replicas=0
 microk8s kubectl scale deployment lightrag-insert --replicas=1
 ```
 
+## 🐳 Déploiement Docker Local
+
+### Prérequis
+- Docker installé
+- Clé API OpenAI (optionnelle mais recommandée pour les embeddings)
+
+### Déploiement standard
+```bash
+./deploy_lightrag.sh
+```
+
+### Déploiement avec clé API OpenAI
+```bash
+# Option 1 : Exporter la variable avant le déploiement
+export OPENAI_API_KEY=votre_clé_api_openai
+./deploy_lightrag.sh
+
+# Option 2 : Passer la clé directement
+OPENAI_API_KEY=votre_clé_api_openai ./deploy_lightrag.sh
+```
+
+#### Notes importantes
+- La clé API OpenAI est passée dynamiquement lors du déploiement
+- Si aucune clé n'est fournie, certaines fonctionnalités utilisant des embeddings seront limitées
+- Ne partagez jamais votre clé API publiquement
+
 ## 🚨 Notes
 - Utilise des secrets Kubernetes
 - Écoute en continu les messages RabbitMQ
