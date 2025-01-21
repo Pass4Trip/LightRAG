@@ -1,70 +1,61 @@
-#!/bin/bash
+#!/bin/zsh
 
-# Couleurs pour les messages
+# Configuration
+APP_NAME="lightrag-api"
+APP_TAG="v1"
+REGISTRY="51.77.200.196:32000"
+LOCAL_PATH="/Users/vinh/Documents/LightRAG"
+VPS_HOST="ubuntu@51.77.200.196"
+
+# Couleurs
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Définir les variables
-PROJECT_NAME="LightRAG"
-APP_NAME="lightrag-api"
-APP_TAG="v1"
-LOCAL_PATH="/Users/vinh/Documents/LightRAG"
-HOST_PORT=8000
-
-# Vérifier les dépendances
-command -v docker >/dev/null 2>&1 || { 
-    echo -e "${RED}❌ Docker n'est pas installé. Installez Docker Desktop.${NC}"
-    exit 1
+# Nettoyer les ressources existantes
+clean_resources() {
+    echo -e "${YELLOW}🧹 Nettoyage des ressources existantes...${NC}"
+    docker stop "$APP_NAME" 2>/dev/null
+    docker rm "$APP_NAME" 2>/dev/null
+    docker rmi "$REGISTRY/$APP_NAME:$APP_TAG" 2>/dev/null
 }
 
-# Nettoyer les conteneurs et images existants
-echo -e "${YELLOW}🧹 Nettoyage des conteneurs et images existants...${NC}"
-docker stop ${APP_NAME} 2>/dev/null
-docker rm ${APP_NAME} 2>/dev/null
-docker rmi ${APP_NAME}:${APP_TAG} 2>/dev/null
-docker rmi lightrag-base:latest 2>/dev/null
+# Construire l'image
+build_image() {
+    echo "${GREEN}🚢 Construction de l'image...${NC}"
+    docker build \
+        -t "$REGISTRY/$APP_NAME:$APP_TAG" \
+        -f "$LOCAL_PATH/api/Dockerfile" \
+        "$LOCAL_PATH"
+}
 
-# Construire l'image de base
-echo -e "${YELLOW}🔨 Construction de l'image de base...${NC}"
-docker build \
-    -t lightrag-base:latest \
-    -f ${LOCAL_PATH}/Dockerfile.base \
-    ${LOCAL_PATH}
+# Pousser l'image
+push_image() {
+    echo "${YELLOW}📤 Envoi de l'image vers le registry...${NC}"
+    docker push "$REGISTRY/$APP_NAME:$APP_TAG"
+}
 
-# Construire l'image de l'API
-echo -e "${YELLOW}🔨 Construction de l'image de l'API...${NC}"
-docker build \
-    -t ${APP_NAME}:${APP_TAG} \
-    -f ${LOCAL_PATH}/api/Dockerfile \
-    ${LOCAL_PATH}
+# Déployer sur Kubernetes
+deploy_kubernetes() {
+    echo "${GREEN}🌐 Déploiement sur Kubernetes...${NC}"
+    scp "$LOCAL_PATH/api/lightrag_deployment.yaml" "$VPS_HOST":~/lightrag_deployment.yaml
+    scp "$LOCAL_PATH/api/lightrag-api-ingress.yaml" "$VPS_HOST":~/lightrag-api-ingress.yaml
+    ssh vps-ovh "
+        microk8s kubectl apply -f ~/lightrag_deployment.yaml
+        microk8s kubectl apply -f ~/lightrag-api-ingress.yaml
+        microk8s kubectl rollout restart deployment $APP_NAME
+    "
+}
 
-# Vérifier la construction des images
-if [[ "$(docker images -q ${APP_NAME}:${APP_TAG} 2> /dev/null)" == "" ]]; then
-    echo -e "${RED}❌ Échec de la construction de l'image Docker${NC}"
-    exit 1
-fi
+# Exécution principale
+main() {
+    clean_resources
+    build_image
+    push_image
+    deploy_kubernetes
+    echo "${GREEN}✅ Déploiement terminé avec succès !${NC}"
+}
 
-# Lancer le conteneur
-echo -e "${YELLOW}🚢 Démarrage du conteneur...${NC}"
-docker run -d \
-    --name ${APP_NAME} \
-    -p ${HOST_PORT}:8000 \
-    -e OPENAI_API_KEY="${OPENAI_API_KEY:-}" \
-    ${APP_NAME}:${APP_TAG}
-
-# Vérifier le statut du conteneur
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Conteneur démarré avec succès${NC}"
-    
-    # Afficher les logs du conteneur
-    echo -e "${YELLOW}📋 Logs du conteneur :${NC}"
-    docker logs ${APP_NAME}
-else
-    echo -e "${RED}❌ Échec du démarrage du conteneur${NC}"
-    exit 1
-fi
-
-# Nettoyer les images intermédiaires
-docker image prune -f
+# Lancer le déploiement
+main

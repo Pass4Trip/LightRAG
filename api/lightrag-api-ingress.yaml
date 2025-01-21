@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lightrag-api-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  rules:
+  - host: vps-af24e24d.vps.ovh.net
+    http:
+      paths:
+      # Route principale de l'API
+      - path: /lightrag-api(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: lightrag-api-service
+            port:
+              number: 8000
+      
+      # Routes de documentation spécifiques
+      - path: /lightrag-api/docs(/|$)
+        pathType: Prefix
+        backend:
+          service:
+            name: lightrag-api-service
+            port:
+              number: 8000
+      
+      - path: /lightrag-api/redoc(/|$)
+        pathType: Prefix
+        backend:
+          service:
+            name: lightrag-api-service
+            port:
+              number: 8000
+      
+      - path: /lightrag-api/openapi.json(/|$)
+        pathType: Prefix
+        backend:
+          service:
+            name: lightrag-api-service
+            port:
+              number: 8000

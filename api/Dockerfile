@@ -1,40 +1,13 @@
-FROM python:3.10-slim
+# Étape 1 : Dépendances de base
+FROM --platform=linux/amd64 python:3.10-slim
 
-# Définir le répertoire de travail
+# Répertoire de travail
 WORKDIR /app/LightRAG
-
-# Installer les dépendances système minimales
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    git \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Installer Rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-ENV RUSTUP_HOME=/root/.rustup
-ENV CARGO_HOME=/root/.cargo
-RUN . "$HOME/.cargo/env" && \
-    rustup default stable && \
-    rustc --version && \
-    cargo --version
-
-# Copier tout le projet
-COPY . ./
-
-# Installer les dépendances Python
-RUN pip install -r requirements.txt
-
-# Définir le répertoire de travail sur le dossier API
-WORKDIR /app/LightRAG/api
 
 # Variables d'environnement par défaut
 ENV PYTHONPATH=/app/LightRAG:/app/LightRAG/api
 ENV PYTHONUNBUFFERED=1
 ENV RUNTIME_ENV=production
-
 
 ENV NEO4J_URI=bolt://vps-af24e24d.vps.ovh.net:32045
 ENV NEO4J_USERNAME=neo4j
@@ -53,9 +26,34 @@ ENV RABBITMQ_PORT=30645
 ENV RABBITMQ_USER=rabbitmq
 ENV RABBITMQ_PASSWORD=mypassword
 
+# Variables d'environnement supplémentaires
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    CARGO_HOME=/root/.cargo \
+    RUSTUP_HOME=/root/.rustup \
+    PATH="/root/.cargo/bin:${PATH}"
 
-# Exposer le port sur lequel l'application va tourner
+# Installation de Rust et des dépendances système
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    git \
+    && curl https://sh.rustup.rs -sSf | sh -s -- -y \
+    && . "$HOME/.cargo/env" \
+    && rustup default stable \
+    && rustc --version \
+    && cargo --version
+
+# Copier tous les fichiers sauf ./api
+COPY . .
+
+# Installer les dépendances Python, en ignorant les erreurs de compilation
+RUN pip install --no-cache-dir -r requirements.txt 
+
+
+# Exposition du port
 EXPOSE 8000
 
-# Commande pour lancer l'application avec Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Commande pour démarrer l'application
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]
