@@ -43,6 +43,10 @@ ENV NEO4J_PASSWORD=my-initial-password
 ENV MILVUS_URI=http://51.77.200.196:19530
 ENV MILVUS_USERNAME=root
 ENV MILVUS_DB_NAME=lightrag
+ENV RABBITMQ_HOST=51.77.200.196
+ENV RABBITMQ_PORT=30645
+ENV RABBITMQ_USER=rabbitmq
+ENV RABBITMQ_PASSWORD=mypassword
 
 # Commande par défaut
 CMD ["python", "-m", "api.main"]

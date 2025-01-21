@@ -48,6 +48,12 @@ ENV MILVUS_DB_NAME=lightrag
 ENV MONGO_URI=mongodb://root:root@vps-af24e24d.vps.ovh.net:30940/
 ENV MONGO_DATABASE=LightRAG
 
+ENV RABBITMQ_HOST=51.77.200.196
+ENV RABBITMQ_PORT=30645
+ENV RABBITMQ_USER=rabbitmq
+ENV RABBITMQ_PASSWORD=mypassword
+
+
 # Exposer le port sur lequel l'application va tourner
 EXPOSE 8000
 
