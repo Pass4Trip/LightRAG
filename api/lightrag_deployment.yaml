@@ -15,47 +15,47 @@ spec:
       containers:
       - name: lightrag-api
         image: localhost:32000/lightrag-api:v1
-        imagePullPolicy: IfNotPresent  # Changement important
+        imagePullPolicy: Always  # Changement important
         ports:
         - containerPort: 8000
-        env:
-        - name: APP_MODULE
-          value: "api.main:app"
-        - name: HOST
-          value: "0.0.0.0"
-        - name: PORT
-          value: "8000"
-        - name: ROOT_PATH
-          value: "/lightrag-api"
-        - name: RUNTIME_ENV
-          value: "production"
-        - name: UVICORN_ROOT_PATH
-          value: "/lightrag-api"
-        # Nouvelles variables de débogage
-        - name: UVICORN_LOG_LEVEL
-          value: "debug"
-        - name: FASTAPI_DEBUG
-          value: "true"
-        - name: PYTHONUNBUFFERED
-          value: "1"
-        command: ["uvicorn"]
-        args: 
-        - "$(APP_MODULE)"
-        - "--host=$(HOST)"
-        - "--port=$(PORT)"
-        - "--root-path=$(ROOT_PATH)"
-        - "--log-level=debug"  # Niveau de log plus verbeux
-        - "--workers=1"  # Limiter à un seul worker pour le débogage
-        - "--reload"  # Activer le rechargement automatique
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 15
-          periodSeconds: 10
+        # env:
+        # - name: APP_MODULE
+        #   value: "api.main:app"
+        # - name: HOST
+        #   value: "0.0.0.0"
+        # - name: PORT
+        #   value: "8000"
+        # - name: ROOT_PATH
+        #   value: "/lightrag-api"
+        # - name: RUNTIME_ENV
+        #   value: "production"
+        # - name: UVICORN_ROOT_PATH
+        #   value: "/lightrag-api"
+        # # Nouvelles variables de débogage
+        # - name: UVICORN_LOG_LEVEL
+        #   value: "debug"
+        # - name: FASTAPI_DEBUG
+        #   value: "true"
+        # - name: PYTHONUNBUFFERED
+        #   value: "1"
+        # command: ["uvicorn"]
+        # args: 
+        # - "$(APP_MODULE)"
+        # - "--host=$(HOST)"
+        # - "--port=$(PORT)"
+        # - "--root-path=$(ROOT_PATH)"
+        # - "--log-level=debug"  # Niveau de log plus verbeux
+        # - "--workers=1"  # Limiter à un seul worker pour le débogage
+        # - "--reload"  # Activer le rechargement automatique
+        # readinessProbe:
+        #   httpGet:
+        #     path: /health
+        #     port: 8000
+        #   initialDelaySeconds: 10
+        #   periodSeconds: 5
+        # livenessProbe:
+        #   httpGet:
+        #     path: /health
+        #     port: 8000
+        #   initialDelaySeconds: 15
+        #   periodSeconds: 10
