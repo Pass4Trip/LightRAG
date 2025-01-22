@@ -25,7 +25,7 @@ clean_resources() {
 build_image() {
     echo "${GREEN}🚢 Construction de l'image...${NC}"
     docker build \
-        -t "$REGISTRY/$APP_NAME:$APP_TAG" \
+        -t "$REGISTRY/lightrag-api:v1" \
         -f "$LOCAL_PATH/api/Dockerfile" \
         "$LOCAL_PATH"
 }
@@ -42,8 +42,8 @@ deploy_kubernetes() {
     scp "$LOCAL_PATH/api/lightrag_deployment.yaml" "$VPS_HOST":~/lightrag_deployment.yaml
     scp "$LOCAL_PATH/api/lightrag-api-ingress.yaml" "$VPS_HOST":~/lightrag-api-ingress.yaml
     ssh vps-ovh "
-        microk8s kubectl apply -f ~/lightrag_deployment.yaml
-        microk8s kubectl apply -f ~/lightrag-api-ingress.yaml
+        microk8s kubectl apply -f api/lightrag_deployment.yaml
+        microk8s kubectl apply -f api/lightrag-api-ingress.yaml
         microk8s kubectl rollout restart deployment $APP_NAME
     "
 }
