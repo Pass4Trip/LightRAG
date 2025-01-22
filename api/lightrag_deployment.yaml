@@ -18,7 +18,12 @@ spec:
         imagePullPolicy: Always  # Changement important
         ports:
         - containerPort: 8000
-        # env:
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-api-key
+              key: OPENAI_API_KEY
         # - name: APP_MODULE
         #   value: "api.main:app"
         # - name: HOST

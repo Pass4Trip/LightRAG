@@ -463,7 +463,7 @@ async def _merge_edges_then_upsert(
             # Recharger les clés après génération
             with open(security_keys_path, 'r') as f:
                 security_keys = json.load(f)
-            logger.debug(f"Clés utilisé pour l'utilisateur {user_id}")
+                logger.debug(f"Clés utilisées pour l'utilisateur {user_id}")
         
         # Récupérer les clés
         user_public_key = security_keys.get(user_id, {}).get('public_key')
@@ -1234,8 +1234,24 @@ async def kg_query(
 
     # Envoi de la réponse à RabbitMQ
     try:
-        RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
-        RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
+        # Récupérer les variables d'environnement
+        RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
+        RABBITMQ_PORT = os.getenv('RABBITMQ_PORT', '30645')
+        
+        # Nettoyer et formater l'hôte et le port
+        if RABBITMQ_HOST.startswith('tcp://'):
+            RABBITMQ_HOST = RABBITMQ_HOST.replace('tcp://', '')
+        
+        if ':' in RABBITMQ_HOST:
+            RABBITMQ_HOST, RABBITMQ_PORT = RABBITMQ_HOST.split(':')
+        
+        # Convertir le port en entier
+        try:
+            RABBITMQ_PORT = int(RABBITMQ_PORT)
+        except ValueError:
+            logger.warning(f"Port RabbitMQ invalide : {RABBITMQ_PORT}. Utilisation du port par défaut 30645.")
+            RABBITMQ_PORT = 30645
+        
         RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
         RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'guest')
         QUEUE_NAME = 'queue_vinh_test'
@@ -1246,6 +1262,7 @@ async def kg_query(
             port=RABBITMQ_PORT, 
             credentials=credentials
         )
+        
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
         
@@ -1273,7 +1290,7 @@ async def kg_query(
         connection.close()
         
     except Exception as e:
-        logger.error(f"Erreur lors de l'envoi à RabbitMQ : {e}")
+        logger.error(f"Erreur lors de l'envoi à RabbitMQ : {e}", exc_info=True)
 
     # Save to cache
     await save_to_cache(
@@ -1930,8 +1947,24 @@ async def naive_query(
 
     # Envoi de la réponse à RabbitMQ
     try:
-        RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
-        RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
+        # Récupérer les variables d'environnement
+        RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
+        RABBITMQ_PORT = os.getenv('RABBITMQ_PORT', '30645')
+        
+        # Nettoyer et formater l'hôte et le port
+        if RABBITMQ_HOST.startswith('tcp://'):
+            RABBITMQ_HOST = RABBITMQ_HOST.replace('tcp://', '')
+        
+        if ':' in RABBITMQ_HOST:
+            RABBITMQ_HOST, RABBITMQ_PORT = RABBITMQ_HOST.split(':')
+        
+        # Convertir le port en entier
+        try:
+            RABBITMQ_PORT = int(RABBITMQ_PORT)
+        except ValueError:
+            logger.warning(f"Port RabbitMQ invalide : {RABBITMQ_PORT}. Utilisation du port par défaut 30645.")
+            RABBITMQ_PORT = 30645
+        
         RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
         RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'guest')
         QUEUE_NAME = 'query_history'
@@ -1942,6 +1975,7 @@ async def naive_query(
             port=RABBITMQ_PORT, 
             credentials=credentials
         )
+        
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
         
@@ -2182,6 +2216,15 @@ async def _merge_nodes_then_upsert(
         description = await _handle_entity_relation_summary(
             entity_name, description, global_config
         )
+        await knowledge_graph_inst.upsert_node(
+            entity_name,
+            node_data=dict(
+                entity_type=entity_type,
+                description=description,
+                source_id=source_id,
+                **metadata  # Ajouter les metadata au nœud
+            ),
+        )
         node_data = dict(
             entity_type=entity_type,
             description=description,
@@ -2189,11 +2232,6 @@ async def _merge_nodes_then_upsert(
             **metadata  # Ajouter les metadata au nœud
         )
 
-        
-        await knowledge_graph_inst.upsert_node(
-            entity_name,
-            node_data=node_data,
-        )
         node_data["entity_name"] = entity_name
         return node_data
     except Exception as e:
@@ -2313,7 +2351,7 @@ async def _merge_edges_then_upsert(
             # Recharger les clés après génération
             with open(security_keys_path, 'r') as f:
                 security_keys = json.load(f)
-            logger.debug(f"Clés utilisé pour l'utilisateur {user_id}")
+                logger.debug(f"Clés utilisé pour l'utilisateur {user_id}")
         
         # Récupérer les clés
         user_public_key = security_keys.get(user_id, {}).get('public_key')

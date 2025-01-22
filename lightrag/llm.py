@@ -41,6 +41,40 @@ else:
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
+def get_api_key_from_kubernetes_secret(secret_name='openai-api-key', secret_key='OPENAI_API_KEY'):
+    """
+    Récupère une clé API depuis un secret Kubernetes.
+    
+    Args:
+        secret_name (str, optional): Nom du secret Kubernetes. Défaut à 'openai-api-key'.
+        secret_key (str, optional): Clé dans le secret. Défaut à 'OPENAI_API_KEY'.
+    
+    Returns:
+        str: Clé API décodée, ou chaîne vide si non trouvée.
+    """
+    try:
+        from kubernetes import client, config
+        import base64
+        
+        # Charger la configuration Kubernetes
+        try:
+            config.load_incluster_config()  # Pour les pods dans le cluster
+        except config.ConfigException:
+            config.load_kube_config()  # Pour le développement local
+        
+        # Récupérer le secret
+        v1 = client.CoreV1Api()
+        secret = v1.read_namespaced_secret(secret_name, 'default')
+        
+        # Décoder la clé API du secret
+        api_key = base64.b64decode(secret.data.get(secret_key, '')).decode('utf-8').strip()
+        
+        return api_key
+    except Exception as e:
+        print(f"Impossible de récupérer la clé API depuis le secret Kubernetes : {e}")
+        return ''
+
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=4, max=10),
@@ -57,6 +91,10 @@ async def openai_complete_if_cache(
 ) -> str:
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
+    
+    # Si la clé est vide, essayer de la récupérer depuis le secret Kubernetes
+    if not os.environ.get("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = get_api_key_from_kubernetes_secret()
 
     openai_async_client = (
         AsyncOpenAI() if base_url is None else AsyncOpenAI(base_url=base_url)
@@ -105,6 +143,13 @@ async def azure_openai_complete_if_cache(
     if api_version:
         os.environ["AZURE_OPENAI_API_VERSION"] = api_version
 
+    # Si la clé est vide, essayer de la récupérer depuis le secret Kubernetes
+    if not os.environ.get("AZURE_OPENAI_API_KEY"):
+        os.environ["AZURE_OPENAI_API_KEY"] = get_api_key_from_kubernetes_secret(
+            secret_name='azure-openai-api-key', 
+            secret_key='AZURE_OPENAI_API_KEY'
+        )
+
     openai_async_client = AsyncAzureOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         api_key=os.getenv("AZURE_OPENAI_API_KEY"),
@@ -115,8 +160,7 @@ async def azure_openai_complete_if_cache(
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
     messages.extend(history_messages)
-    if prompt is not None:
-        messages.append({"role": "user", "content": prompt})
+    messages.append({"role": "user", "content": prompt})
 
     response = await openai_async_client.chat.completions.create(
         model=model, messages=messages, **kwargs
@@ -369,7 +413,7 @@ async def lmdeploy_model_if_cache(
                         "lmdeploy/llama2-chat-70b-4bit", etc.
                     - iii) The model_id of a model hosted inside a model repo
                         on huggingface.co, such as "internlm/internlm-chat-7b",
-                        "Qwen/Qwen-7B-Chat ", "baichuan-inc/Baichuan2-7B-Chat"
+                        "Qwen/Qwen-7B-Chat ", "Baichuan2-7B-Chat"
                         and so on.
         chat_template (str): needed when model is a pytorch model on
             huggingface.co, such as "internlm-chat-7b",
@@ -573,6 +617,10 @@ async def openai_embedding(
 ) -> np.ndarray:
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
+    
+    # Si la clé est vide, essayer de la récupérer depuis le secret Kubernetes
+    if not os.environ.get("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = get_api_key_from_kubernetes_secret()
 
     openai_async_client = (
         AsyncOpenAI() if base_url is None else AsyncOpenAI(base_url=base_url)
@@ -635,15 +683,16 @@ async def nvidia_openai_embedding(
 ) -> np.ndarray:
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
+    
+    # Si la clé est vide, essayer de la récupérer depuis le secret Kubernetes
+    if not os.environ.get("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = get_api_key_from_kubernetes_secret()
 
     openai_async_client = (
         AsyncOpenAI() if base_url is None else AsyncOpenAI(base_url=base_url)
     )
     response = await openai_async_client.embeddings.create(
-        model=model,
-        input=texts,
-        encoding_format=encode,
-        extra_body={"input_type": input_type, "truncate": trunc},
+        model=model, input=texts, encoding_format=encode, extra_body={"input_type": input_type, "truncate": trunc}
     )
     return np.array([dp.embedding for dp in response.data])
 
@@ -667,6 +716,13 @@ async def azure_openai_embedding(
         os.environ["AZURE_OPENAI_ENDPOINT"] = base_url
     if api_version:
         os.environ["AZURE_OPENAI_API_VERSION"] = api_version
+
+    # Si la clé est vide, essayer de la récupérer depuis le secret Kubernetes
+    if not os.environ.get("AZURE_OPENAI_API_KEY"):
+        os.environ["AZURE_OPENAI_API_KEY"] = get_api_key_from_kubernetes_secret(
+            secret_name='azure-openai-api-key', 
+            secret_key='AZURE_OPENAI_API_KEY'
+        )
 
     openai_async_client = AsyncAzureOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),

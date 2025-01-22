@@ -7,6 +7,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 import json
+import base64
+from kubernetes import client, config
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, 
@@ -74,6 +76,39 @@ class Neo4jQuery:
             self.driver.close()
             logger.info("Connexion Neo4j fermée.")
 
+def get_api_key_from_kubernetes_secret(secret_name='openai-api-key', secret_key='OPENAI_API_KEY'):
+    """
+    Récupère une clé API depuis un secret Kubernetes.
+    
+    Args:
+        secret_name (str, optional): Nom du secret Kubernetes. Défaut à 'openai-api-key'.
+        secret_key (str, optional): Clé dans le secret. Défaut à 'OPENAI_API_KEY'.
+    
+    Returns:
+        str: Clé API décodée, ou chaîne vide si non trouvée.
+    """
+    try:
+        from kubernetes import client, config
+        import base64
+        
+        # Charger la configuration Kubernetes
+        try:
+            config.load_incluster_config()  # Pour les pods dans le cluster
+        except config.ConfigException:
+            config.load_kube_config()  # Pour le développement local
+        
+        # Récupérer le secret
+        v1 = client.CoreV1Api()
+        secret = v1.read_namespaced_secret(secret_name, 'default')
+        
+        # Décoder la clé API du secret
+        api_key = base64.b64decode(secret.data.get(secret_key, '')).decode('utf-8').strip()
+        
+        return api_key
+    except Exception as e:
+        logger.error(f"Impossible de récupérer la clé API depuis le secret Kubernetes : {e}")
+        return ''
+
 class UserContextEnhancer:
     def __init__(self, neo4j_query, openai_api_key=None):
         """
@@ -87,6 +122,11 @@ class UserContextEnhancer:
         
         # Configuration OpenAI
         openai_api_key = openai_api_key or os.getenv('OPENAI_API_KEY')
+        
+        # Si la clé est vide, essayer de la récupérer depuis le secret Kubernetes
+        if not openai_api_key:
+            openai_api_key = get_api_key_from_kubernetes_secret()
+        
         if openai_api_key:
             client = openai.OpenAI(api_key=openai_api_key)
         else:
