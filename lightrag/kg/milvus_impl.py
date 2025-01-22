@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 from lightrag.utils import logger
 from ..base import BaseVectorStorage
+import traceback
 
 from pymilvus import MilvusClient
 
@@ -15,11 +16,36 @@ class MilvusVectorDBStorage(BaseVectorStorage):
     def create_collection_if_not_exist(
         client: MilvusClient, collection_name: str, **kwargs
     ):
-        if client.has_collection(collection_name):
-            return
-        client.create_collection(
-            collection_name, max_length=64, id_type="string", **kwargs
-        )
+        try:
+            logger.info(f"🔍 Vérification de l'existence de la collection : {collection_name}")
+            logger.info(f"🔧 Arguments supplémentaires : {kwargs}")
+            
+            # Vérifier les collections existantes
+            existing_collections = client.list_collections()
+            logger.info(f"📋 Collections existantes : {existing_collections}")
+            
+            # Vérifier si la collection existe
+            collection_exists = client.has_collection(collection_name)
+            logger.info(f"✅ La collection {collection_name} existe : {collection_exists}")
+            
+            if not collection_exists:
+                logger.info(f"🆕 Création de la collection : {collection_name}")
+                try:
+                    client.create_collection(
+                        collection_name, 
+                        max_length=64, 
+                        id_type="string", 
+                        **kwargs
+                    )
+                    logger.info(f"✅ Collection {collection_name} créée avec succès")
+                except Exception as create_ex:
+                    logger.error(f"❌ Erreur lors de la création de la collection {collection_name}: {create_ex}")
+                    logger.error(f"Détails de l'exception : {traceback.format_exc()}")
+                    raise
+        except Exception as ex:
+            logger.error(f"❌ Erreur lors de la vérification/création de la collection {collection_name}: {ex}")
+            logger.error(f"Détails de l'exception : {traceback.format_exc()}")
+            raise
 
     @staticmethod
     def create_database_if_not_exist(client: MilvusClient, db_name: str):

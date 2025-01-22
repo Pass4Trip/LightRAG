@@ -1235,27 +1235,13 @@ async def kg_query(
     # Envoi de la réponse à RabbitMQ
     try:
         # Récupérer les variables d'environnement
-        RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
-        RABBITMQ_PORT = os.getenv('RABBITMQ_PORT', '30645')
+        RABBITMQ_HOST = '51.77.200.196'
+        RABBITMQ_PORT = 30645
+        RABBITMQ_USER = 'rabbitmq'
+        RABBITMQ_PASSWORD = 'mypassword'
+        RABBITMQ_QUEUE = 'queue_vinh_test'
         
-        # Nettoyer et formater l'hôte et le port
-        if RABBITMQ_HOST.startswith('tcp://'):
-            RABBITMQ_HOST = RABBITMQ_HOST.replace('tcp://', '')
-        
-        if ':' in RABBITMQ_HOST:
-            RABBITMQ_HOST, RABBITMQ_PORT = RABBITMQ_HOST.split(':')
-        
-        # Convertir le port en entier
-        try:
-            RABBITMQ_PORT = int(RABBITMQ_PORT)
-        except ValueError:
-            logger.warning(f"Port RabbitMQ invalide : {RABBITMQ_PORT}. Utilisation du port par défaut 30645.")
-            RABBITMQ_PORT = 30645
-        
-        RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
-        RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'guest')
-        QUEUE_NAME = 'queue_vinh_test'
-        
+
         credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
         parameters = pika.ConnectionParameters(
             host=RABBITMQ_HOST, 
@@ -1266,7 +1252,7 @@ async def kg_query(
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
         
-        channel.queue_declare(queue=QUEUE_NAME, durable=True)
+        channel.queue_declare(queue=RABBITMQ_QUEUE, durable=True)
         
         message = {
             "type": "query", 
@@ -1280,7 +1266,7 @@ async def kg_query(
         
         channel.basic_publish(
             exchange='',
-            routing_key=QUEUE_NAME,
+            routing_key=RABBITMQ_QUEUE,
             body=message_body,
             properties=pika.BasicProperties(
                 delivery_mode=2,  # Rendre le message persistant
@@ -1948,27 +1934,14 @@ async def naive_query(
     # Envoi de la réponse à RabbitMQ
     try:
         # Récupérer les variables d'environnement
-        RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
-        RABBITMQ_PORT = os.getenv('RABBITMQ_PORT', '30645')
+        # Récupérer les variables d'environnement
+        RABBITMQ_HOST = '51.77.200.196'
+        RABBITMQ_PORT = 30645
+        RABBITMQ_USER = 'rabbitmq'
+        RABBITMQ_PASSWORD = 'mypassword'
+        RABBITMQ_QUEUE = 'queue_vinh_test'
         
-        # Nettoyer et formater l'hôte et le port
-        if RABBITMQ_HOST.startswith('tcp://'):
-            RABBITMQ_HOST = RABBITMQ_HOST.replace('tcp://', '')
-        
-        if ':' in RABBITMQ_HOST:
-            RABBITMQ_HOST, RABBITMQ_PORT = RABBITMQ_HOST.split(':')
-        
-        # Convertir le port en entier
-        try:
-            RABBITMQ_PORT = int(RABBITMQ_PORT)
-        except ValueError:
-            logger.warning(f"Port RabbitMQ invalide : {RABBITMQ_PORT}. Utilisation du port par défaut 30645.")
-            RABBITMQ_PORT = 30645
-        
-        RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'guest')
-        RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'guest')
-        QUEUE_NAME = 'query_history'
-        
+
         credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
         parameters = pika.ConnectionParameters(
             host=RABBITMQ_HOST, 
@@ -1979,11 +1952,11 @@ async def naive_query(
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
         
-        channel.queue_declare(queue=QUEUE_NAME, durable=True)
+        channel.queue_declare(queue=RABBITMQ_QUEUE, durable=True)
         
         message = {
             "type": "query", 
-            "user_id": user_id,  
+            "user_id": user_id, 
             "custom_id": str(uuid.uuid4()),  # Génération d'un identifiant unique
             "response": response,
             "timestamp": datetime.now().isoformat()
@@ -1993,7 +1966,7 @@ async def naive_query(
         
         channel.basic_publish(
             exchange='',
-            routing_key=QUEUE_NAME,
+            routing_key=RABBITMQ_QUEUE,
             body=message_body,
             properties=pika.BasicProperties(
                 delivery_mode=2,  # Rendre le message persistant

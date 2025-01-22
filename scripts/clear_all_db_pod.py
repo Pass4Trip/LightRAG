@@ -1,7 +1,16 @@
 import sys
 import os
 import subprocess
+import logging
 from pathlib import Path
+
+# Configuration du logging pour réduire la verbosité
+logging.basicConfig(
+    level=logging.INFO,  # Niveau de log moins détaillé
+    format='%(asctime)s - %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S'  # Format de date plus court
+)
+logger = logging.getLogger(__name__)
 
 def install_dependencies():
     """
@@ -9,9 +18,9 @@ def install_dependencies():
     """
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "--break-system-packages", "python-dotenv", "pymilvus", "pymongo", "neo4j"])
-        print("✅ Dépendances installées avec succès")
+        logger.info("✅ Dépendances installées avec succès")
     except Exception as e:
-        print(f"❌ Erreur lors de l'installation des dépendances : {e}")
+        logger.error(f"❌ Erreur lors de l'installation des dépendances : {e}")
         sys.exit(1)
 
 def run_clear_script(script_path):
@@ -22,28 +31,28 @@ def run_clear_script(script_path):
         script_path (str): Chemin absolu du script à exécuter
     """
     try:
-        print(f"\n🔥 Exécution du script : {os.path.basename(script_path)}")
+        logger.info(f"🔥 Exécution du script : {os.path.basename(script_path)}")
         
         # Vérifier si le script existe
         if not os.path.exists(script_path):
-            print(f"❌ Le script {script_path} n'existe pas")
+            logger.error(f"❌ Le script {script_path} n'existe pas")
             return
         
         # Vérifier les permissions du script
         if not os.access(script_path, os.X_OK):
-            print(f"❌ Le script {script_path} n'est pas exécutable")
+            logger.error(f"❌ Le script {script_path} n'est pas exécutable")
             return
         
         # Exécuter le script avec Python et capturer les erreurs
         result = os.system(f"python3 {script_path}")
         
         if result == 0:
-            print(f"✅ Script {os.path.basename(script_path)} exécuté avec succès")
+            logger.info(f"✅ Script {os.path.basename(script_path)} exécuté avec succès")
         else:
-            print(f"❌ Erreur lors de l'exécution de {os.path.basename(script_path)}")
+            logger.error(f"❌ Erreur lors de l'exécution de {os.path.basename(script_path)}")
     
     except Exception as e:
-        print(f"❌ Erreur lors de l'exécution de {script_path}: {e}")
+        logger.error(f"❌ Erreur lors de l'exécution de {script_path}: {e}")
 
 def main():
     # Installer les dépendances
@@ -58,15 +67,15 @@ def main():
         base_path / "neo4j_microk8s" / "clear_database.py"
     ]
     
-    print("🧹 Début du nettoyage de toutes les bases de données")
+    logger.info("🧹 Début du nettoyage de toutes les bases de données")
     
     for script in scripts:
         if script.exists():
             run_clear_script(str(script))
         else:
-            print(f"❌ Script non trouvé : {script}")
+            logger.error(f"❌ Script non trouvé : {script}")
     
-    print("\n🎉 Nettoyage des bases de données terminé")
+    logger.info("\n🎉 Nettoyage des bases de données terminé")
 
 if __name__ == "__main__":
     main()
