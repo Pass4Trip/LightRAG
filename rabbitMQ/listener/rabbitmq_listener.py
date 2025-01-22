@@ -19,46 +19,56 @@ RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'mypassword')
 RABBITMQ_QUEUE = os.getenv('RABBITMQ_QUEUE', 'queue_vinh_test')
 
 # Configuration flexible de l'API d'insertion
-API_LIGHTRAG_URL = 'http://51.77.200.196:30080/insert'
+API_LIGHTRAG_URL = 'http://51.77.200.196:30080/insert/'
 
 logger.debug(f"🌐 URL d'insertion configurée : {API_LIGHTRAG_URL}")
 
 def sync_send_to_insert_api(payload: dict):
     """
-    Version synchrone de l'envoi à l'API d'insertion de LightRAG avec gestion des redirections
-
+    Version synchrone de l'envoi à l'API d'insertion de LightRAG avec gestion des timeouts
+    
     Args:
         payload (dict): Message à insérer
     """
     try:
-        # Configuration du client avec gestion des redirections
+        # Configuration du client avec timeouts plus généreux
         with httpx.Client(
-            timeout=10.0, 
+            timeout=httpx.Timeout(
+                connect=10.0,   # Timeout de connexion
+                read=60.0,      # Timeout de lecture très long
+                write=60.0,     # Timeout d'écriture très long
+                pool=60.0       # Timeout du pool de connexions
+            ),
             follow_redirects=True,  # Activer le suivi des redirections
             max_redirects=3  # Limiter le nombre de redirections
         ) as client:
-            # Ajout de logs détaillés pour le débogage
+            # Log de débogage
             logger.info(f"🚀 Tentative d'insertion du message vers {API_LIGHTRAG_URL}")
             
-            response = client.post(API_LIGHTRAG_URL, json=payload)
+            try:
+                response = client.post(
+                    API_LIGHTRAG_URL, 
+                    json=payload
+                )
+                
+                # Log détaillé de la requête et de la réponse
+                logger.info(f"📡 Requête HTTP: {response.request.method} {response.request.url}")
+                logger.info(f"📥 Réponse HTTP: {response.status_code} {response.reason_phrase}")
+                
+                if response.status_code == 200:
+                    logger.info(f"✅ Message inséré avec succès : {payload.get('type', 'unknown')}")
+                    return True
+                else:
+                    logger.error(f"❌ Échec de l'insertion : {response.status_code} - {response.text}")
+                    return False
             
-            # Log de la requête et de la réponse
-            logger.info(f"📡 Requête HTTP: {response.request.method} {response.request.url}")
-            logger.info(f"📥 Réponse HTTP: {response.status_code} {response.reason_phrase}")
-            
-            if response.status_code == 200:
-                logger.info(f"✅ Message inséré avec succès : {payload}")
-                logger.debug(f"Détails de la réponse : {response.text}")
-            else:
-                logger.error(f"❌ Échec de l'insertion : {response.status_code} - {response.text}")
-                logger.error(f"URL finale : {response.url}")
+            except httpx.TimeoutException as e:
+                logger.error(f"⏰ Timeout lors de l'envoi du message : {e}")
+                return False
     
-    except httpx.RequestError as e:
-        logger.error(f"❌ Erreur de requête réseau : {e}")
-    except httpx.HTTPStatusError as e:
-        logger.error(f"❌ Erreur HTTP : {e}")
     except Exception as e:
         logger.error(f"❌ Erreur inattendue lors de l'envoi à l'API : {e}")
+        return False
 
 def callback(ch, method, properties, body):
     """
