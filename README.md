@@ -55,6 +55,23 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
+### Installation serveur OVH
+
+- Clone le repo
+
+- Build docker image
+```bash
+docker build --tag localhost:32000/lightrag-api:v1 .
+```
+- Deploy pod
+```bash
+kubectl apply -f api/lightrag_deployment.yaml
+```
+- Deploy ingress
+```bash
+kubectl apply -f api/lightrag-api-ingress.yaml
+```
+
 ## Configuration
 
 ### Services Requis
