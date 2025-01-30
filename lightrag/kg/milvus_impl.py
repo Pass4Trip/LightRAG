@@ -16,36 +16,11 @@ class MilvusVectorDBStorage(BaseVectorStorage):
     def create_collection_if_not_exist(
         client: MilvusClient, collection_name: str, **kwargs
     ):
-        try:
-            logger.info(f"🔍 Vérification de l'existence de la collection : {collection_name}")
-            logger.info(f"🔧 Arguments supplémentaires : {kwargs}")
-            
-            # Vérifier les collections existantes
-            existing_collections = client.list_collections()
-            logger.info(f"📋 Collections existantes : {existing_collections}")
-            
-            # Vérifier si la collection existe
-            collection_exists = client.has_collection(collection_name)
-            logger.info(f"✅ La collection {collection_name} existe : {collection_exists}")
-            
-            if not collection_exists:
-                logger.info(f"🆕 Création de la collection : {collection_name}")
-                try:
-                    client.create_collection(
-                        collection_name, 
-                        max_length=64, 
-                        id_type="string", 
-                        **kwargs
-                    )
-                    logger.info(f"✅ Collection {collection_name} créée avec succès")
-                except Exception as create_ex:
-                    logger.error(f"❌ Erreur lors de la création de la collection {collection_name}: {create_ex}")
-                    logger.error(f"Détails de l'exception : {traceback.format_exc()}")
-                    raise
-        except Exception as ex:
-            logger.error(f"❌ Erreur lors de la vérification/création de la collection {collection_name}: {ex}")
-            logger.error(f"Détails de l'exception : {traceback.format_exc()}")
-            raise
+        if client.has_collection(collection_name):
+            return
+        client.create_collection(
+            collection_name, max_length=64, id_type="string", **kwargs
+        )
 
     @staticmethod
     def create_database_if_not_exist(client: MilvusClient, db_name: str):
@@ -63,42 +38,23 @@ class MilvusVectorDBStorage(BaseVectorStorage):
             client.create_database(db_name)
 
     def __post_init__(self):
-        # D'abord, créer la base de données si nécessaire
-        milvus_uri = os.environ.get(
-            "MILVUS_URI",
-            os.path.join(self.global_config["working_dir"], "milvus_lite.db"),
-        )
-        logger.debug(f"Configuration Milvus - URI: {milvus_uri}")
-        
-        temp_client = MilvusClient(
-            uri=milvus_uri,
-            db_name=""  # Base de données par défaut
-        )
-        db_name = os.environ.get("MILVUS_DB_NAME", "")
-        logger.debug(f"Configuration Milvus - DB Name: {db_name}")
-        
-        self.create_database_if_not_exist(temp_client, db_name)
-
-        # Ensuite, se connecter à la base de données créée
         self._client = MilvusClient(
-            uri=milvus_uri,
+            uri=os.environ.get(
+                "MILVUS_URI",
+                os.path.join(self.global_config["working_dir"], "milvus_lite.db"),
+            ),
             user=os.environ.get("MILVUS_USER", ""),
             password=os.environ.get("MILVUS_PASSWORD", ""),
             token=os.environ.get("MILVUS_TOKEN", ""),
-            db_name=db_name,
+            db_name=os.environ.get("MILVUS_DB_NAME", ""),
         )
-        logger.debug(f"Configuration Milvus - Collection: {self.namespace}, Dimension: {self.embedding_func.embedding_dim}")
-        
         self._max_batch_size = self.global_config["embedding_batch_num"]
+        
         MilvusVectorDBStorage.create_collection_if_not_exist(
             self._client,
             self.namespace,
             dimension=self.embedding_func.embedding_dim,
         )
-        
-        # Vérifier les collections après création
-        collections = self._client.list_collections()
-        logger.debug(f"Collections disponibles après initialisation : {collections}")
 
     async def upsert(self, data: dict[str, dict]):
         logger.debug(f"Inserting {len(data)} vectors to {self.namespace}")
