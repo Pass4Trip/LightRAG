@@ -925,14 +925,14 @@ async def extract_entities(
             elif entity_type == 'user_preference':
                 color = Fore.MAGENTA
             
-            logger.info(
+            logger.debug(
                 f"{color}📦 Entité traitée: "
                 f"{Style.BRIGHT}{entity_type}{Style.RESET_ALL} "
                 f"{color}→ {Style.BRIGHT}{entity_name}{Style.RESET_ALL}"
             )
 
-    logger.info("Inserting relationships into storage...")
-    logger.info(f"Nombre total de relations potentielles : {len(maybe_edges)}")
+    logger.debug("Inserting relationships into storage...")
+    logger.debug(f"Nombre total de relations potentielles : {len(maybe_edges)}")
     for (src, tgt), relations in maybe_edges.items():
         logger.debug(f"Relation potentielle - Source: {src}, Cible: {tgt}")
         logger.debug(f"Détails des relations : {relations}")
@@ -1679,12 +1679,17 @@ async def _get_edge_data(
     if not len(results):
         return "", "", ""
 
+    logger.debug(f"Results: {results[0]}")
+
     edge_datas = await asyncio.gather(
         *[knowledge_graph_inst.get_edge(r["src_id"], r["tgt_id"]) for r in results]
     )
+    
 
+    # Identifier les arêtes manquantes dans edge_datas
     if not all([n is not None for n in edge_datas]):
         logger.warning("Some edges are missing, maybe the storage is damaged")
+
     edge_degree = await asyncio.gather(
         *[knowledge_graph_inst.edge_degree(r["src_id"], r["tgt_id"]) for r in results]
     )

@@ -113,3 +113,33 @@ app = FastAPI(
 
 # Inclure le router
 app.include_router(router, tags=["Query"])
+
+
+
+if __name__ == "__main__":
+    try:
+        # Exemple d'utilisation
+        #question = "dis moi ce que tu sais sur lea"
+        question = "trouver moi un restaurant qui dispose d'une ambiance chaleureuse et si possible des burgers"
+
+        rag = init_lightrag()
+        
+        # Exemple d'utilisation avec filtrage
+        # node_list = [{'custom_id': 'ZUlli'}]
+        
+
+        # Préparation des paramètres de requête
+        mode="hybrid"
+        query_param = QueryParam(mode=mode)
+        
+        #vdb_filter= [ "Zulli"]
+        #vdb_filter= ["lea"]
+        vdb_filter=None
+
+        # Exécution asynchrone de la requête
+        response = asyncio.run(rag.aquery(question, param=query_param))
+        
+        print(f"\nQuestion: {question}")
+        print(f"\nRéponse: {response}")
+    except Exception as e:
+        print(f"An error occurred: {e}")

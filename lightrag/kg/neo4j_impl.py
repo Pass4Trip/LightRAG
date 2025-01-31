@@ -833,7 +833,7 @@ class Neo4JStorage(BaseGraphStorage):
         async with self.driver.session() as session:
             try:
                 # Log de débogage
-                logger.info(f"Requête Cypher pour associer query {custom_id} à l'utilisateur {user_id}")
+                logger.debug(f"Requête Cypher pour associer query {custom_id} à l'utilisateur {user_id}")
             
 
                 # Vérifier l'existence des nœuds
@@ -861,8 +861,8 @@ class Neo4JStorage(BaseGraphStorage):
                 RETURN r
                 """
                 
-                logger.info(f"Requête Cypher finale : {query}")
-                logger.info(f"Paramètres : custom_id={custom_id}, user_id={user_id}")
+                logger.debug(f"Requête Cypher finale : {query}")
+                logger.debug(f"Paramètres : custom_id={custom_id}, user_id={user_id}")
                 
                 result = await session.run(query, {
                     "custom_id": custom_id,
@@ -872,7 +872,7 @@ class Neo4JStorage(BaseGraphStorage):
                 records = await result.data()
                 
                 if records:
-                    logger.info(f"Relation USER_QUERY créée entre query {custom_id} et user {user_id}")
+                    logger.debug(f"Relation USER_QUERY créée entre query {custom_id} et user {user_id}")
                 else:
                     logger.warning(f"Impossible de créer la relation USER_QUERY entre query {custom_id} et user {user_id}")
                 

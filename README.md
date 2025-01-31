@@ -1,4 +1,6 @@
-# Répertoire actif : /Users/vinh/Documents/Prefect
+# Répertoire actif : /Users/vinh/Documents/LightRAG/
+
+Déploiement : /Users/vinh/Documents/LightRAG/api/deploy_lightrag.sh
 
 # LightRAG
 
